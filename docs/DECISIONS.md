@@ -21,13 +21,44 @@ Defined during CVC Phase 1 planning. Every deployment should start with these ro
 | Ventures | Companies, DD, deal flow, LP fund data |
 | PSM | Assigned partners only. No LP fund data. |
 
-### Data Isolation Rule
-PSM partner terminal data (notes, documents, service requests) must be **row-level secured at the DB level** — not just filtered in the UI. This is non-negotiable. Each PSM's partner data is private to them + GP/Principal/Director.
+### Data Isolation Rule — Visibility Tagging (NOT PostgreSQL RLS)
 
-### Auth
-- Start with JWT (username/password → token). Do not use Basic Auth.
-- Tokens carry the user's role.
-- Login screen is the entry point.
+**Decision (finalized 2026-04-28): Use application-level visibility tagging. PostgreSQL RLS is NOT used and NOT planned.**
+
+PSM partner terminal data (notes, documents, problems, advisory logs, issue comments) is isolated using two columns added to each of those tables:
+
+| Column | Type | Values |
+|--------|------|--------|
+| `visibility` | TEXT | `team` (all authenticated staff) \| `psm_only` (creator PSM + GP/Principal/Director) \| `gp_only` |
+| `assigned_psm` | TEXT | username of the owning PSM (NULL for team-visible rows) |
+
+**Why tagging, not RLS:**
+- Rules can change without DB migrations — just update the API filter helper
+- Naturally extends to future visibility tiers (e.g. `ventures_only`, `board_only`)
+- Simpler to audit and reason about than Postgres policy expressions
+
+**How it is enforced:**
+- API helper `_visibility_clause(user, alias)` in `api/routes/partners.py` builds the WHERE clause:
+  - GP / Principal / Director: no filter — sees all rows
+  - Ventures: `visibility = 'team'` only
+  - PSM: `visibility = 'team'` OR (`visibility = 'psm_only'` AND `assigned_psm = their username`)
+- PSM-created records are auto-tagged `visibility='psm_only'` + `assigned_psm=username` at the POST endpoint — no client involvement
+- Every terminal data read is logged to `cvc.partner_terminal_access_log` (username, role, partner_id, action, timestamp)
+
+**Tables covered (migration 084):** `partner_documents`, `partner_problems`, `partner_notes`, `partner_advisory_logs`, `partner_issue_comments`
+
+**Do not implement RLS.** If someone suggests adding Postgres row-level security policies on these tables, that is the wrong direction.
+
+### Auth (implemented 2026-04-28, Phase 1 complete)
+- JWT only. Basic Auth is fully removed from the platform.
+- `POST /auth/login` → 24hr HS256 token; payload carries `username`, `role`, `full_name`, `assigned_partner_ids`
+- `GET /auth/me` — token introspection
+- `POST /auth/refresh` — extend session
+- Token stored in `localStorage['cvc_jwt']`; `AuthGuard.tsx` redirects to `/login` if absent
+- FastAPI dependency `require_jwt` imported by any route that needs auth
+- `cvc.users` table: `id`, `username`, `password_hash` (bcrypt), `role` FK, `full_name`, `email`, `assigned_partner_ids int[]`, `is_active`
+- `cvc.roles` table: GP, Principal, Director, Ventures, PSM
+- Default password at seed time: `cvc2026` — must be changed before handing to a real team
 
 ### What Each New Team Needs to Customize
 1. Team name, logo
