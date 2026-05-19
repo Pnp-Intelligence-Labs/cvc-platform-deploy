@@ -1,0 +1,18 @@
+@import 'tailwindcss' source(none);
+@source '../**/*.{js,ts,jsx,tsx}';
+
+@import 'tw-animate-css';
+
+@theme {
+  --font-sans: 'Geist Variable', 'Geist', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* Warm Industrial Gallery design tokens */
+  --color-linen:     #FAF9F6;  /* bg-linen — page background */
+  --color-cvc-gold:  #F59E0B;  /* text-cvc-gold / bg-cvc-gold — amber accent */
+  --color-cvc-slate: #1e293b;  /* text-cvc-slate / bg-cvc-slate — primary text / dark surfaces */
+
+  /* Elevation */
+  --shadow-cvc:       0 1px 2px 0 rgb(0 0 0 / 0.04), 0 4px 16px 0 rgb(0 0 0 / 0.06);
+  --shadow-cvc-hover: 0 2px 4px 0 rgb(0 0 0 / 0.06), 0 8px 24px 0 rgb(0 0 0 / 0.08);
+}

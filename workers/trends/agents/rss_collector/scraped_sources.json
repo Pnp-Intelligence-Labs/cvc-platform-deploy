@@ -1,0 +1,20 @@
+[
+    {
+        "name": "Standard Bots Blog",
+        "url": "https://standardbots.com/blog",
+        "sectors": ["robotics", "industrial_auto"],
+        "note": "No-code robotics, factory floor deployment"
+    },
+    {
+        "name": "WIPO Technology Trends",
+        "url": "https://www.wipo.int/tech_trends/en/",
+        "sectors": ["robotics", "physical_ai"],
+        "note": "Global patent trends — who owns robotics/AI IP"
+    },
+    {
+        "name": "NIST Robotics",
+        "url": "https://www.nist.gov/robotics",
+        "sectors": ["robotics", "industrial_auto"],
+        "note": "US government robotics standards and measurement science"
+    }
+]

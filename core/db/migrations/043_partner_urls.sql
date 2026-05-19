@@ -1,0 +1,4 @@
+ALTER TABLE cvc.partners 
+ADD COLUMN IF NOT EXISTS salesforce_url TEXT,
+ADD COLUMN IF NOT EXISTS playbook_url TEXT,
+ADD COLUMN IF NOT EXISTS monday_item_id TEXT;

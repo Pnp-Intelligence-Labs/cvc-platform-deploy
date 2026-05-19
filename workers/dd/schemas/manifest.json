@@ -1,0 +1,42 @@
+{
+  "_description": "Schema for workdir/[company]/manifest.json — the central data contract between Ingestion and all specialist agents.",
+  "company": "Acme Robotics",
+  "date": "2026-03-04",
+  "drive_url": "https://drive.google.com/drive/folders/...",
+  "documents": [
+    {
+      "filename":   "Acme_Pitch_Deck.pdf",
+      "rel_path":   "Overview/Acme_Pitch_Deck.pdf",
+      "local_path": "/home/nathan/repos/02-dd-pipeline/workdir/Acme_Robotics/raw/Overview/Acme_Pitch_Deck.pdf",
+      "text_path":  "/home/nathan/repos/02-dd-pipeline/workdir/Acme_Robotics/converted/Acme_Pitch_Deck.txt",
+      "doc_type":   "pitch_deck",
+      "chars":      24000,
+      "conversion": "ok",
+      "mime_type":  "application/pdf",
+      "success":    true
+    }
+  ],
+  "routing": {
+    "financials":  [{"_comment": "list of slim doc records for this agent"}],
+    "comp":        [],
+    "qualitative": [],
+    "product":     [],
+    "news":        []
+  },
+  "summary": {
+    "total":     12,
+    "converted": 10,
+    "skipped":   1,
+    "failed":    1,
+    "by_type": {
+      "pitch_deck": 2,
+      "financial_model": 1,
+      "financial_statement": 2,
+      "cap_table": 1,
+      "legal_terms": 3,
+      "customer_contract": 1,
+      "team_bio": 1,
+      "unknown": 1
+    }
+  }
+}

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 300px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #253B49;
+      color: #fff;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .logo { color: #F0E545; font-weight: 700; font-size: 14px; }
+    .subtitle { color: rgba(255,255,255,0.5); font-size: 11px; }
+    .body { padding: 16px; }
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 4px;
+    }
+    input {
+      width: 100%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 12px;
+      padding: 7px 10px;
+      margin-bottom: 10px;
+      outline: none;
+      font-family: inherit;
+    }
+    input:focus { border-color: #F0E545; }
+    input::placeholder { color: rgba(255,255,255,0.3); }
+    .btn-save {
+      width: 100%;
+      background: #F0E545;
+      color: #253B49;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 9px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-save:hover { opacity: 0.9; }
+    .status {
+      margin-top: 12px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      min-height: 16px;
+    }
+    .status.ok  { color: #10b981; }
+    .status.err { color: #ef4444; }
+    .btn-test {
+      width: 100%;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      margin-top: 8px;
+    }
+    .btn-test:hover { background: rgba(255,255,255,0.15); }
+    .debug {
+      margin-top: 10px;
+      font-size: 10px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 6px;
+      padding: 8px;
+      color: rgba(255,255,255,0.7);
+      word-break: break-all;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="logo">⬡ CVC Source Verification</div>
+      <div class="subtitle">Connect to your CVC Intelligence server</div>
+    </div>
+  </div>
+  <div class="body">
+    <label>Server URL</label>
+    <input id="serverUrl" type="text" placeholder="http://100.83.104.117:8001" />
+
+    <label>Username</label>
+    <input id="username" type="text" placeholder="nate" />
+
+    <label>Password</label>
+    <input id="password" type="password" placeholder="••••••••" />
+
+    <button class="btn-save" id="btnSave">Save Settings</button>
+    <button class="btn-test" id="btnTest">Test Current Tab</button>
+    <div class="status" id="status"></div>
+    <div class="debug" id="debug"></div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

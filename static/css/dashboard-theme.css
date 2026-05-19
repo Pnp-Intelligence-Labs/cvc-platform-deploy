@@ -1,0 +1,26 @@
+/* Dashboard Theme - Dark Slate Overhaul */
+:root {
+  --bg-primary: #0f172a;
+  --bg-header: #0f172a;
+  --bg-page: #0f172a;
+  --logo-bg: #ffffff;
+}
+
+body, .dashboard-container, .page-wrapper {
+  background-color: #0f172a;
+}
+
+.header, .navbar, .top-navigation, .dashboard-header {
+  background-color: #0f172a !important;
+  border-bottom: 1px solid #1e293b;
+}
+
+.logo, .brand-logo, .logo-square {
+  background-color: #ffffff;
+  border-radius: 0;
+  /* Previous: background-color: #F0E545; border-radius: 8px; */
+}
+
+.sidebar, .nav-sidebar {
+  background-color: #0f172a;
+}

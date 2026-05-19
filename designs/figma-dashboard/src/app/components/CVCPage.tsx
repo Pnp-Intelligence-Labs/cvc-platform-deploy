@@ -1,0 +1,51 @@
+/**
+ * CVCPage — shared page-level layout components
+ *
+ * Usage:
+ *   <PageShell>
+ *     <ReportHeader eyebrow="SLAM · Deal Flow" title="Sourcing" subtitle="142 companies" />
+ *     ...content...
+ *   </PageShell>
+ */
+
+import { CVCNavbar } from './CVCNavbar';
+import { cls } from './tokens';
+
+interface PageShellProps {
+  children: React.ReactNode;
+  navActive?: string;
+  maxWidth?: string;
+}
+
+export function PageShell({ children, navActive, maxWidth = '1400px' }: PageShellProps) {
+  return (
+    <div className={cls.page}>
+      <CVCNavbar active={navActive} />
+      <div style={{ maxWidth, margin: '0 auto', padding: '2rem' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+interface ReportHeaderProps {
+  eyebrow: string;
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+}
+
+export function ReportHeader({ eyebrow, title, subtitle, action }: ReportHeaderProps) {
+  return (
+    <div className={cls.reportDivider}>
+      <p className={`${cls.eyebrow} mb-2`}>{eyebrow}</p>
+      <div className="flex items-baseline justify-between">
+        <h1 className={cls.reportTitle}>{title}</h1>
+        <div className="flex items-center gap-3">
+          {subtitle && <span className="text-sm text-slate-500">{subtitle}</span>}
+          {action}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,20 @@
+{
+  "quarter": "Q2-2026",
+  "rss_feeds_file": "agents/rss_collector/feeds.json",
+  "ipc_codes": [
+    "B60",
+    "G06",
+    "H04",
+    "H05",
+    "Y10T",
+    "Y02E"
+  ],
+  "target_public_companies": [
+    "AMZN",
+    "TSLA",
+    "DE",
+    "CAT",
+    "CTAS",
+    "WM"
+  ]
+}

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cvc_skills"
+version = "0.1.0"
+description = "Shared skill library for CVC pipelines"
+requires-python = ">=3.10"
+dependencies = [
+    "psycopg2-binary",
+    "requests",
+    "python-dotenv",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["db*", "llm*", "web*", "documents*", "monitor*"]
+
+[tool.setuptools]
+py-modules = ["cvc_config"]

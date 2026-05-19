@@ -1,0 +1,15 @@
+[
+    {"name": "TechCrunch Robotics", "url": "https://techcrunch.com/tag/robotics/feed/", "sectors": ["robotics"]},
+    {"name": "The Robot Report", "url": "https://www.therobotreport.com/feed/", "sectors": ["robotics"]},
+    {"name": "Robotics Business Review", "url": "https://www.roboticsbusinessreview.com/feed/", "sectors": ["robotics"]},
+    {"name": "Robotics & Automation News", "url": "https://roboticsandautomationnews.com/feed/", "sectors": ["robotics", "industrial_auto"]},
+    {"name": "IEEE Spectrum Robotics", "url": "https://spectrum.ieee.org/feeds/topic/robotics.rss", "sectors": ["robotics", "physical_ai"]},
+    {"name": "CSET Georgetown - AI & Security", "url": "https://cset.georgetown.edu/feed/", "sectors": ["physical_ai", "robotics"]},
+    {"name": "VentureBeat AI", "url": "https://venturebeat.com/category/ai/feed/", "sectors": ["physical_ai"]},
+    {"name": "Supply Chain Dive", "url": "https://www.supplychaindive.com/feeds/news/", "sectors": ["supply_chain"]},
+    {"name": "Logistics Management", "url": "https://www.logisticsmgmt.com/rss", "sectors": ["supply_chain"]},
+    {"name": "Modern Materials Handling", "url": "https://www.mmh.com/rss/news", "sectors": ["supply_chain", "robotics"]},
+    {"name": "FreightWaves", "url": "https://www.freightwaves.com/news/feed", "sectors": ["supply_chain"]},
+    {"name": "Crunchbase News", "url": "https://news.crunchbase.com/feed/", "sectors": []},
+    {"name": "Farmonaut - AgTech", "url": "https://farmonaut.com/feed/", "sectors": ["robotics"]}
+]

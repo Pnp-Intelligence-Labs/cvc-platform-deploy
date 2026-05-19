@@ -1,0 +1,12 @@
+{
+  "name": "cvc-intelligence-tests",
+  "private": true,
+  "scripts": {
+    "test:e2e":   "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report tests/e2e/report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0"
+  }
+}

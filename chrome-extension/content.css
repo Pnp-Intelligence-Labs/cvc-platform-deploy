@@ -1,0 +1,167 @@
+/* CVC Source Verification Toolbar */
+
+#cvc-verification-toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2147483647;
+  background: #253B49;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+}
+
+.cvc-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 48px;
+  gap: 12px;
+}
+
+.cvc-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cvc-logo {
+  font-weight: 700;
+  color: #F0E545;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.cvc-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255,255,255,0.2);
+}
+
+.cvc-company {
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.cvc-type {
+  color: #F0E545;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cvc-snippet {
+  color: rgba(255,255,255,0.55);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+.cvc-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.cvc-btn {
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  transition: opacity 0.15s, transform 0.1s;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+}
+
+.cvc-btn:hover:not(:disabled) {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.cvc-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cvc-btn-approve {
+  background: #10b981;
+  color: #fff;
+}
+
+.cvc-btn-reject {
+  background: #ef4444;
+  color: #fff;
+}
+
+.cvc-btn-edit {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+}
+
+.cvc-btn-close {
+  background: transparent;
+  color: rgba(255,255,255,0.45);
+  font-size: 18px;
+  padding: 4px 8px;
+  line-height: 1;
+}
+
+.cvc-btn-close:hover {
+  color: #fff;
+}
+
+/* Edit panel */
+.cvc-edit-panel {
+  padding: 10px 16px 12px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  background: #1a2e39;
+}
+
+.cvc-edit-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 8px 10px;
+  resize: none;
+  height: 52px;
+  outline: none;
+}
+
+.cvc-edit-textarea::placeholder { color: rgba(255,255,255,0.35); }
+.cvc-edit-textarea:focus { border-color: #F0E545; }
+
+.cvc-edit-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/* Result banner */
+.cvc-result-banner {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  letter-spacing: 0.02em;
+}
