@@ -1,1 +1,1 @@
-from . import cvc_config
+from . import config
