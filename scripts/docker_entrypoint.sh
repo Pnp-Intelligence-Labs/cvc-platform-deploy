@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# docker_entrypoint.sh — runs inside the container as CMD
+# 1. Waits for the database to accept connections (up to 30 s)
+# 2. Runs Python-based migrations
+# 3. Starts uvicorn
+
+set -e
+
+DB_HOST="${DB_HOST:-db}"
+DB_PORT="${DB_PORT:-5432}"
+DB_NAME="${DB_NAME:-platform_db}"
+DB_USER="${DB_USER:-platform}"
+DB_PASSWORD="${DB_PASSWORD:-}"
+
+echo "[entrypoint] Waiting for database at ${DB_HOST}:${DB_PORT} ..."
+
+MAX_WAIT=30
+ELAPSED=0
+
+until python -c "
+import psycopg2, sys
+try:
+    psycopg2.connect(
+        host='${DB_HOST}',
+        port=${DB_PORT},
+        dbname='${DB_NAME}',
+        user='${DB_USER}',
+        password='${DB_PASSWORD}'
+    ).close()
+except Exception as e:
+    sys.exit(1)
+" 2>/dev/null; do
+    if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
+        echo "[entrypoint] Database not reachable after ${MAX_WAIT}s — aborting."
+        exit 1
+    fi
+    echo "[entrypoint] Database not ready yet — retrying in 2s (${ELAPSED}s elapsed)"
+    sleep 2
+    ELAPSED=$((ELAPSED + 2))
+done
+
+echo "[entrypoint] Database is ready."
+
+echo "[entrypoint] Running migrations ..."
+python -m core.db.migrate
+
+echo "[entrypoint] Starting API server ..."
+exec python -m uvicorn api.main:app \
+    --host 0.0.0.0 \
+    --port 8002 \
+    --workers 2

@@ -1,0 +1,39 @@
+# Python
+.venv/
+venv/
+ENV/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Node / frontend source (compiled output in api/static/app/ is already in the repo)
+node_modules/
+designs/figma-dashboard/
+
+# Secrets — never bake into images
+.env
+
+# Git
+.git/
+.gitignore
+
+# Tests
+tests/
+test-results/
+
+# Plugins managed outside git — mounted at runtime
+plugins/installed/
+
+# Docs
+*.md
+docs/
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store

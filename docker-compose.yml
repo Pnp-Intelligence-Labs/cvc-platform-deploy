@@ -20,6 +20,7 @@ services:
     ports:
       - "${PORT:-8002}:8002"
     environment:
+      PYTHONPATH: /app:/app/core
       DB_HOST: db
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-platform_db}
@@ -29,11 +30,16 @@ services:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
       ALLOW_CREDENTIALS: ${ALLOW_CREDENTIALS:-false}
       PORT: 8002
+      # Optional — plugins use these if present; leave empty to disable
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      BRAVE_API_KEY: ${BRAVE_API_KEY:-}
+      PROXYCURL_API_KEY: ${PROXYCURL_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - ./api/static:/app/api/static
+      - ./plugins/installed:/app/plugins/installed:ro
 
 volumes:
   pgdata:
