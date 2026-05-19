@@ -10,6 +10,7 @@ import PartnerManagement from "./pages/PartnerManagement";
 import Admin from "./pages/Admin";
 import RequestsPage from "./pages/Requests";
 import SalesPage from "./pages/Sales";
+import DataExplorerPage from "./pages/DataExplorerPage";
 
 function Guard({ component: Component }: { component: React.ComponentType }) {
   return <AuthGuard><Component /></AuthGuard>;
@@ -53,6 +54,9 @@ export const router = createBrowserRouter([
   { path: "/sales",                   Component: () => <Guard component={SalesPage} />,        errorElement: <AppError /> },
   { path: "/requests",                Component: () => <Guard component={RequestsPage} />,     errorElement: <AppError /> },
   { path: "/admin",                   Component: () => <Guard component={Admin} />,            errorElement: <AppError /> },
+
+  // Plugin pages — only reachable when the corresponding plugin is installed
+  { path: "/explore",                 Component: () => <Guard component={DataExplorerPage} />, errorElement: <AppError /> },
 
   // Redirects for removed/plugin routes
   { path: "/portfolio",               Component: () => <Navigate to="/ventures" replace /> },
