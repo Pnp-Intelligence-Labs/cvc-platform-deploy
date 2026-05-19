@@ -9,6 +9,7 @@ from datetime import datetime
 from psycopg2.extras import RealDictCursor
 from core.db.connection import get_connection
 from api.auth import require_auth
+from api.plugin_loader import get_loaded_plugins
 
 router = APIRouter()
 
@@ -522,3 +523,38 @@ def get_admin_kpis(user=Depends(require_auth)):
             "top_outcome": top_outcome,
         },
     }
+
+
+# ── Plugin Health ──────────────────────────────────────────────────────────────
+
+@router.get("/plugins/health")
+def plugin_health(user=Depends(require_auth)):
+    """Check health of all installed plugins.
+
+    For each plugin, verifies its required DB tables exist.
+    Returns status 'healthy' or 'degraded' per plugin.
+    """
+    plugins = get_loaded_plugins()
+    results = []
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            for plugin in plugins:
+                tables_ok = True
+                for table in plugin.get("requires_tables", []):
+                    cur.execute("""
+                        SELECT EXISTS (
+                            SELECT 1 FROM information_schema.tables
+                            WHERE table_schema = 'cvc' AND table_name = %s
+                        ) AS exists
+                    """, (table,))
+                    if not cur.fetchone()["exists"]:
+                        tables_ok = False
+                        break
+                results.append({
+                    "slug":           plugin["slug"],
+                    "name":           plugin["name"],
+                    "version":        plugin["version"],
+                    "status":         "healthy" if tables_ok else "degraded",
+                    "tables_present": tables_ok,
+                })
+    return {"installed": results}

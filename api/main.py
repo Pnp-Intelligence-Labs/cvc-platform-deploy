@@ -24,6 +24,7 @@ from api.routes.meeting_notes import router as meeting_notes_router
 from api.routes.auth import router as auth_router
 from api.routes.config import router as config_router
 from api.auth import require_auth
+from api.plugin_loader import load_plugins, get_loaded_plugins
 
 
 app = FastAPI(
@@ -98,6 +99,18 @@ app.include_router(meeting_notes_router, prefix="/notes", tags=["notes"],
 # Auth routes — public
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(config_router, prefix="/config", tags=["config"])
+
+# Plugins — discovered from plugins/installed/ at startup
+load_plugins(app, require_auth)
+
+
+@app.get("/config/plugins", tags=["config"])
+async def list_plugins():
+    """Return installed plugin manifests (slug, name, version, nav declaration).
+    Used by the frontend to conditionally render plugin nav items and routes.
+    No auth required — same access level as /config.
+    """
+    return {"plugins": get_loaded_plugins()}
 
 # Static files
 static_dir = os.path.join(os.path.dirname(__file__), "static")

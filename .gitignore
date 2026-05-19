@@ -36,6 +36,10 @@ config/team_credentials.json
 # DD pipeline — dataroom files and pipeline outputs are confidential
 workers/dd/workdir/
 
+# Installed plugins — managed outside git, installed via install_plugin.sh
+plugins/installed/*
+!plugins/installed/.gitkeep
+
 # React frontend source — track src, ignore build artifacts
 # designs/figma-export/ is Figma-only; figma-dashboard/ is production source
 designs/figma-export/
