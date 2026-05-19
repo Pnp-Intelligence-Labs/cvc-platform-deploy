@@ -10,6 +10,7 @@ import { AUTH_HEADER as AUTH } from '../api/client';
 import { api } from '../api/client';
 import { PortcoNewsPanel } from '../components/PortcoNewsPanel';
 import { DealPipelinePanel } from '../components/DealPipelinePanel';
+import { useTeamMembers } from '../hooks/useTeamMembers';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -76,14 +77,11 @@ const PRIORITY_DOT: Record<string, string> = {
   low:    'bg-slate-300',
 };
 
-// Ventures team — only these users appear in the Assignments assign dropdown.
-// Harry and Frederik are excluded here; they can be added to individual Requests if needed.
-const TEAM_MEMBERS = ['nate', 'jerry', 'harvey', 'harshal', 'praj'];
-
 // ── Assignments Panel ────────────────────────────────────────────────────────
 
 function AssignmentsPanel() {
   const currentUser = api.getCurrentUser();
+  const TEAM_MEMBERS = useTeamMembers();
   const me = currentUser?.username ?? '';
   const canAssignOthers = ['GP', 'Principal', 'Director'].includes(currentUser?.role ?? '');
 
@@ -1061,7 +1059,7 @@ export default function VenturesOverview() {
 
       {/* Page header */}
       <div className="border-b-2 border-[#151411] pb-5 mb-6">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[#787569] mb-2">SLAM · Ventures</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[#787569] mb-2">Vertical OS · Ventures</p>
         <h1 className={cls.pageTitle}>Overview</h1>
       </div>
 

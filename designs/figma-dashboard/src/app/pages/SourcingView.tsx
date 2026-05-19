@@ -4,6 +4,7 @@ import { CVCNavbar } from '../components/CVCNavbar';
 import { Link } from 'react-router';
 import { api } from '../api/client';
 import { cls } from '../components/tokens';
+import { useConfig } from '../hooks/useConfig';
 
 interface SourcingCompany {
   id: number;
@@ -28,7 +29,6 @@ interface ShortlistModal {
   companyName: string;
 }
 
-const SECTORS = ['All Sectors', 'Robotics', 'Manufacturing', 'Supply Chain', 'Industrial Automation', 'Physical AI'];
 const STAGES  = ['All Stages', 'Pre-Seed', 'Seed', 'Series A', 'Series B', 'Series C+'];
 
 function ScoreBar({ score }: { score: number }) {
@@ -44,6 +44,8 @@ function ScoreBar({ score }: { score: number }) {
 }
 
 export default function SourcingView() {
+  const config = useConfig();
+  const SECTORS = ['All Sectors', ...config.sectors];
   const [companies, setCompanies]     = useState<SourcingCompany[]>([]);
   const [loading, setLoading]         = useState(true);
   const [q, setQ]                     = useState('');
@@ -131,7 +133,7 @@ export default function SourcingView() {
       <div style={{ maxWidth: 1400, margin: '0 auto', padding: '2rem' }}>
         {/* Report Header */}
         <div className="border-b-2 border-[#33322c] pb-5 mb-6">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">SLAM · Deal Flow</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Vertical OS · Deal Flow</p>
           <div className="flex items-baseline justify-between">
             <h1 className={cls.pageTitle}>Sourcing</h1>
             <span className="text-sm text-slate-500">{total} companies ranked by signal score</span>

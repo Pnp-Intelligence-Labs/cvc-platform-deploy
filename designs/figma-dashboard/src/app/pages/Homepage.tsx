@@ -1319,8 +1319,8 @@ export default function Homepage() {
 
         {/* Report Header */}
         <div className="border-b-2 border-[#33322c] pb-5 mb-8">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#787569] mb-2">SLAM · Intelligence Dashboard</p>
-          <h1 className={cls.pageTitle}>SLAM Intelligence</h1>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#787569] mb-2">Vertical OS · Intelligence</p>
+          <h1 className={cls.pageTitle}>Vertical OS</h1>
           <p className="text-sm text-[#787569] mt-1">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
           </p>

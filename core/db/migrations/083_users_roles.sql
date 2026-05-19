@@ -34,14 +34,14 @@ CREATE TABLE IF NOT EXISTS cvc.users (
     updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Seed Nate as GP
--- Password hash seeded for initial setup only; rotate on first login.
+-- Seed a default admin user.
+-- Default password is "changeme" — rotate immediately on first login.
 INSERT INTO cvc.users (username, password_hash, role, full_name, email)
 VALUES (
-    'nate',
-    '$2b$12$.guKR4LBG3.ckb4MRFDVf.nxi40FdVpOLThlpmtQagqMq2NBrl/xa',
+    'admin',
+    '$2b$12$STRQmHpsYvBDFJ5AoprsCeVc0Oo0.B6/bofKMpJiZTrOjc5IcLSZe',
     'GP',
-    'Nate Louie',
+    'Admin',
     ''
 )
 ON CONFLICT (username) DO NOTHING;

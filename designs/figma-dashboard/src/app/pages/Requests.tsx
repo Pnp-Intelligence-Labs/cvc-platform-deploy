@@ -12,6 +12,7 @@ import {
 import { cls } from '../components/tokens';
 import { CVCNavbar } from '../components/CVCNavbar';
 import { AUTH_HEADER as AUTH, api } from '../api/client';
+import { useTeamMembers } from '../hooks/useTeamMembers';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -80,7 +81,6 @@ const PRIORITY_COLORS: Record<string, string> = {
   low:    'text-slate-400',
 };
 
-const TEAM_MEMBERS = ['nate', 'jerry', 'harvey', 'harshal', 'praj', 'frederik', 'harry', 'alaina', 'jana', 'yukino'];
 
 function fmtTs(iso: string) {
   const d = new Date(iso);
@@ -139,6 +139,7 @@ interface RequestTask {
 }
 
 function TasksSection({ requestId, ventureAssignmentId }: { requestId: number; ventureAssignmentId?: number | null }) {
+  const TEAM_MEMBERS = useTeamMembers();
   const [tasks, setTasks]       = useState<RequestTask[]>([]);
   const [newTitle, setNewTitle] = useState('');
   const [newAssignee, setNewAssignee] = useState('');
@@ -386,6 +387,7 @@ function SkirmishDetail({ skirmish, onClose, onUpdated }: {
   onClose: () => void;
   onUpdated: () => void;
 }) {
+  const TEAM_MEMBERS = useTeamMembers();
   const [detail, setDetail]         = useState<SkirmishDetail | null>(null);
   const [updateText, setUpdateText] = useState('');
   const [posting, setPosting]       = useState(false);
@@ -1410,7 +1412,7 @@ async function openChartAsImage(
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '10px system-ui,-apple-system,sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText('Source: SLAM Intelligence Platform · ' + new Date().getFullYear(), canvasW - PAD, canvasH - 10);
+    ctx.fillText('Source: Vertical OS Platform · ' + new Date().getFullYear(), canvasW - PAD, canvasH - 10);
 
     // Open as blob URL in new tab — user right-clicks → Copy Image → paste anywhere
     const blob = await new Promise<Blob>((res, rej) =>
@@ -1481,7 +1483,7 @@ function WefDataModal({ onClose }: { onClose: () => void }) {
         <div className="mx-6 mt-5 mb-1 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
           <p className="text-[11px] font-bold text-amber-800 uppercase tracking-widest mb-1">Data Source & Scope</p>
           <p className="text-[12px] text-amber-900 leading-relaxed">
-            All data in these charts is sourced exclusively from the <strong>Plug and Play SLAM Intelligence Platform</strong> — a proprietary deal tracking and partner engagement system covering approximately <strong>1,700 startups</strong> across Robotics, Supply Chain, Physical AI, Industrial Automation, and Manufacturing. Figures reflect companies and engagement activity logged within the platform and do not represent the full market. Funding data is limited to rounds tracked in the platform database.
+            All data in these charts is sourced exclusively from the <strong>Vertical OS Platform</strong> — a proprietary deal tracking and partner engagement system. Figures reflect companies and engagement activity logged within the platform and do not represent the full market. Funding data is limited to rounds tracked in the platform database.
           </p>
         </div>
 
@@ -1793,7 +1795,7 @@ function ProvenanceFooter({ meta }: { meta: ExplorerMeta }) {
             </ul>
           </div>
           <p className="text-[10px] text-slate-300">
-            Data confidence score = (% human-edited × 0.6) + (% enriched × 0.4) · Source: SLAM Intelligence Platform
+            Data confidence score = (% human-edited × 0.6) + (% enriched × 0.4) · Source: Vertical OS Platform
           </p>
         </div>
       )}
@@ -1971,7 +1973,7 @@ function DataExplorerModal({ onClose }: { onClose: () => void }) {
                       onClick={() => chartCardRef.current && openChartAsImage(
                         chartCardRef.current,
                         activeTemplate.label,
-                        'SLAM Intelligence Platform',
+                        'Vertical OS Platform',
                         setExporting,
                         setExportErr,
                       )}
@@ -2509,20 +2511,13 @@ function ScrumView() {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function RequestsPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [pageTab, setPageTab] = useState<'requests' | 'scrum'>(
-    searchParams.get('tab') === 'scrum' ? 'scrum' : 'requests'
-  );
+  const [searchParams] = useSearchParams();
+  const [pageTab] = useState<'requests'>('requests');
   const [skirmishes, setSkirmishes] = useState<Skirmish[]>([]);
   const [loading, setLoading]       = useState(true);
   const [filterStatus, setFilterStatus]   = useState<string>('');
   const [filterService, setFilterService] = useState<string>('');
   const [selected, setSelected]     = useState<Skirmish | null>(null);
-
-  const switchTab = (tab: 'requests' | 'scrum') => {
-    setPageTab(tab);
-    setSearchParams(tab === 'scrum' ? { tab: 'scrum' } : {}, { replace: true });
-  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -2558,10 +2553,8 @@ export default function RequestsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h1 className={cls.pageTitle}>{pageTab === 'scrum' ? 'Scrum' : 'Requests'}</h1>
-            <p className="text-sm text-slate-500 mt-0.5">
-              {pageTab === 'scrum' ? 'Product ideas, PoCs, and MVPs' : 'Active partner service engagements'}
-            </p>
+            <h1 className={cls.pageTitle}>Requests</h1>
+            <p className="text-sm text-slate-500 mt-0.5">Active partner service engagements</p>
           </div>
           {pageTab === 'requests' && (
             <div className="flex items-center gap-3">
@@ -2579,28 +2572,8 @@ export default function RequestsPage() {
           )}
         </div>
 
-        {/* Tab bar */}
-        <div className="flex gap-1 mb-6 border-b border-slate-200">
-          {(['requests', 'scrum'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => switchTab(tab)}
-              className={`px-4 py-2 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-                pageTab === tab
-                  ? 'border-[#1E293B] text-[#1E293B]'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              {tab === 'requests' ? 'Requests' : 'Scrum'}
-            </button>
-          ))}
-        </div>
-
-        {/* Scrum tab */}
-        {pageTab === 'scrum' && <ScrumView />}
-
         {/* Requests tab */}
-        {pageTab === 'requests' && <>
+        {true && <>
 
         {/* Filters */}
         <div className="flex gap-2 mb-6 flex-wrap">

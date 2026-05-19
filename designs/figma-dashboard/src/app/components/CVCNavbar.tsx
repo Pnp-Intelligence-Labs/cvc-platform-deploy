@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { Menu, LogOut, MessageSquare, Search, Camera, ClipboardList, FileText, ChevronDown } from 'lucide-react';
 import { api } from '../api/client';
 import { FeedbackModal } from './FeedbackModal';
+import { useConfig } from '../hooks/useConfig';
 import { NotificationBell } from './NotificationBell';
 import { QuickNotePanel } from './QuickNotePanel';
 
@@ -298,6 +299,7 @@ const CVCNavbar: React.FC = () => {
   const location = useLocation();
   const navigate  = useNavigate();
 
+  const config = useConfig();
   const currentUser = api.getCurrentUser();
   const role = currentUser?.role ?? 'GP';
   const isPSM      = role === 'PSM';
@@ -333,9 +335,9 @@ const CVCNavbar: React.FC = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 shrink-0">
             <div className="w-7 h-7 bg-cvc-gold rounded flex items-center justify-center">
-              <span className="text-[#151411] font-bold text-sm">V</span>
+              <span className="text-[#151411] font-bold text-sm">{config.logo_char}</span>
             </div>
-            <span className="text-white font-bold text-base tracking-tight">Vertical OS</span>
+            <span className="text-white font-bold text-base tracking-tight">{config.team_name}</span>
           </Link>
 
           {/* Desktop Nav */}

@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS cvc.briefing_sources (
     category     TEXT,                           -- e.g. 'supply chain', 'robotics', 'industrials'
     active       BOOLEAN NOT NULL DEFAULT TRUE,
     notes        TEXT,
-    added_by     TEXT DEFAULT 'nate',
+    added_by     TEXT DEFAULT 'admin',
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );

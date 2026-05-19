@@ -171,7 +171,7 @@ CREATE TABLE IF NOT EXISTS cvc.partner_notes (
     partner_id  INTEGER NOT NULL REFERENCES cvc.partners(id) ON DELETE CASCADE,
     body        TEXT NOT NULL,
     created_at  TIMESTAMPTZ DEFAULT NOW(),
-    created_by  TEXT DEFAULT 'nate'
+    created_by  TEXT DEFAULT 'admin'
 );
 
 -- ─────────────────────────────────────────────────────────────────────────────

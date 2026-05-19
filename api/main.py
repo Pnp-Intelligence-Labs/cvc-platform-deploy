@@ -22,6 +22,7 @@ from api.routes.requests import router as requests_router
 from api.routes.sales import router as sales_router
 from api.routes.meeting_notes import router as meeting_notes_router
 from api.routes.auth import router as auth_router
+from api.routes.config import router as config_router
 from api.auth import require_auth
 
 
@@ -96,6 +97,7 @@ app.include_router(meeting_notes_router, prefix="/notes", tags=["notes"],
 
 # Auth routes — public
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(config_router, prefix="/config", tags=["config"])
 
 # Static files
 static_dir = os.path.join(os.path.dirname(__file__), "static")

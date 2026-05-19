@@ -1,11 +1,12 @@
 import { TrendingUp, Building2, Clock, HandshakeIcon, MapPin, Download, DollarSign, Target, PieChart as PieChartIcon, X, Search, ChevronRight } from 'lucide-react';
 import { PortcoNewsPanel } from '../components/PortcoNewsPanel';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { api } from '../api/client';
 import { AUTH_HEADER as AUTH } from '../api/client';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { cls } from '../components/tokens';
+import { useConfig } from '../hooks/useConfig';
 
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -108,24 +109,9 @@ const lightTooltip = {
   labelStyle: { color: '#33322c' },
 };
 
-// ── LP Tab ────────────────────────────────────────────────────────────────────
-const LP_SECTOR_COLORS: Record<string, string> = {
-  'Manufacturing':         '#06b6d4',
-  'Energy':                '#3b82f6',
-  'Supply Chain':          '#6366f1',
-  'Robotics':              '#ec4899',
-  'Industrial Automation': '#f59e0b',
-  'Physical AI':           '#8b5cf6',
-  'Unclassified':          '#787569',
-};
-
 function fmtUSD(n?: number | null): string {
   if (n == null) return '—';
   return '$' + Math.round(n).toLocaleString('en-US');
-}
-function fmtM(n?: number | null): string {
-  if (n == null) return '—';
-  return '$' + (n / 1_000_000).toFixed(2) + 'M';
 }
 function moicColor(m?: number | null): string {
   if (m == null) return 'text-[#787569]';
@@ -277,7 +263,7 @@ function AnnualReportSection({ report, defaultOpen }: { report: AnnualReport; de
                       <td className="px-3 py-2.5 hidden lg:table-cell">
                         <div className="space-y-0.5">
                           {inv.is_lead_investor
-                            ? <span className="text-[10px] font-bold text-emerald-600">SLAM Lead</span>
+                            ? <span className="text-[10px] font-bold text-emerald-600">Lead Investor</span>
                             : inv.lead_investor
                               ? <span className="text-[10px] text-[#787569]">{inv.lead_investor}</span>
                               : <span className="text-[10px] text-[#ACACAA]">—</span>}
@@ -339,227 +325,103 @@ function AnnualReportSection({ report, defaultOpen }: { report: AnnualReport; de
   );
 }
 
-function LPTab() {
-  const [fund, setFund] = useState<any>(null);
-  const [sectorAlloc, setSectorAlloc] = useState<any[]>([]);
-  const [reports, setReports] = useState<AnnualReport[]>([]);
-  const [navHistory, setNavHistory] = useState<{ q: string; v: number }[]>([]);
+function DeploymentsTab() {
+  const [data, setData] = useState<{ reports: AnnualReport[]; total_deployed: number; total_fmv: number; total_companies: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const [lpData, rptData, navData] = await Promise.all([
-          api.getLPPortal(),
-          fetch('/lp/annual-reports', { headers: AUTH }).then(r => r.json()),
-          fetch('/lp/nav-history', { headers: AUTH }).then(r => r.json()),
-        ]);
-
-        const totalCos = (lpData.sectors || []).reduce((s: number, x: any) => s + (x.company_count || 0), 0);
-        setSectorAlloc(
-          totalCos > 0
-            ? (lpData.sectors || []).map((s: any) => ({
-                name: s.name,
-                value: Math.round(((s.company_count || 0) / totalCos) * 100),
-                color: LP_SECTOR_COLORS[s.name] ?? '#787569',
-              }))
-            : []
-        );
-        setFund(lpData.fund);
-        setReports(rptData.reports || []);
-
-        // Build quarterly TVPI snapshots (last entry per quarter: Mar, Jun, Sep, Dec)
-        const quarterMonths = new Set([2, 5, 8, 11]); // 0-indexed
-        const quarterSnaps: { q: string; v: number }[] = [];
-        const history: any[] = navData.history || [];
-        // Group by quarter label, keep last entry
-        const quarterMap: Record<string, number> = {};
-        for (const row of history) {
-          const dt = new Date(row.date);
-          const month = dt.getMonth(); // 0-indexed
-          if (!quarterMonths.has(month)) continue;
-          const qNum = Math.floor(month / 3) + 1;
-          const label = `Q${qNum} ${dt.getFullYear()}`;
-          quarterMap[label] = row.tvpi ?? 1.0;
-        }
-        for (const [q, v] of Object.entries(quarterMap)) {
-          quarterSnaps.push({ q, v: Math.round(v * 100) / 100 });
-        }
-        // Sort chronologically
-        quarterSnaps.sort((a, b) => {
-          const [aq, ay] = a.q.split(' ');
-          const [bq, by_] = b.q.split(' ');
-          return Number(ay) !== Number(by_) ? Number(ay) - Number(by_) : Number(aq[1]) - Number(bq[1]);
-        });
-        setNavHistory(quarterSnaps);
-      } catch (e: any) { setError(e.message || 'Failed to load LP data'); }
-      finally { setLoading(false); }
-    })();
+    fetch('/portfolio/deployments', { headers: AUTH })
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(setData)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-10 w-10 border-2 border-[#151411] border-r-transparent" /></div>;
   if (error) return <div className="bg-red-50 border border-red-200 rounded p-6 text-red-600 text-sm">{error}</div>;
-  if (!fund) return null;
+  if (!data) return null;
 
-  const deploymentPct = fund.deployment_pct ?? 0;
+  const { reports, total_deployed, total_fmv, total_companies } = data;
+
+  // Sector breakdown across all investments
+  const catTotals: Record<string, { usd: number; count: number }> = {};
+  for (const rpt of reports) {
+    for (const inv of rpt.investments) {
+      const cat = inv.sector || 'Unclassified';
+      if (!catTotals[cat]) catTotals[cat] = { usd: 0, count: 0 };
+      catTotals[cat].usd += inv.check_size_usd || 0;
+      catTotals[cat].count += 1;
+    }
+  }
+  const sortedSectors = Object.entries(catTotals).sort((a, b) => b[1].usd - a[1].usd);
+  const CAT_COLORS = ['#6366f1','#ec4899','#06b6d4','#f59e0b','#8b5cf6','#10b981','#f97316','#3b82f6','#64748b','#94a3b8'];
 
   return (
     <>
-      {/* Fund Structure */}
-      <div className={`${CARD} rounded p-5 mb-6`}>
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-1.5 h-1.5 rounded-full bg-[#151411]" />
-          <span className="text-[10px] font-bold text-[#151411] uppercase tracking-widest">Fund I — Structure</span>
-          <span className="text-[10px] text-[#787569] ml-1">Vintage {fund.vintage_year} · Closed</span>
-        </div>
-        <div className="grid grid-cols-3 gap-0 divide-x divide-slate-200">
-          {[
-            { label: 'Gross Fund Size',         value: fmtUSD(fund.fund_size_usd),           sub: 'LP commitments' },
-            { label: 'Management Fees',          value: fund.management_fees_usd ? `(${fmtUSD(fund.management_fees_usd)})` : '—', sub: 'Reserved for operations' },
-            { label: 'Investable Capital',       value: fmtUSD(fund.investable_capital_usd),  sub: 'Available to deploy' },
-          ].map(({ label, value, sub }) => (
-            <div key={label} className="px-5 first:pl-0 last:pr-0 text-center">
-              <p className="text-[10px] font-bold text-[#787569] uppercase tracking-wide mb-1">{label}</p>
-              <p className="text-xl font-extrabold text-[#33322c] tracking-tight">{value}</p>
-              <p className="text-[10px] text-[#787569] mt-0.5">{sub}</p>
-            </div>
-          ))}
-        </div>
-        {/* Deployment progress bar */}
-        <div className="mt-4 pt-4 border-t border-slate-100">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] font-bold text-[#787569] uppercase tracking-wide">Deployment Progress</span>
-            <span className="text-xs font-bold text-[#33322c]">{fmtUSD(fund.deployed_capital_usd)} of {fmtUSD(fund.investable_capital_usd)} · {deploymentPct}%</span>
-          </div>
-          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full bg-[#151411] rounded-full transition-all" style={{ width: `${Math.min(deploymentPct, 100)}%` }} />
-          </div>
-          <div className="flex items-center justify-between mt-1">
-            <span className="text-[10px] text-[#787569]">{fund.portfolio_companies} portfolio companies</span>
-            <span className="text-[10px] text-[#787569]">{(100 - deploymentPct).toFixed(2)}% remaining</span>
-          </div>
-          {/* Investment breakdown */}
-          {(fund.initial_investments_usd || fund.followon_investments_usd || fund.remaining_reserves_usd) && (
-            <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 divide-x divide-slate-200">
-              {[
-                { label: 'Initial Investments', value: fund.initial_investments_usd, pct: fund.investable_capital_usd ? Math.round(fund.initial_investments_usd / fund.investable_capital_usd * 10000) / 100 : null, color: '#151411' },
-                { label: 'Follow-On Investments', value: fund.followon_investments_usd, pct: fund.investable_capital_usd ? Math.round(fund.followon_investments_usd / fund.investable_capital_usd * 10000) / 100 : null, color: '#4a4840' },
-                { label: 'Remaining Reserves', value: fund.remaining_reserves_usd, pct: fund.investable_capital_usd ? Math.round(fund.remaining_reserves_usd / fund.investable_capital_usd * 10000) / 100 : null, color: '#787569' },
-              ].map(({ label, value, pct, color }) => (
-                <div key={label} className="px-4 first:pl-0 last:pr-0 text-center">
-                  <p className="text-[9px] font-bold text-[#787569] uppercase tracking-wide mb-1">{label}</p>
-                  <p className="text-base font-extrabold text-[#33322c]">{fmtUSD(value)}</p>
-                  {pct != null && <p className="text-[10px] mt-0.5" style={{ color }}>{pct}% of investable</p>}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Performance KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+      {/* Summary KPIs */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
         {[
-          { label: 'TVPI',           value: `${fund.net_tvpi ?? 0}x`,       color: '#151411',  sub: 'Total value / paid-in' },
-          { label: 'DPI',            value: `${fund.dpi ?? 0}x`,            color: '#4a4840',  sub: 'Distributions / paid-in' },
-          { label: 'Net IRR',        value: fund.net_irr_pct != null ? `${fund.net_irr_pct}%` : '—',  color: '#686560',  sub: 'Since first close' },
-          { label: 'NAV',            value: fmtM(fund.nav_musd * 1_000_000), color: '#3a3830', sub: 'Current portfolio value' },
-          { label: 'Deployed',       value: fmtUSD(fund.deployed_capital_usd), color: '#151411', sub: `${deploymentPct}% of investable` },
-          { label: 'Companies',      value: String(fund.portfolio_companies ?? 0), color: '#4a4840', sub: 'Active portfolio' },
-        ].map(({ label, value, color, sub }) => (
+          { label: 'Total Deployed',     value: fmtUSD(total_deployed),    sub: 'Across all investments' },
+          { label: 'Portfolio FMV',      value: fmtUSD(total_fmv),         sub: 'Based on term sheet marks' },
+          { label: 'Total Investments',  value: String(total_companies),    sub: 'Portfolio companies' },
+        ].map(({ label, value, sub }) => (
           <div key={label} className={`${CARD} rounded p-4 relative overflow-hidden`}>
-            <div className="absolute inset-x-0 top-0 h-[2px] rounded-t" style={{ background: color }} />
+            <div className="absolute inset-x-0 top-0 h-[2px] rounded-t bg-[#151411]" />
             <p className="text-[10px] font-bold text-[#787569] uppercase tracking-wide mb-2">{label}</p>
-            <p className="text-xl font-extrabold text-[#33322c] tracking-tight leading-none mb-1">{value}</p>
+            <p className="text-2xl font-extrabold text-[#33322c] tracking-tight leading-none mb-1">{value}</p>
             <p className="text-[10px] text-[#787569]">{sub}</p>
           </div>
         ))}
       </div>
 
-      {/* Portfolio Analytics — category breakdown */}
-      {reports.length > 0 && (() => {
-        const catTotals: Record<string, { usd: number; count: number }> = {};
-        for (const rpt of reports) {
-          for (const inv of rpt.investments) {
-            const cat = inv.sector || 'Unclassified';
-            if (!catTotals[cat]) catTotals[cat] = { usd: 0, count: 0 };
-            catTotals[cat].usd += inv.check_size_usd || 0;
-            catTotals[cat].count += 1;
-          }
-        }
-        const sorted = Object.entries(catTotals).sort((a, b) => b[1].usd - a[1].usd);
-        const total = sorted.reduce((s, [, v]) => s + v.usd, 0);
-        const CAT_COLORS = ['#6366f1','#ec4899','#06b6d4','#f59e0b','#8b5cf6','#10b981','#f97316','#3b82f6','#64748b','#94a3b8'];
-        return (
-          <div className={`${CARD} rounded p-5 mb-6`}>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#151411]" />
-              <span className="text-[10px] font-bold text-[#151411] uppercase tracking-widest">Portfolio by Sector</span>
-              <span className="text-[10px] text-[#787569] ml-1">{sorted.length} sectors · {fmtUSD(total)} total deployed</span>
-            </div>
-            <div className="space-y-2">
-              {sorted.map(([cat, { usd, count }], i) => {
-                const pct = total > 0 ? Math.round(usd / total * 1000) / 10 : 0;
-                const color = CAT_COLORS[i % CAT_COLORS.length];
-                return (
-                  <div key={cat} className="flex items-center gap-3">
-                    <div className="w-24 shrink-0 text-[10px] font-semibold text-[#33322c] truncate">{cat}</div>
-                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
-                    </div>
-                    <div className="w-20 text-right text-[10px] font-mono text-[#33322c]">{fmtUSD(usd)}</div>
-                    <div className="w-12 text-right text-[10px] text-[#787569]">{count} co{count !== 1 ? 's' : ''}</div>
-                    <div className="w-10 text-right text-[10px] font-semibold" style={{ color }}>{pct}%</div>
+      {/* Sector breakdown */}
+      {sortedSectors.length > 0 && (
+        <div className={`${CARD} rounded p-5 mb-6`}>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#151411]" />
+            <span className="text-[10px] font-bold text-[#151411] uppercase tracking-widest">Deployed Capital by Sector</span>
+            <span className="text-[10px] text-[#787569] ml-1">{sortedSectors.length} sectors · {fmtUSD(total_deployed)} total</span>
+          </div>
+          <div className="space-y-2">
+            {sortedSectors.map(([cat, { usd, count }], i) => {
+              const pct = total_deployed > 0 ? Math.round(usd / total_deployed * 1000) / 10 : 0;
+              const color = CAT_COLORS[i % CAT_COLORS.length];
+              return (
+                <div key={cat} className="flex items-center gap-3">
+                  <div className="w-28 shrink-0 text-[10px] font-semibold text-[#33322c] truncate">{cat}</div>
+                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
                   </div>
-                );
-              })}
+                  <div className="w-20 text-right text-[10px] font-mono text-[#33322c]">{fmtUSD(usd)}</div>
+                  <div className="w-12 text-right text-[10px] text-[#787569]">{count} co{count !== 1 ? 's' : ''}</div>
+                  <div className="w-10 text-right text-[10px] font-semibold" style={{ color }}>{pct}%</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Annual reports */}
+      {reports.length === 0 ? (
+        <div className={`${CARD} rounded p-8 text-center`}>
+          <p className="text-sm text-[#787569]">No investments recorded yet.</p>
+          <p className="text-[10px] text-[#ACACAA] mt-1">Add a term sheet to a portfolio company to see deployments here.</p>
+        </div>
+      ) : (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="text-sm font-bold text-[#33322c]">Deployments by Year</h3>
+              <p className="text-[10px] text-[#787569] mt-0.5">From term sheets · FMV as of latest valuation</p>
             </div>
           </div>
-        );
-      })()}
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <div className={`${CARD} rounded p-5`}>
-          <h3 className="text-sm font-semibold text-[#33322c] mb-1">TVPI Trajectory</h3>
-          <p className="text-[10px] text-[#787569] mb-4">{navHistory.length > 0 ? 'Quarterly value progression' : 'No quarterly history — add marks to fund_nav_history to populate'}</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={navHistory.length > 0 ? navHistory : [{ q: '—', v: 1 }]}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="q" tick={{ fill: '#787569', fontSize: 9 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis domain={[0.8, 'auto']} tick={{ fill: '#787569', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <Tooltip {...lightTooltip} formatter={(v: any) => [`${v}x`, 'TVPI']} />
-              <Line type="monotone" dataKey="v" stroke="#151411" strokeWidth={2} dot={{ fill: '#151411', r: 2 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          {reports.map((r, i) => (
+            <AnnualReportSection key={r.year} report={r} defaultOpen={i === 0} />
+          ))}
         </div>
-        <div className={`${CARD} rounded p-5`}>
-          <h3 className="text-sm font-semibold text-[#33322c] mb-1">Sector Allocation</h3>
-          <p className="text-[10px] text-[#787569] mb-4">By portfolio company count</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie data={sectorAlloc} cx="50%" cy="50%" outerRadius={72} dataKey="value"
-                label={(e: any) => `${e.name} ${e.value}%`} labelLine={{ stroke: '#e2e8f0' }}>
-                {sectorAlloc.map((entry: any, i: number) => <Cell key={i} fill={entry.color} />)}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Annual Investment Reports */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h3 className="text-sm font-bold text-[#33322c]">Annual Investment Reports</h3>
-            <p className="text-[10px] text-[#787569] mt-0.5">Fund I investments by vintage year · FMV as of latest valuation</p>
-          </div>
-        </div>
-        {reports.map((r, i) => (
-          <AnnualReportSection key={r.year} report={r} defaultOpen={i === 0} />
-        ))}
-      </div>
+      )}
     </>
   );
 }
@@ -574,9 +436,8 @@ interface MilestoneRound {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function PortfolioHomepage() {
   const navigate = useNavigate();
-  const userRole = api.getCurrentUser()?.role ?? 'GP';
-  const canSeeLP = userRole !== 'PSM';
-  const [tab, setTab] = useState<'overview' | 'lp'>('overview');
+  const config = useConfig();
+  const [tab, setTab] = useState<'overview' | 'deployments'>('overview');
   const [stats, setStats] = useState<Stats | null>(null);
   const [portfolioCompanies, setPortfolioCompanies] = useState<PortfolioCompany[]>([]);
   const [gridSearch, setGridSearch] = useState('');
@@ -654,9 +515,7 @@ export default function PortfolioHomepage() {
   const deployedFormatted = deployedRaw
     ? (deployedRaw >= 1_000_000 ? `$${(deployedRaw / 1_000_000).toFixed(1)}M` : `$${deployedRaw.toLocaleString('en-US')}`)
     : '$' + (stats.total_raised_usd / 1_000_000).toFixed(0) + 'M';
-  const deployedSubtitle = (stats.fund_i_deployed_usd && stats.family_office_deployed_usd)
-    ? `Fund I $${(stats.fund_i_deployed_usd/1_000_000).toFixed(1)}M · FO $${(stats.family_office_deployed_usd/1_000_000).toFixed(1)}M`
-    : 'Across all portfolio vehicles';
+  const deployedSubtitle = 'Across all portfolio vehicles';
   const avgAge = stats.avg_founded_year ? (new Date().getFullYear() - stats.avg_founded_year).toFixed(1) : null;
   const totalIntros = stats.top_by_intros.reduce((s, c) => s + c.intro_count, 0);
   const sectorData = stats.sector_distribution.map((item, i) => ({
@@ -679,23 +538,21 @@ export default function PortfolioHomepage() {
 
         {/* McKinsey-style report header */}
         <div className="border-b-2 border-[#151411] pb-5 mb-6">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#787569] mb-2">SLAM · Portfolio</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#787569] mb-2">Vertical OS · Portfolio</p>
           <div className="flex items-center justify-between">
             <div>
               <h1 className={cls.pageTitle}>Portfolio</h1>
               <p className="text-xs text-[#787569] mt-0.5">
-                {portfolioCompanies.filter(c => c.fund === 'Fund I').length} Fund I
-                {' · '}
-                {portfolioCompanies.filter(c => c.fund === 'Family Office').length} Family Office
+                {config.fund_names.map(f => `${portfolioCompanies.filter(c => c.fund === f).length} ${f}`).join(' · ')}
                 {' · '}
                 {portfolioCompanies.length} total
               </p>
             </div>
             <div className="flex gap-1 p-1 rounded border border-slate-200 bg-white">
               {([
-                { key: 'overview',  label: 'Overview'      },
-                ...(canSeeLP ? [{ key: 'lp', label: 'Fund I' }] : []),
-              ] as { key: 'overview' | 'lp'; label: string }[]).map(t => (
+                { key: 'overview',     label: 'Overview'     },
+                { key: 'deployments',  label: 'Deployments'  },
+              ] as { key: 'overview' | 'deployments'; label: string }[]).map(t => (
                 <button key={t.key} onClick={() => setTab(t.key)}
                   className={`px-4 py-1.5 rounded text-xs font-semibold transition-all ${
                     tab === t.key
@@ -709,7 +566,7 @@ export default function PortfolioHomepage() {
           </div>
         </div>
 
-        {tab === 'lp' && <LPTab />}
+        {tab === 'deployments' && <DeploymentsTab />}
 
         {tab === 'overview' && (
           <>
@@ -852,7 +709,7 @@ export default function PortfolioHomepage() {
                 <div className="flex items-center gap-2 flex-1 justify-end">
                   {/* Fund filter pills */}
                   <div className="flex gap-1 shrink-0">
-                    {([null, 'Fund I', 'Family Office'] as (string | null)[]).map(f => (
+                    {([null, ...config.fund_names] as (string | null)[]).map(f => (
                       <button key={f ?? 'all'} onClick={() => setFundFilter(f)}
                         className={`px-2.5 py-1 rounded text-[10px] font-semibold transition-all border ${
                           fundFilter === f

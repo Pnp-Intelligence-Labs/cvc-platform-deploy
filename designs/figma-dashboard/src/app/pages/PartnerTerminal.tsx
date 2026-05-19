@@ -5,6 +5,7 @@ import { api } from '../api/client';
 import { AUTH_HEADER as AUTH } from '../api/client';
 import { FeedbackModal } from '../components/FeedbackModal';
 import { QuickNotePanel } from '../components/QuickNotePanel';
+import { useConfig } from '../hooks/useConfig';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -203,10 +204,8 @@ interface ServiceOrderConfig {
   fields: ServiceField[];
 }
 
-const CVC_SECTORS = ['Robotics', 'Supply Chain', 'Manufacturing', 'Industrial Automation', 'Physical AI'] as const;
-
 const SECTOR_FIELDS: ServiceField[] = [
-  { key: 'sector',    label: 'Sector',            type: 'select', options: [...CVC_SECTORS] },
+  { key: 'sector',    label: 'Sector',            type: 'select', options: ['Supply Chain', 'Robotics', 'Manufacturing', 'Industrial Automation', 'Physical AI'] },
   { key: 'subsector', label: 'Subsector / Topic', type: 'text',   placeholder: 'e.g. AMR Navigation, Cold Chain Visibility' },
 ];
 
@@ -2190,7 +2189,6 @@ interface SectorProfile {
   updated_at: string | null;
 }
 
-const SP_SECTORS       = ['Robotics', 'Supply Chain', 'Manufacturing', 'Industrial Automation', 'Physical AI'];
 const SP_ENV_SECTORS   = new Set(['Robotics', 'Manufacturing', 'Industrial Automation']);
 const SP_INTEREST_LABELS: Record<number, string> = { 1: 'Low', 2: 'Moderate', 3: 'Interested', 4: 'High', 5: 'Core Priority' };
 
@@ -2226,12 +2224,14 @@ function PartnerProfileTab({ partnerId, partnerBrief, onBriefSaved }: {
   partnerBrief: string | null;
   onBriefSaved: (brief: string) => void;
 }) {
+  const config = useConfig();
+  const SP_SECTORS = config.sectors;
   const [profiles,       setProfiles]     = useState<SectorProfile[]>([]);
   const [loading,        setLoading]      = useState(true);
   const [brief,          setBrief]        = useState(partnerBrief ?? '');
   const [savingBrief,    setSavingBrief]  = useState(false);
   const [briefSavedAt,   setBriefSavedAt] = useState<string | null>(null);
-  const [selectedSector, setSelectedSector] = useState(SP_SECTORS[0]);
+  const [selectedSector, setSelectedSector] = useState(SP_SECTORS[0] ?? '');
 
   const [sectorForms, setSectorForms] = useState<Record<string, {
     interest_level: number | null;
@@ -2589,6 +2589,7 @@ function NoteAccordion({ note, preview, typeColor, onDelete }: {
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function PartnerTerminal() {
+  const config = useConfig();
   const { id } = useParams<{ id: string }>();
   const partnerId = parseInt(id ?? '0', 10);
 
@@ -3094,7 +3095,7 @@ export default function PartnerTerminal() {
         <div className="flex items-end justify-between pb-4">
           <div>
             <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">
-              SLAM · Partner Intelligence
+              Vertical OS · Partner Intelligence
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-white">{partner.name}</h1>
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
@@ -3447,7 +3448,7 @@ export default function PartnerTerminal() {
                             onChange={e => setServiceOrderFields(p => ({ ...p, [field.key]: e.target.value }))}
                             className="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#F0E545]"
                           >
-                            {field.options!.map(o => <option key={o} value={o}>{o}</option>)}
+                            {(field.key === 'sector' ? config.sectors : field.options!).map(o => <option key={o} value={o}>{o}</option>)}
                           </select>
                         ) : (
                           <input

@@ -3,7 +3,7 @@
  *
  * Usage:
  *   <PageShell>
- *     <ReportHeader eyebrow="SLAM · Deal Flow" title="Sourcing" subtitle="142 companies" />
+ *     <ReportHeader eyebrow="Vertical OS · Deal Flow" title="Sourcing" subtitle="142 companies" />
  *     ...content...
  *   </PageShell>
  */

@@ -840,7 +840,7 @@ export default function Admin() {
 
         {/* Page header */}
         <div className="mb-6">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">SLAM · Operations</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Vertical OS · Operations</p>
           <h1 className={cls.pageTitle}>Command Center</h1>
         </div>
 

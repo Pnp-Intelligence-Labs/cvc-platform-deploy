@@ -9,6 +9,8 @@ import {
 import { cls } from '../components/tokens';
 import { CVCNavbar } from '../components/CVCNavbar';
 import { AUTH_HEADER as AUTH } from '../api/client';
+import { useTeamMembers } from '../hooks/useTeamMembers';
+import { useConfig } from '../hooks/useConfig';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -118,8 +120,6 @@ const LINE_ITEMS = [
   { key: 'custom_research',    label: 'Custom Research',   price: 80_000, anchorOnly: true  },
 ];
 const ANCHOR_LEVELS = new Set(['Anchor', 'Founding Anchor']);
-const PLATFORM_USERS = ['nate', 'jerry', 'harvey', 'harshal', 'frederik', 'harry', 'alaina', 'jana', 'yukino', 'dave', 'kevin', 'josh'];
-const SECTORS = ['Supply Chain', 'Robotics', 'Manufacturing', 'Industrial Automation', 'Physical AI', 'Other'];
 const ADVANCE_STAGES = ['target', 'nurturing', 'proposal'];
 
 // ── Person colors ─────────────────────────────────────────────────────────────
@@ -424,6 +424,9 @@ function StageStepper({ stage }: { stage: string }) {
 // ── Add Target Modal ──────────────────────────────────────────────────────────
 
 function AddTargetModal({ onClose, onCreated }: { onClose: () => void; onCreated: (t: SalesTarget) => void }) {
+  const PLATFORM_USERS = useTeamMembers();
+  const config = useConfig();
+  const SECTORS = config.sectors;
   const [form, setForm]   = useState({ company_name: '', website: '', sector: '', assigned_to: '', rationale: '' });
   const [saving, setSaving] = useState(false);
   const [err, setErr]      = useState('');
@@ -1326,6 +1329,9 @@ function DetailPanel({ target, onUpdate, onClose, onDelete }: {
   onClose: () => void;
   onDelete: (id: number) => void;
 }) {
+  const PLATFORM_USERS = useTeamMembers();
+  const config = useConfig();
+  const SECTORS = config.sectors;
   const [tab, setTab]           = useState<Tab>('contacts');
   const [showAdvance, setShowAdvance] = useState(false);
   const [showLost, setShowLost]       = useState(false);
@@ -1630,7 +1636,7 @@ export default function SalesPage() {
         {/* Page header */}
         <div className="border-b-2 border-[#1E293B] pb-5 mb-5 flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">SLAM · Sales</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Vertical OS · Sales</p>
             <h1 className={cls.pageTitle}>Sales</h1>
             <p className="text-sm text-slate-500 mt-1">Pipeline · Targets · Proposals</p>
           </div>

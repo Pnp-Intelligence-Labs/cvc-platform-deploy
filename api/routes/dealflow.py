@@ -80,23 +80,31 @@ def list_dealflow(user=Depends(require_auth)):
             return rows
 
 
-_VENTURES_TEAM = ['harvey', 'jerry', 'praj', 'sterling']
-
 @router.get("/leaderboard")
 def dealflow_leaderboard(user=Depends(require_auth)):
-    """2026 investment counts per ventures team member."""
+    """Investment counts per active ventures team member (current year)."""
     with get_connection() as conn:
         with conn.cursor() as cur:
+            # Get active Ventures/GP/Principal/Director users
+            cur.execute("""
+                SELECT username FROM cvc.users
+                WHERE is_active = TRUE
+                  AND role IN ('GP', 'Principal', 'Director', 'Ventures')
+                ORDER BY username
+            """)
+            team = [r["username"] for r in cur.fetchall()]
+            if not team:
+                return []
             cur.execute("""
                 SELECT changed_by, COUNT(*) AS investments
                 FROM cvc.company_lifecycle
                 WHERE status = 'invested'
-                  AND status_changed_at >= '2026-01-01'
+                  AND status_changed_at >= date_trunc('year', NOW())
                   AND changed_by = ANY(%s)
                 GROUP BY changed_by
-            """, (_VENTURES_TEAM,))
+            """, (team,))
             rows = {r["changed_by"]: int(r["investments"]) for r in cur.fetchall()}
-    return [{"username": u, "investments": rows.get(u, 0)} for u in _VENTURES_TEAM]
+    return [{"username": u, "investments": rows.get(u, 0)} for u in team]
 
 
 @router.get("/stats")
@@ -154,30 +162,21 @@ def intake_deal(data: DealIntake, user=Depends(require_auth)):
 
             # Upsert lifecycle status
             username = user.get("username", "nate") if isinstance(user, dict) else str(user)
-            cur.execute("""
-                INSERT INTO cvc.company_lifecycle (company_id, status, status_changed_at, changed_by, reason)
-                VALUES (%s, %s, NOW(), %s, %s)
-                ON CONFLICT (company_id) DO UPDATE SET
-                    status = EXCLUDED.status,
-                    status_changed_at = NOW(),
-                    changed_by = EXCLUDED.changed_by,
-                    reason = EXCLUDED.reason
-            """, (company_id, data.pipeline_status, username, data.notes or None))
-
-            # Optionally queue a DD task for BigBossHog
-            dd_task_id = None
-            if data.start_dd:
-                spec = f"Run full DD pipeline for {data.name.strip()} (company_id={company_id})."
+            cur.execute("SELECT id FROM cvc.company_lifecycle WHERE company_id = %s", (company_id,))
+            if cur.fetchone():
                 cur.execute("""
-                    INSERT INTO cvc.build_tasks
-                        (spec, priority, risk_level, requires_approval, status, created_by, assigned_to, status_changed_at)
-                    VALUES (%s, 'high', 'medium', TRUE, 'pending', 'nate', 'bigclaw', NOW())
-                    RETURNING task_id
-                """, (spec,))
-                dd_task_id = cur.fetchone()["task_id"]
+                    UPDATE cvc.company_lifecycle
+                    SET status = %s, status_changed_at = NOW(), changed_by = %s, reason = %s
+                    WHERE company_id = %s
+                """, (data.pipeline_status, username, data.notes or None, company_id))
+            else:
+                cur.execute("""
+                    INSERT INTO cvc.company_lifecycle (company_id, status, stage, status_changed_at, changed_by, reason)
+                    VALUES (%s, %s, 'sourced', NOW(), %s, %s)
+                """, (company_id, data.pipeline_status, username, data.notes or None))
 
             conn.commit()
-            return {"company_id": company_id, "existed": existed, "dd_task_id": dd_task_id}
+            return {"company_id": company_id, "existed": existed}
 
 
 @router.post("/upload/{company_id}")
@@ -298,14 +297,18 @@ def save_term_sheet(company_id: int, data: TermSheetRequest, user=Depends(requir
                 "UPDATE cvc.companies SET is_portfolio = TRUE, fund = %s, updated_at = NOW() WHERE id = %s",
                 (fund_val, company_id,)
             )
-            cur.execute("""
-                INSERT INTO cvc.company_lifecycle (company_id, status, status_changed_at, changed_by)
-                VALUES (%s, 'invested', NOW(), %s)
-                ON CONFLICT (company_id) DO UPDATE SET
-                    status = 'invested',
-                    status_changed_at = NOW(),
-                    changed_by = EXCLUDED.changed_by
-            """, (company_id, username))
+            cur.execute("SELECT id FROM cvc.company_lifecycle WHERE company_id = %s", (company_id,))
+            if cur.fetchone():
+                cur.execute("""
+                    UPDATE cvc.company_lifecycle
+                    SET status = 'invested', status_changed_at = NOW(), changed_by = %s
+                    WHERE company_id = %s
+                """, (username, company_id))
+            else:
+                cur.execute("""
+                    INSERT INTO cvc.company_lifecycle (company_id, status, stage, status_changed_at, changed_by)
+                    VALUES (%s, 'invested', 'sourced', NOW(), %s)
+                """, (company_id, username))
 
             conn.commit()
             return sheet
@@ -319,19 +322,20 @@ def update_status(company_id: int, request: StatusUpdateRequest, user=Depends(re
             if not cur.fetchone():
                 raise HTTPException(status_code=404, detail="Company not found")
             username = user.get("username", "system") if isinstance(user, dict) else str(user)
-            cur.execute("""
-                INSERT INTO cvc.company_lifecycle
-                    (company_id, status, status_changed_at, changed_by, reason)
-                VALUES
-                    (%s, %s, NOW(), %s, %s)
-                ON CONFLICT (company_id)
-                DO UPDATE SET
-                    status = EXCLUDED.status,
-                    status_changed_at = NOW(),
-                    changed_by = EXCLUDED.changed_by,
-                    reason = EXCLUDED.reason
-                RETURNING *
-            """, (company_id, request.status, username, request.reason))
+            cur.execute("SELECT id FROM cvc.company_lifecycle WHERE company_id = %s", (company_id,))
+            if cur.fetchone():
+                cur.execute("""
+                    UPDATE cvc.company_lifecycle
+                    SET status = %s, status_changed_at = NOW(), changed_by = %s, reason = %s
+                    WHERE company_id = %s
+                    RETURNING *
+                """, (request.status, username, request.reason, company_id))
+            else:
+                cur.execute("""
+                    INSERT INTO cvc.company_lifecycle (company_id, status, stage, status_changed_at, changed_by, reason)
+                    VALUES (%s, %s, 'sourced', NOW(), %s, %s)
+                    RETURNING *
+                """, (company_id, request.status, username, request.reason))
             result = cur.fetchone()
             conn.commit()
             return result

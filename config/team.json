@@ -1,0 +1,18 @@
+{
+  "team_name": "Vertical OS",
+  "team_short": "Vertical OS",
+  "logo_char": "V",
+  "sectors": [
+    "Supply Chain",
+    "Robotics",
+    "Manufacturing",
+    "Industrial Automation",
+    "Physical AI",
+    "Other"
+  ],
+  "fund_names": [
+    "Fund I",
+    "Family Office"
+  ],
+  "default_fund": "Fund I"
+}

@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS cvc.partner_advisory_logs (
     next_steps   TEXT,
     source_url   TEXT,   -- endnote link (used by proximity_signal entries)
     created_at   TIMESTAMPTZ DEFAULT NOW(),
-    created_by   TEXT DEFAULT 'nate'
+    created_by   TEXT DEFAULT 'admin'
 );
 
 CREATE INDEX IF NOT EXISTS idx_pal_partner_id  ON cvc.partner_advisory_logs(partner_id);

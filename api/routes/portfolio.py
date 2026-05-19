@@ -675,6 +675,105 @@ def get_recent_stages(user=Depends(require_auth)):
             return list(merged.values())
 
 
+@router.get("/deployments")
+def portfolio_deployments(user=Depends(require_auth)):
+    """
+    Annual deployment reports built from term_sheets (core data, no plugin required).
+    Groups investments by close_date year, returning totals and per-investment detail.
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    t.id, c.id AS company_id, c.name, c.sector,
+                    t.investment_type, t.round_type,
+                    t.check_size_usd, t.pre_money_valuation_usd, t.round_size_usd,
+                    t.fmv_usd, t.moic,
+                    t.is_lead_investor, t.lead_investor, t.co_investors,
+                    t.close_date, t.fund
+                FROM cvc.term_sheets t
+                JOIN cvc.companies c ON c.id = t.company_id
+                WHERE c.is_portfolio = TRUE
+                ORDER BY t.close_date ASC NULLS LAST, c.name
+            """)
+            rows = cur.fetchall()
+
+    # Group by year
+    from collections import defaultdict
+    by_year: dict = defaultdict(list)
+    no_date = []
+    for r in rows:
+        inv = {
+            "id":                      r["id"],
+            "company_id":              r["company_id"],
+            "name":                    r["name"],
+            "sector":                  r["sector"],
+            "investment_type":         r["investment_type"],
+            "round_type":              r["round_type"],
+            "check_size_usd":          r["check_size_usd"],
+            "pre_money_valuation_usd": r["pre_money_valuation_usd"],
+            "round_size_usd":          r["round_size_usd"],
+            "fmv_usd":                 r["fmv_usd"],
+            "moic":                    float(r["moic"]) if r["moic"] is not None else None,
+            "is_lead_investor":        r["is_lead_investor"],
+            "lead_investor":           r["lead_investor"],
+            "co_investors":            list(r["co_investors"]) if r["co_investors"] else [],
+            "close_date":              str(r["close_date"]) if r["close_date"] else None,
+            "fund":                    r["fund"],
+            "is_written_off":          False,
+            "followons":               [],
+        }
+        if r["close_date"]:
+            by_year[r["close_date"].year].append(inv)
+        else:
+            no_date.append(inv)
+
+    def _build_report(year, investments, cumulative_deployed, cumulative_count):
+        year_deployed = sum(i["check_size_usd"] or 0 for i in investments)
+        year_fmv = sum(i["fmv_usd"] or 0 for i in investments)
+        moics = [i["moic"] for i in investments if i["moic"] is not None]
+        year_moic = round(sum(moics) / len(moics), 2) if moics else None
+        sector_breakdown: dict = {}
+        for i in investments:
+            s = i["sector"] or "Unclassified"
+            sector_breakdown[s] = sector_breakdown.get(s, 0) + 1
+        return {
+            "year":               year,
+            "investments":        investments,
+            "year_deployed":      year_deployed,
+            "year_fmv":           year_fmv,
+            "year_moic":          year_moic,
+            "year_company_count": len(investments),
+            "cumulative_deployed": cumulative_deployed + year_deployed,
+            "cumulative_count":   cumulative_count + len(investments),
+            "sector_breakdown":   sector_breakdown,
+        }
+
+    reports = []
+    cum_deployed = 0
+    cum_count = 0
+    for year in sorted(by_year.keys(), reverse=True):
+        report = _build_report(year, by_year[year], cum_deployed, cum_count)
+        cum_deployed = report["cumulative_deployed"]
+        cum_count = report["cumulative_count"]
+        reports.append(report)
+
+    if no_date:
+        reports.append(_build_report("No date", no_date, cum_deployed, cum_count))
+
+    # Summary totals
+    all_investments = [i for y in by_year.values() for i in y] + no_date
+    total_deployed = sum(i["check_size_usd"] or 0 for i in all_investments)
+    total_fmv = sum(i["fmv_usd"] or 0 for i in all_investments)
+
+    return {
+        "reports": reports,
+        "total_deployed": total_deployed,
+        "total_fmv": total_fmv,
+        "total_companies": len(all_investments),
+    }
+
+
 @router.get("/milestone-round")
 def get_milestone_round(user=Depends(require_auth)):
     """

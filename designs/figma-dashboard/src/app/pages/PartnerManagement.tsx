@@ -985,7 +985,7 @@ export default function PartnerManagement() {
         {/* Report header */}
         <div className="border-b-2 border-[#33322c] pb-5 mb-6">
           <div className="text-[10px] font-bold uppercase tracking-widest text-[#787569] mb-2">
-            SLAM · Partner Intelligence
+            Vertical OS · Partner Intelligence
           </div>
           <div className="flex items-end justify-between gap-4">
             <div>

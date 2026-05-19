@@ -651,7 +651,7 @@ function BriefPanel({ brief, loading, onGenerate, onUpdate }: {
               It gets injected into every section generation — so every section stays coherent with the same thesis.
             </p>
             <p className="text-xs text-[#545249] leading-relaxed">
-              <span className="font-medium text-[#33322c]">Good brief:</span> "This report argues that autonomous mobile robots are crossing the ROI threshold for mid-market warehouses in 2025, driven by falling hardware costs and tighter labor markets. It is written for SLAM corporate partners evaluating deployment timelines. The angle is: the barrier is no longer technical — it is integration and change management."
+              <span className="font-medium text-[#33322c]">Good brief:</span> "This report argues that autonomous mobile robots are crossing the ROI threshold for mid-market warehouses in 2025, driven by falling hardware costs and tighter labor markets. It is written for your corporate partners evaluating deployment timelines. The angle is: the barrier is no longer technical — it is integration and change management."
             </p>
             <p className="text-[10px] text-[#787569]">
               You can write it manually, or click Generate to have the system draft one from your title, theme, and section outline.
@@ -1160,7 +1160,7 @@ function SectionsPanel({ reportId, sections, sources, onSectionsChange, onSource
               <textarea
                 value={importText} onChange={e => setImportText(e.target.value)}
                 rows={6}
-                placeholder={"Paste your outline, table of contents, or any document text here.\n\nExample:\n1. Market Overview\n2. Key Players & Competitive Dynamics\n3. Investment Thesis\n4. Risks & Challenges\n5. SLAM Portfolio Fit"}
+                placeholder={"Paste your outline, table of contents, or any document text here.\n\nExample:\n1. Market Overview\n2. Key Players & Competitive Dynamics\n3. Investment Thesis\n4. Risks & Challenges\n5. Portfolio Fit"}
                 className="w-full text-xs border border-slate-200 rounded px-3 py-2 bg-white focus:outline-none focus:border-slate-400 resize-none font-mono"
               />
               <div className="flex items-center gap-2">
@@ -1807,7 +1807,7 @@ function DownloadBar({ reportId, reportTitle, doneCount, totalCount, publishedHt
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${reportTitle.replace(/\s+/g, '_')}_SLAM_Report.docx`;
+      a.download = `${reportTitle.replace(/\s+/g, '_')}_Report.docx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

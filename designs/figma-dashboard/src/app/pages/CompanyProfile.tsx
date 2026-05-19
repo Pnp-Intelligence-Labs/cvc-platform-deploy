@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { AUTH_HEADER as AUTH } from '../api/client';
 import { cls } from '../components/tokens';
+import { useConfig } from '../hooks/useConfig';
 
 interface Company {
   id: number;
@@ -241,6 +242,7 @@ function ScoreCard({ label, score, emphasized = false }: { label: string; score:
 
 export default function CompanyProfile() {
   const navigate = useNavigate();
+  const config = useConfig();
   const { id } = useParams();
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
@@ -966,7 +968,7 @@ export default function CompanyProfile() {
       <main className="max-w-[1400px] mx-auto px-6 py-8">
         {/* Report Header */}
         <div className="border-b-2 border-[#33322c] pb-5 mb-6">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#787569] mb-2">SLAM · Company Intelligence</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#787569] mb-2">Vertical OS · Company Intelligence</p>
           <div className="flex items-center justify-between">
             <h1 className={cls.pageTitle}>Company Profile</h1>
             <button
@@ -1002,7 +1004,7 @@ export default function CompanyProfile() {
                       <label className="text-xs font-semibold text-[#545249] uppercase block mb-1">Sector</label>
                       <select value={draft.sector ?? ''} onChange={e => setDraft(d => ({ ...d, sector: e.target.value }))} className={INPUT_CLS}>
                         <option value="">— Select —</option>
-                        {['Robotics','Supply Chain','Manufacturing','Industrial Automation','Physical AI','Other'].map(s => (
+                        {config.sectors.map(s => (
                           <option key={s} value={s}>{s}</option>
                         ))}
                       </select>
@@ -1168,7 +1170,7 @@ export default function CompanyProfile() {
                     const conf = company.sector_confidence!;
                     const reviewed = !!company.sector_reviewed_at;
                     const confColor = conf >= 80 ? 'bg-emerald-100 text-emerald-700' : conf >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-[#f1f5f9]/30 text-[#33322c]';
-                    const SECTORS = ['Supply Chain', 'Robotics', 'Physical AI', 'Industrial Automation', 'Manufacturing', 'Other'];
+                    const SECTORS = config.sectors;
 
                     if (reviewed && !sectorReviewOpen) {
                       return (
@@ -2513,7 +2515,7 @@ export default function CompanyProfile() {
               {company.case_study && (
                 <div className="mt-5 pt-5 border-t border-slate-200">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-[#545249] mb-2 flex items-center gap-2">
-                    SLAM Case Study Note
+                    Case Study Note
                     <span className="text-[#787569] font-normal normal-case tracking-normal">manually entered</span>
                   </p>
                   <p className="text-sm text-[#33322c] leading-relaxed whitespace-pre-line">{company.case_study}</p>
@@ -3554,7 +3556,7 @@ export default function CompanyProfile() {
         {/* CVC Position — one card per investment vehicle */}
         {(company.term_sheets ?? (company.term_sheet ? [company.term_sheet] : [])).length > 0 && (
           <div className="mt-6">
-            <h3 className={`${cls.sectionTitle} mb-3`}>SLAM Position</h3>
+            <h3 className={`${cls.sectionTitle} mb-3`}>Our Position</h3>
             <div className="space-y-3">
               {(company.term_sheets ?? (company.term_sheet ? [company.term_sheet] : [])).map((ts, idx) => ts && (
                 <div key={ts.fund ?? idx} className="bg-white rounded border border-slate-200 p-5">

@@ -29,11 +29,11 @@ VALUES (
     'Brambles DD Platform',
     'product',
     'A white-label due diligence intelligence platform built on the CVC DD engine. Allows corporate partners and institutional investors to run structured, AI-assisted DD on startup companies — producing IC memos, scorecards, and analyst review workflows.',
-    'nate',
+    'admin',
     'Strategic corporate partners, institutional VCs, family offices, and investment teams at corporates who evaluate startups but lack structured DD infrastructure.',
     'SaaS licensing per seat or per-run. Estimated $15-30K/year per client for unlimited runs; or $500-1,500 per DD report on a transactional basis. White-label branding add-on.',
     'AI-powered IC memo generation with evidence-cited claims; analyst review workflow with verdict system; PDF + DOCX output; scorecard with configurable weights; learning feedback loop across runs; partner-configurable thesis and criteria.',
     '/brambles',
     'live',
-    'nate'
+    'admin'
 );

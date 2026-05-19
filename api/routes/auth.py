@@ -165,6 +165,18 @@ def list_users(caller: UserInfo = Depends(require_jwt)):
     return {"users": [dict(r) for r in rows]}
 
 
+@router.get("/team")
+def list_team(caller: UserInfo = Depends(require_jwt)):
+    """Return active team member usernames. Available to all authenticated users."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT username, full_name, role FROM cvc.users WHERE is_active = TRUE ORDER BY username"
+            )
+            rows = cur.fetchall()
+    return {"team": [{"username": r["username"], "full_name": r["full_name"], "role": r["role"]} for r in rows]}
+
+
 @router.patch("/users/{user_id}")
 def update_user(user_id: int, body: dict, caller: UserInfo = Depends(require_jwt)):
     """Update a user's role, assigned_partner_ids, full_name, or is_active.

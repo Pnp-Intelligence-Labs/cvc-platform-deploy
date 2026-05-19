@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS cvc.verification_evidence (
     company_id          INTEGER REFERENCES cvc.companies(id) ON DELETE SET NULL,
     url                 TEXT NOT NULL,
     decision            TEXT NOT NULL CHECK (decision IN ('approved', 'rejected', 'edited')),
-    reviewed_by         TEXT NOT NULL DEFAULT 'nate',
+    reviewed_by         TEXT NOT NULL DEFAULT 'admin',
     reviewed_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     screenshot          BYTEA,
     screenshot_taken_at TIMESTAMPTZ,

@@ -520,12 +520,12 @@ export const api = {
     if (!response.ok) throw new Error('Invalid username or password');
     const data = await response.json();
     localStorage.setItem('platform_jwt', data.access_token);
-    localStorage.setItem('cvc_user', JSON.stringify({ username: data.username, role: data.role, full_name: data.full_name }));
+    localStorage.setItem('platform_user', JSON.stringify({ username: data.username, role: data.role, full_name: data.full_name }));
   },
 
   logout(): void {
     localStorage.removeItem('platform_jwt');
-    localStorage.removeItem('cvc_user');
+    localStorage.removeItem('platform_user');
   },
 
   isLoggedIn(): boolean {
@@ -540,7 +540,7 @@ export const api = {
   },
 
   getCurrentUser(): { username: string; role: string; full_name: string | null } | null {
-    const raw = localStorage.getItem('cvc_user');
+    const raw = localStorage.getItem('platform_user');
     return raw ? JSON.parse(raw) : null;
   },
 

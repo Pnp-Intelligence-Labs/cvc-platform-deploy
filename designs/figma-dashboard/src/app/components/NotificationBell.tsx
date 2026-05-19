@@ -14,7 +14,7 @@ interface Notification {
   created_at: string | null;
 }
 
-const LS_KEY = 'cvc_notif_last_read';
+const LS_KEY = 'platform_notif_last_read';
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();

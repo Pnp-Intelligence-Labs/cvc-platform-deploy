@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS cvc.partner_issue_comments (
     id         SERIAL PRIMARY KEY,
     issue_id   INTEGER NOT NULL REFERENCES cvc.partner_issues(id) ON DELETE CASCADE,
     body       TEXT NOT NULL,
-    created_by TEXT NOT NULL DEFAULT 'nate',
+    created_by TEXT NOT NULL DEFAULT 'admin',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

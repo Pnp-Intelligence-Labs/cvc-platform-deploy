@@ -54,7 +54,7 @@ export default function LoginPage() {
               <span style={{ color: '#1e293b', fontWeight: 'bold', fontSize: '1rem' }}>S</span>
             </div>
             <span style={{ color: '#1e293b', fontSize: '1.35rem', fontWeight: 700, letterSpacing: 0.3 }}>
-              SLAM Intelligence
+              Vertical OS
             </span>
           </div>
           <p style={{ color: '#6b7280', margin: 0, fontSize: '0.9rem' }}>Sign in to your account</p>
