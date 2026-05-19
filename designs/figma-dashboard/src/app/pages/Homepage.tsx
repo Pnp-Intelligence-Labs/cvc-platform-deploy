@@ -1042,16 +1042,118 @@ function LeaderboardPanel({
   );
 }
 
+// ── My Partners Widget (PSM role) ─────────────────────────────────────────────
+
+interface PartnerSummary { id: number; name: string; industry: string | null; membership_level: string | null }
+
+function MyPartnersWidget() {
+  const [partners, setPartners] = useState<PartnerSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/partners/', { headers: AUTH })
+      .then(r => r.ok ? r.json() : { partners: [] })
+      .then(d => setPartners((d.partners ?? []).slice(0, 6)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="bg-white border border-slate-200 rounded overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+        <div className="flex items-center gap-2.5">
+          <Handshake className="w-4 h-4 text-[#8a7200]" />
+          <span className="font-semibold text-[#33322c] text-sm">My Partners</span>
+        </div>
+        <Link to="/partners" className="text-xs text-slate-400 hover:text-slate-600 transition-colors">View all →</Link>
+      </div>
+      {loading ? (
+        <div className="px-5 py-4 text-xs text-slate-400">Loading…</div>
+      ) : partners.length === 0 ? (
+        <p className="text-xs text-slate-400 italic px-5 py-4">No partners assigned yet.</p>
+      ) : (
+        <div className="divide-y divide-[#f1f5f9]">
+          {partners.map(p => (
+            <Link key={p.id} to={`/partners/${p.id}/terminal`}
+              className="flex items-center gap-3 px-5 py-3 hover:bg-[#ede8d7] transition-colors group">
+              <div className="w-7 h-7 rounded-full bg-[#ede8d7] flex items-center justify-center shrink-0">
+                <span className="text-xs font-bold text-[#787569]">{p.name[0].toUpperCase()}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-[#33322c] group-hover:text-[#151411] truncate">{p.name}</p>
+                {p.industry && <p className="text-[10px] text-slate-400 truncate">{p.industry}</p>}
+              </div>
+              {p.membership_level && (
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                  {p.membership_level}
+                </span>
+              )}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── My Recent Activity Widget (Ventures role) ─────────────────────────────────
+
+function MyActivityWidget() {
+  const [edits, setEdits] = useState<{ company_id: number; company_name: string; action: string; ts: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.getMyActivity()
+      .then(d => setEdits(d.edits ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="bg-white border border-slate-200 rounded overflow-hidden">
+      <div className="flex items-center gap-2.5 px-5 py-4 border-b border-slate-200">
+        <Activity className="w-4 h-4 text-[#8a7200]" />
+        <span className="font-semibold text-[#33322c] text-sm">My Recent Activity</span>
+      </div>
+      {loading ? (
+        <div className="px-5 py-4 text-xs text-slate-400">Loading…</div>
+      ) : edits.length === 0 ? (
+        <p className="text-xs text-slate-400 italic px-5 py-4">No recent activity.</p>
+      ) : (
+        <div className="divide-y divide-[#f1f5f9]">
+          {edits.map((e, i) => (
+            <Link key={i} to={`/company/${e.company_id}`}
+              className="flex items-center gap-3 px-5 py-3 hover:bg-[#ede8d7] transition-colors group">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-[#33322c] group-hover:text-[#151411] truncate">{e.company_name}</p>
+                <p className="text-[10px] text-slate-400 truncate">{e.action}</p>
+              </div>
+              <span className="text-[10px] text-slate-400 shrink-0">{fmtRelative(e.ts)}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Homepage Carousel ─────────────────────────────────────────────────────────
 
-function HomeCarousel({ messages, expandedMsg, setExpandedMsg }: {
+function HomeCarousel({ messages, expandedMsg, setExpandedMsg, initialIndex }: {
   messages: TeamMessage[];
   expandedMsg: number | null;
   setExpandedMsg: (id: number | null) => void;
+  initialIndex?: number;
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'start' });
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(initialIndex ?? 0);
   const SLIDES = 3;
+
+  // Scroll to initial index once emblaApi is ready
+  useEffect(() => {
+    if (!emblaApi || !initialIndex) return;
+    emblaApi.scrollTo(initialIndex, true);
+  }, [emblaApi, initialIndex]);
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
@@ -1286,6 +1388,13 @@ function PipelinePulseWidget() {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function Homepage() {
+  const currentUser = api.getCurrentUser();
+  const role = currentUser?.role ?? '';
+  const isPSM = role === 'PSM' || role === 'Senior PSM';
+  const isVentures = role === 'Ventures';
+  // Carousel initial slide: PSMs → Pipeline Pulse (1), Ventures → Traction (2), others → Announcements (0)
+  const carouselInitialIndex = isPSM ? 1 : isVentures ? 2 : 0;
+
   const [data, setData]             = useState<DashboardData | null>(null);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
@@ -1372,7 +1481,7 @@ export default function Homepage() {
         </div>
 
         {/* ── Carousel: Announcements / Pipeline Pulse / Traction+Portco ── */}
-        <HomeCarousel messages={messages} expandedMsg={expandedMsg} setExpandedMsg={setExpandedMsg} />
+        <HomeCarousel messages={messages} expandedMsg={expandedMsg} setExpandedMsg={setExpandedMsg} initialIndex={carouselInitialIndex} />
 
         {data && (
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -1392,8 +1501,11 @@ export default function Homepage() {
               )}
             </div>
 
-            {/* ── Right column: reserved for future tables ── */}
+            {/* ── Right column: role-aware ── */}
             <div className="space-y-6">
+
+              {/* PSM: My Partners first */}
+              {isPSM && <MyPartnersWidget />}
 
               {/* Deliverables */}
               <div className="bg-white border border-slate-200 rounded overflow-hidden">
@@ -1457,6 +1569,9 @@ export default function Homepage() {
                   </div>
                 )}
               </div>
+
+              {/* Ventures: My Recent Activity below deliverables */}
+              {isVentures && <MyActivityWidget />}
 
             </div>
 
