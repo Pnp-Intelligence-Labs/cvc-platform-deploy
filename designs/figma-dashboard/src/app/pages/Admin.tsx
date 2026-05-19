@@ -273,6 +273,36 @@ function PersonCard({
             )}
           </div>
 
+          {/* Partner Assignment (PSM / Senior PSM only) */}
+          {(draft.role === 'PSM' || draft.role === 'Senior PSM') && partners.length > 0 && (
+            <div className="px-4 py-3 border-b border-slate-100">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-2">
+                Partner Assignments ({draft.assigned_partner_ids.length} of {partners.length})
+              </p>
+              <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
+                {partners.map(p => {
+                  const assigned = draft.assigned_partner_ids.includes(p.id);
+                  return (
+                    <label key={p.id} className="flex items-center gap-2.5 py-1 px-1 rounded hover:bg-slate-100 cursor-pointer select-none group">
+                      <input
+                        type="checkbox"
+                        checked={assigned}
+                        onChange={() => {
+                          const next = assigned
+                            ? draft.assigned_partner_ids.filter(id => id !== p.id)
+                            : [...draft.assigned_partner_ids, p.id];
+                          onDraftChange('assigned_partner_ids', next);
+                        }}
+                        className="rounded border-slate-300 text-slate-800 focus:ring-slate-400"
+                      />
+                      <span className="text-xs text-slate-700 flex-1 truncate">{p.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Open Assignments */}
           <div className="px-4 py-3 border-b border-slate-100">
             <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-2">
