@@ -54,7 +54,7 @@ The private plugin registry manages packaging and versioning.
   },
   "nav": {
     "label":     "DD Pipeline",
-    "path":      "/app/dd",
+    "path":      "/dd",
     "icon":      "FileText",
     "roles":     ["GP", "Principal", "Director", "Ventures"]
   },
@@ -74,6 +74,7 @@ The private plugin registry manages packaging and versioning.
 | `routes.tag` | yes | OpenAPI tag for this router |
 | `nav` | no | If present, platform nav injects this entry |
 | `nav.roles` | no | Which roles see this nav item. Omit = all roles. |
+| `nav.path` | yes (if nav present) | React Router path — no `/app` prefix (e.g. `/explore` not `/app/explore`) |
 | `requires_tables` | no | List of table names (under `cvc.` schema) this plugin creates. Used by health check. |
 | `config_schema` | no | JSON Schema fragment for plugin-specific config keys in team.json |
 

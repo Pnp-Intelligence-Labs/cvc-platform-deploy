@@ -4,6 +4,7 @@ import { Menu, LogOut, MessageSquare, Search, Camera, ClipboardList, FileText, C
 import { api } from '../api/client';
 import { FeedbackModal } from './FeedbackModal';
 import { useConfig } from '../hooks/useConfig';
+import { usePlugins } from '../hooks/usePlugins';
 import { NotificationBell } from './NotificationBell';
 import { QuickNotePanel } from './QuickNotePanel';
 
@@ -300,21 +301,28 @@ const CVCNavbar: React.FC = () => {
   const navigate  = useNavigate();
 
   const config = useConfig();
+  const plugins = usePlugins();
   const currentUser = api.getCurrentUser();
   const role = currentUser?.role ?? 'GP';
   const isPSM      = role === 'PSM';
   const isVentures = role === 'Ventures';
   const showAdmin  = !isPSM && !isVentures;   // GP / Principal / Director only
 
-  const allNavLinks = [
-    { path: '/',           label: 'Home',       roles: null          },  // null = all roles
+  const coreNavLinks = [
+    { path: '/',           label: 'Home',       roles: null },  // null = all roles
     { path: '/ventures',   label: 'Ventures',   roles: null },
     { path: '/partners',   label: 'Partners',   roles: null },
     { path: '/sales',      label: 'Sales',      roles: null },
     { path: '/requests',   label: 'Requests',   roles: null },
   ];
 
-  const navLinks = allNavLinks.filter(l => l.roles === null || l.roles.includes(role));
+  // Inject plugin nav entries for plugins that have a nav declaration and allow this role
+  const pluginNavLinks = plugins
+    .filter(p => p.nav && (!p.nav.roles || p.nav.roles.includes(role)))
+    .map(p => ({ path: p.nav!.path, label: p.nav!.label, roles: p.nav!.roles ?? null }));
+
+  const allNavLinks = [...coreNavLinks, ...pluginNavLinks];
+  const navLinks = allNavLinks.filter(l => l.roles === null || (l.roles as string[]).includes(role));
 
   const isActive = (path: string) =>
     path === '/'

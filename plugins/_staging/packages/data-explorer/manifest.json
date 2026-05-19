@@ -9,7 +9,7 @@
   },
   "nav": {
     "label": "Data Explorer",
-    "path":  "/app/explore",
+    "path":  "/explore",
     "icon":  "BarChart2",
     "roles": ["GP", "Principal", "Director", "Ventures"]
   },
