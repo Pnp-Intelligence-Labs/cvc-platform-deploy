@@ -11,6 +11,7 @@ import Admin from "./pages/Admin";
 import RequestsPage from "./pages/Requests";
 import SalesPage from "./pages/Sales";
 import DataExplorerPage from "./pages/DataExplorerPage";
+import LPPortalPage from "./pages/LPPortalPage";
 
 function Guard({ component: Component }: { component: React.ComponentType }) {
   return <AuthGuard><Component /></AuthGuard>;
@@ -57,6 +58,7 @@ export const router = createBrowserRouter([
 
   // Plugin pages — only reachable when the corresponding plugin is installed
   { path: "/explore",                 Component: () => <Guard component={DataExplorerPage} />, errorElement: <AppError /> },
+  { path: "/lp",                      Component: () => <Guard component={LPPortalPage} />,    errorElement: <AppError /> },
 
   // Redirects for removed/plugin routes
   { path: "/portfolio",               Component: () => <Navigate to="/ventures" replace /> },
