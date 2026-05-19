@@ -79,19 +79,6 @@ export const api = {
     return response.json();
   },
 
-  // Intelligence
-  async getIntelligence() {
-    const response = await fetch('/intelligence', { headers: AUTH_HEADER });
-    if (!response.ok) throw new Error('Intelligence fetch failed');
-    return response.json();
-  },
-
-  async getIntelligenceSector(sector: string) {
-    const response = await fetch(`/intelligence/${sector}`, { headers: AUTH_HEADER });
-    if (!response.ok) throw new Error('Sector intelligence fetch failed');
-    return response.json();
-  },
-
   // Portfolio Stats
   async getPortfolioStats() {
     const response = await fetch('/companies', { headers: AUTH_HEADER });
@@ -450,13 +437,6 @@ export const api = {
     return response.json();
   },
 
-  // LP Portal
-  async getLPPortal() {
-    const response = await fetch('/lp/overview', { headers: AUTH_HEADER });
-    if (!response.ok) throw new Error('LP Portal fetch failed');
-    return response.json();
-  },
-
   // Company Profile
   async getCompanyProfile(id: string) {
     const response = await fetch(`/companies/${id}`, { headers: AUTH_HEADER });
@@ -500,13 +480,6 @@ export const api = {
   async deleteTeamMessage(id: number) {
     const response = await fetch(`/home/messages/${id}`, { method: 'DELETE', headers: AUTH_HEADER });
     if (!response.ok) throw new Error('Delete message failed');
-    return response.json();
-  },
-
-  // LLM usage / cost tracking
-  async getLLMUsage() {
-    const response = await fetch('/intelligence/llm-usage', { headers: AUTH_HEADER });
-    if (!response.ok) throw new Error('LLM usage fetch failed');
     return response.json();
   },
 
@@ -654,11 +627,11 @@ export const api = {
   // Namespace alias for components that call api.admin.*
   get admin() {
     return {
-      runBatchEnrichment: this.runBatchEnrichment.bind(this),
-      getLatestBatchJob:  this.getLatestBatchJob.bind(this),
-      getBraveTemplates:  this.getBraveTemplates.bind(this),
+      runBatchEnrichment:  this.runBatchEnrichment.bind(this),
+      getLatestBatchJob:   this.getLatestBatchJob.bind(this),
+      getBraveTemplates:   this.getBraveTemplates.bind(this),
       updateBraveTemplate: this.updateBraveTemplate.bind(this),
-      getBraveStats:      this.getBraveStats.bind(this),
+      getBraveStats:       this.getBraveStats.bind(this),
     };
   },
 
@@ -673,55 +646,5 @@ export const api = {
     };
   },
 
-  // ── QQQ Market Intelligence / News ──────────────────────────────────────────
-  async getRecentNews(limit = 50): Promise<{ articles: any[]; stats: any }> {
-    const response = await fetch(`/news/recent?limit=${limit}`, { headers: AUTH_HEADER });
-    if (!response.ok) throw new Error('News fetch failed');
-    return response.json();
-  },
-
-  async getNewsStats(): Promise<{ totals: any; by_type: any[]; by_company: any[] }> {
-    const response = await fetch('/news/stats', { headers: AUTH_HEADER });
-    if (!response.ok) throw new Error('News stats failed');
-    return response.json();
-  },
-
-  async listWatchCompanies(q?: string): Promise<any[]> {
-    const qs = q ? `?q=${encodeURIComponent(q)}` : '';
-    const response = await fetch(`/news/companies${qs}`, { headers: AUTH_HEADER });
-    if (!response.ok) throw new Error('Watch companies fetch failed');
-    return response.json();
-  },
-
-  async addWatchCompany(company_name: string, ticker?: string): Promise<any> {
-    const response = await fetch('/news/companies', {
-      method: 'POST',
-      headers: { ...AUTH_HEADER, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ company_name, ticker }),
-    });
-    if (!response.ok) {
-      if (response.status === 409) throw new Error('Company already in watch list');
-      throw new Error('Add company failed');
-    }
-    return response.json();
-  },
-
-  async removeWatchCompany(companyId: number): Promise<any> {
-    const response = await fetch(`/news/companies/${companyId}`, {
-      method: 'DELETE',
-      headers: AUTH_HEADER,
-    });
-    if (!response.ok) throw new Error('Remove company failed');
-    return response.json();
-  },
-
-  async triggerNewsFetch(): Promise<any> {
-    const response = await fetch('/news/fetch', {
-      method: 'POST',
-      headers: AUTH_HEADER,
-    });
-    if (!response.ok) throw new Error('Fetch trigger failed');
-    return response.json();
-  },
 }
 

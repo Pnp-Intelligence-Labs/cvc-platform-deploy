@@ -36,26 +36,6 @@ interface TeamMessage {
   created_at: string;
 }
 
-interface BraveTemplate {
-  id: number;
-  search_type: string;
-  label: string;
-  query_template: string;
-  result_count: number;
-  active: boolean;
-  notes: string | null;
-  updated_at: string;
-}
-
-interface BraveStat {
-  search_type: string;
-  total_runs: number;
-  avg_results: number;
-  zero_result_pct: number;
-  total_results: number;
-  last_run: string | null;
-}
-
 interface FeedbackTask {
   task_id: number;
   spec: string;
@@ -87,20 +67,6 @@ interface Assignment {
   company_id: number | null;
   company_name: string | null;
   created_at: string;
-}
-
-interface LLMPeriod { calls: number; cost: number; }
-interface LLMActivity { activity: string; calls: number; cost: number; last_called: string | null; }
-interface LLMUsage { today: LLMPeriod; week: LLMPeriod; month: LLMPeriod; by_activity: LLMActivity[]; }
-interface BraveUsage {
-  today_searches: number;
-  week_searches: number;
-  month_searches: number;
-  total_searches: number;
-  monthly_quota: number;
-  remaining: number;
-  pct_used: number;
-  by_type: { search_type: string; month_searches: number; avg_results: number; zero_pct: number }[];
 }
 
 // ── Module-scope maps (used by PersonCard + activity renderers) ───────────────
@@ -522,12 +488,9 @@ export default function Admin() {
 
   // ── Collapsible section state (system tab) ─────────────────────────────────
   const [open, setOpen] = useState<Record<string, boolean>>({
-    issues:             false,
-    intros:             false,
-    feedback:           false,
-    system:             false,
-    'brave-templates':  false,
-    'recent-edits':     false,
+    issues:         false,
+    feedback:       false,
+    'recent-edits': false,
   });
   const toggle = (id: string) => setOpen(prev => ({ ...prev, [id]: !prev[id] }));
 
@@ -598,41 +561,6 @@ export default function Admin() {
   const deleteMessage = async (id: number) => {
     await api.deleteTeamMessage(id);
     setMessages(ms => ms.filter(m => m.id !== id));
-  };
-
-  // ── Brave Templates ───────────────────────────────────────────────────────
-  const [braveTemplates, setBraveTemplates]   = useState<BraveTemplate[]>([]);
-  const [braveStats, setBraveStats]           = useState<BraveStat[]>([]);
-  const [braveLoading, setBraveLoading]       = useState(false);
-  const [editingTmpl, setEditingTmpl]         = useState<number | null>(null);
-  const [tmplForm, setTmplForm]               = useState<{ query_template: string; result_count: number; active: boolean; notes: string }>({ query_template: '', result_count: 5, active: true, notes: '' });
-  const [tmplSaving, setTmplSaving]           = useState(false);
-
-  const loadBraveData = useCallback(async () => {
-    setBraveLoading(true);
-    try {
-      const [templates, stats] = await Promise.all([api.getBraveTemplates(), api.getBraveStats()]);
-      setBraveTemplates(templates ?? []);
-      setBraveStats(stats ?? []);
-    } catch { /* silent */ }
-    setBraveLoading(false);
-  }, []);
-
-  useEffect(() => { loadBraveData(); }, [loadBraveData]);
-
-  const startEditTmpl = (t: BraveTemplate) => {
-    setEditingTmpl(t.id);
-    setTmplForm({ query_template: t.query_template, result_count: t.result_count, active: t.active, notes: t.notes ?? '' });
-  };
-
-  const saveTmpl = async (id: number) => {
-    setTmplSaving(true);
-    try {
-      await api.updateBraveTemplate(id, tmplForm);
-      setEditingTmpl(null);
-      await loadBraveData();
-    } catch { /* silent */ }
-    setTmplSaving(false);
   };
 
   // ── Feedback ──────────────────────────────────────────────────────────────
@@ -717,32 +645,6 @@ export default function Admin() {
     } finally { setSavingUserId(null); }
   };
 
-  // ── Intro Matches ─────────────────────────────────────────────────────────
-  const [introMatches, setIntroMatches]   = useState<any[]>([]);
-  const [introLoading, setIntroLoading]   = useState(false);
-
-  const loadIntroMatches = useCallback(async () => {
-    setIntroLoading(true);
-    try {
-      const res = await fetch('/admin/intro-matches', { headers: AUTH });
-      const data = await res.json();
-      setIntroMatches(data.matches ?? []);
-    } catch { setIntroMatches([]); }
-    setIntroLoading(false);
-  }, []);
-
-  useEffect(() => { loadIntroMatches(); }, [loadIntroMatches]);
-
-  const confirmIntroMatch = async (startupName: string) => {
-    await fetch(`/admin/intro-matches/${encodeURIComponent(startupName)}/confirm`, { method: 'POST', headers: AUTH });
-    setIntroMatches(m => m.filter(x => x.startup_name !== startupName));
-  };
-
-  const rejectIntroMatch = async (startupName: string) => {
-    await fetch(`/admin/intro-matches/${encodeURIComponent(startupName)}/reject`, { method: 'POST', headers: AUTH });
-    setIntroMatches(m => m.filter(x => x.startup_name !== startupName));
-  };
-
   // ── Activity ──────────────────────────────────────────────────────────────
   const [activityItems, setActivityItems]     = useState<any[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
@@ -781,26 +683,13 @@ export default function Admin() {
       .catch(() => {});
   }, []);
 
-  // ── LLM + Brave Usage ─────────────────────────────────────────────────────
-  const [llmUsage, setLlmUsage]     = useState<LLMUsage | null>(null);
-  const [braveUsage, setBraveUsage] = useState<BraveUsage | null>(null);
   const [recentEdits, setRecentEdits] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('/admin/activity-log', { headers: AUTH })
+    fetch('/admin/activity', { headers: AUTH })
       .then(r => r.json())
       .then(d => setRecentEdits(d.company_changes ?? []))
       .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    api.getLLMUsage().catch(() => null).then((u: LLMUsage | null) => (u && u.today) ? setLlmUsage(u) : null);
-    api.getBraveUsage().catch(() => null).then((b: BraveUsage | null) => setBraveUsage(b));
-    const interval = setInterval(() => {
-      api.getLLMUsage().then((u: LLMUsage) => (u && u.today) ? setLlmUsage(u) : null).catch(() => {});
-      api.getBraveUsage().then((b: BraveUsage) => setBraveUsage(b)).catch(() => {});
-    }, 30_000);
-    return () => clearInterval(interval);
   }, []);
 
   // ── Auto-open urgent sections ─────────────────────────────────────────────
@@ -808,10 +697,6 @@ export default function Admin() {
     if (!loading && issues.some(i => i.severity === 'high'))
       setOpen(prev => ({ ...prev, issues: true }));
   }, [loading, issues]);
-
-  useEffect(() => {
-    if (introMatches.length > 0) setOpen(prev => ({ ...prev, intros: true }));
-  }, [introMatches.length]);
 
   useEffect(() => {
     if (feedbackItems.filter(f => f.status === 'pending').length > 0)
@@ -962,9 +847,9 @@ export default function Admin() {
             >
               {icon}
               {label}
-              {key === 'system' && (pendingFeedbackCount + introMatches.length) > 0 && (
+              {key === 'system' && pendingFeedbackCount > 0 && (
                 <span className="ml-0.5 bg-amber-500 text-white text-[9px] font-bold px-1 py-0.5 rounded-full leading-none">
-                  {pendingFeedbackCount + introMatches.length}
+                  {pendingFeedbackCount}
                 </span>
               )}
             </button>
@@ -1268,70 +1153,6 @@ export default function Admin() {
               </div>
             </CollapsibleSection>
 
-            {/* ── Intro Matches ── */}
-            <CollapsibleSection
-              id="intros"
-              icon={<Handshake className="w-4 h-4" />}
-              title="Intro Matches"
-              sub="pending fuzzy match review"
-              badge={introMatches.length}
-              open={open.intros}
-              onToggle={() => toggle('intros')}
-            >
-              <p className="text-sm text-slate-500 mb-4">
-                These startup names from imported intro files are <strong>possible</strong> matches to companies in the platform.
-                Confirm to link them, or reject if they're different companies.
-              </p>
-              {introLoading ? (
-                <div className="text-sm text-slate-400 py-8 text-center">Loading…</div>
-              ) : introMatches.length === 0 ? (
-                <div className="text-sm text-slate-400 py-8 text-center">No pending matches — all reviewed.</div>
-              ) : (
-                <div className="border border-slate-200 rounded-lg overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
-                      <tr>
-                        <th className="px-4 py-2.5 text-left font-medium">Intro Name</th>
-                        <th className="px-4 py-2.5 text-left font-medium">Suggested Match</th>
-                        <th className="px-4 py-2.5 text-left font-medium">Confidence</th>
-                        <th className="px-4 py-2.5 text-left font-medium">Intros</th>
-                        <th className="px-4 py-2.5 text-left font-medium">Source</th>
-                        <th className="px-4 py-2.5 text-left font-medium"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {introMatches.map(m => {
-                        const pct = Math.round((m.match_confidence ?? 0) * 100);
-                        const color = pct >= 93 ? 'text-emerald-600 bg-emerald-50' : pct >= 80 ? 'text-amber-600 bg-amber-50' : 'text-red-600 bg-red-50';
-                        return (
-                          <tr key={m.startup_name} className="hover:bg-slate-50">
-                            <td className="px-4 py-3 font-medium text-slate-800">{m.startup_name}</td>
-                            <td className="px-4 py-3">
-                              <a href={`/app/company/${m.suggested_company_id}`} target="_blank" rel="noreferrer"
-                                className="text-blue-600 hover:underline">{m.suggested_company_name}</a>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${color}`}>{pct}%</span>
-                            </td>
-                            <td className="px-4 py-3 text-slate-500">{m.intro_count}</td>
-                            <td className="px-4 py-3 text-slate-400 text-xs">{m.source}</td>
-                            <td className="px-4 py-3">
-                              <div className="flex gap-2">
-                                <button onClick={() => confirmIntroMatch(m.startup_name)}
-                                  className="text-xs px-3 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors">Confirm</button>
-                                <button onClick={() => rejectIntroMatch(m.startup_name)}
-                                  className="text-xs px-3 py-1 bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100 transition-colors">Reject</button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CollapsibleSection>
-
             {/* ── Partner Issues ── */}
             <CollapsibleSection
               id="issues"
@@ -1508,226 +1329,6 @@ export default function Admin() {
                   })}
                 </div>
               )}
-            </CollapsibleSection>
-
-            {/* ── System Usage ── */}
-            <CollapsibleSection
-              id="system"
-              icon={<Zap className="w-4 h-4" />}
-              title="System Usage"
-              sub={`LLM ${fmtCost(llmUsage?.month.cost ?? 0)} this month · Brave ${braveUsage?.remaining.toLocaleString() ?? '—'} remaining`}
-              open={open.system}
-              onToggle={() => toggle('system')}
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* OpenRouter */}
-                <div className="bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
-                  <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-slate-200">
-                    <Zap className="w-4 h-4 text-amber-500" />
-                    <span className="font-semibold text-slate-800 text-sm">OpenRouter</span>
-                  </div>
-                  {!llmUsage ? (
-                    <p className="text-xs text-slate-400 px-5 py-6 text-center">No usage data yet.</p>
-                  ) : (
-                    <div className="px-5 py-4">
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {[{ label: 'Today', data: llmUsage.today }, { label: 'Week', data: llmUsage.week }, { label: 'Month', data: llmUsage.month }].map(p => (
-                          <div key={p.label} className="bg-[#ede8d7] rounded px-3 py-2 flex-1 min-w-[80px]">
-                            <div className="text-base font-bold text-slate-800">{fmtCost(p.data.cost)}</div>
-                            <div className="text-[10px] text-slate-400 mt-0.5">{p.label} · {p.data.calls} calls</div>
-                          </div>
-                        ))}
-                      </div>
-                      {llmUsage.by_activity.length > 0 && (
-                        <div className="space-y-2">
-                          {(() => {
-                            const max = Math.max(...llmUsage.by_activity.map(a => a.cost), 0.000001);
-                            return llmUsage.by_activity.map(a => (
-                              <div key={a.activity} className="flex items-center gap-2">
-                                <div className="w-28 shrink-0 text-xs text-slate-500 truncate">{a.activity}</div>
-                                <div className="flex-1 h-1.5 bg-[#ede8d7] rounded-full overflow-hidden">
-                                  <div className="h-full bg-amber-400/80 rounded-full" style={{ width: `${(a.cost / max) * 100}%` }} />
-                                </div>
-                                <div className="w-12 text-right text-xs text-slate-500 shrink-0">{fmtCost(a.cost)}</div>
-                              </div>
-                            ));
-                          })()}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Brave Search */}
-                <div className="bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
-                  <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-slate-200">
-                    <Search className="w-4 h-4 text-orange-500" />
-                    <span className="font-semibold text-slate-800 text-sm">Brave Search</span>
-                  </div>
-                  {!braveUsage || braveUsage.total_searches === 0 ? (
-                    <p className="text-xs text-slate-400 px-5 py-6 text-center">No search data yet.</p>
-                  ) : (
-                    <div className="px-5 py-4">
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {[{ label: 'Today', count: braveUsage.today_searches }, { label: 'Week', count: braveUsage.week_searches }, { label: 'Month', count: braveUsage.month_searches }].map(p => (
-                          <div key={p.label} className="bg-[#ede8d7] rounded px-3 py-2 flex-1 min-w-[80px]">
-                            <div className="text-base font-bold text-slate-800">{p.count.toLocaleString()}</div>
-                            <div className="text-[10px] text-slate-400 mt-0.5">{p.label} · searches</div>
-                          </div>
-                        ))}
-                      </div>
-                      {braveUsage.by_type.length > 0 && (
-                        <div className="space-y-2">
-                          {(() => {
-                            const max = Math.max(...braveUsage.by_type.map(t => t.month_searches), 1);
-                            return braveUsage.by_type.map(t => (
-                              <div key={t.search_type} className="flex items-center gap-2">
-                                <div className="w-28 shrink-0 text-xs text-slate-500 truncate capitalize">{t.search_type.replace('_', ' ')}</div>
-                                <div className="flex-1 h-1.5 bg-[#ede8d7] rounded-full overflow-hidden">
-                                  <div className="h-full bg-orange-400/70 rounded-full" style={{ width: `${(t.month_searches / max) * 100}%` }} />
-                                </div>
-                                <div className="w-20 text-right text-xs text-slate-500 shrink-0">{t.month_searches} · {t.avg_results ?? 0} avg</div>
-                              </div>
-                            ));
-                          })()}
-                        </div>
-                      )}
-                      <div className="mt-4 pt-3 border-t border-slate-200">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[10px] text-slate-400">Monthly quota</span>
-                          <span className={`text-xs font-semibold ${braveUsage.remaining < braveUsage.monthly_quota * 0.1 ? 'text-red-400' : braveUsage.remaining < braveUsage.monthly_quota * 0.25 ? 'text-amber-400' : 'text-slate-700'}`}>
-                            {braveUsage.remaining.toLocaleString()} remaining
-                          </span>
-                        </div>
-                        <div className="w-full h-1.5 bg-[#ede8d7] rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full transition-all ${braveUsage.pct_used > 90 ? 'bg-red-500' : braveUsage.pct_used > 75 ? 'bg-amber-400' : 'bg-orange-400/70'}`}
-                            style={{ width: `${Math.min(braveUsage.pct_used, 100)}%` }} />
-                        </div>
-                        <div className="flex justify-between mt-1">
-                          <span className="text-[10px] text-slate-400">{braveUsage.month_searches.toLocaleString()} used</span>
-                          <span className="text-[10px] text-slate-400">{braveUsage.monthly_quota.toLocaleString()} / mo</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CollapsibleSection>
-
-            {/* ── Brave Search Templates ── */}
-            <CollapsibleSection
-              id="brave-templates"
-              icon={<Search className="w-4 h-4" />}
-              title="Brave Search Templates"
-              sub="query templates for enrichment workers"
-              open={open['brave-templates']}
-              onToggle={() => toggle('brave-templates')}
-            >
-              <div className="space-y-6">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                      <BarChart2 className="w-4 h-4" /> Search Performance
-                    </h3>
-                    <button onClick={loadBraveData} className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700">
-                      <RefreshCw className={`w-3.5 h-3.5 ${braveLoading ? 'animate-spin' : ''}`} /> Refresh
-                    </button>
-                  </div>
-                  {braveStats.length === 0 ? (
-                    <p className="text-xs text-slate-400 py-4 text-center">No search history yet.</p>
-                  ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {braveStats.map(s => (
-                        <div key={s.search_type} className="border border-slate-200 rounded-lg p-4 bg-white">
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2">{s.search_type.replace('_', ' ')}</div>
-                          <div className="text-xl font-bold text-slate-800">{s.avg_results}</div>
-                          <div className="text-[10px] text-slate-400">avg results / run</div>
-                          <div className="mt-2 flex items-center gap-1">
-                            <div className={`text-xs font-semibold ${s.zero_result_pct > 50 ? 'text-red-500' : s.zero_result_pct > 20 ? 'text-amber-500' : 'text-emerald-600'}`}>
-                              {s.zero_result_pct}%
-                            </div>
-                            <div className="text-[10px] text-slate-400">zero-result rate</div>
-                          </div>
-                          <div className="text-[10px] text-slate-400 mt-1">{s.total_runs} total runs</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-800 mb-3">Query Templates</h3>
-                  <p className="text-xs text-slate-500 mb-4">
-                    Use <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">{'{name}'}</code> as the company name placeholder.
-                  </p>
-                  <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-50">
-                    {braveLoading && braveTemplates.length === 0 ? (
-                      <div className="text-center py-8 text-slate-400 text-xs">Loading…</div>
-                    ) : braveTemplates.map(t => {
-                      const isEditing = editingTmpl === t.id;
-                      return (
-                        <div key={t.id} className="px-5 py-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${t.active ? 'bg-slate-800/10 text-slate-700' : 'bg-slate-100 text-slate-400'}`}>
-                                  {t.active ? 'Active' : 'Inactive'}
-                                </span>
-                                <span className="text-sm font-semibold text-slate-800">{t.label}</span>
-                                <span className="text-[10px] text-slate-400 font-mono">{t.search_type}</span>
-                              </div>
-                              {!isEditing && (
-                                <>
-                                  <p className="text-xs font-mono text-slate-600 bg-[#ede8d7] border border-slate-200 rounded px-2 py-1.5">{t.query_template}</p>
-                                  <div className="flex items-center gap-4 mt-1.5 text-[10px] text-slate-400">
-                                    <span>{t.result_count} results</span>
-                                    {t.notes && <span>{t.notes}</span>}
-                                    <span>Updated {new Date(t.updated_at).toLocaleDateString()}</span>
-                                  </div>
-                                </>
-                              )}
-                              {isEditing && (
-                                <div className="space-y-2 mt-2">
-                                  <textarea value={tmplForm.query_template}
-                                    onChange={e => setTmplForm(f => ({ ...f, query_template: e.target.value }))}
-                                    rows={2}
-                                    className="w-full text-xs font-mono border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-slate-400 resize-none bg-white" />
-                                  <div className="flex items-center gap-3">
-                                    <label className="text-xs text-slate-500">Results:
-                                      <input type="number" min={1} max={20} value={tmplForm.result_count}
-                                        onChange={e => setTmplForm(f => ({ ...f, result_count: parseInt(e.target.value) || 5 }))}
-                                        className="ml-1 w-16 text-xs border border-slate-200 rounded px-1.5 py-1 focus:outline-none bg-white" />
-                                    </label>
-                                    <label className="flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer">
-                                      <input type="checkbox" checked={tmplForm.active} onChange={e => setTmplForm(f => ({ ...f, active: e.target.checked }))} />
-                                      Active
-                                    </label>
-                                    <input value={tmplForm.notes} onChange={e => setTmplForm(f => ({ ...f, notes: e.target.value }))}
-                                      placeholder="Notes (optional)"
-                                      className="flex-1 text-xs border border-slate-200 rounded px-2 py-1 focus:outline-none bg-white" />
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <button onClick={() => saveTmpl(t.id)} disabled={tmplSaving || !tmplForm.query_template.trim()}
-                                      className="flex items-center gap-1 text-xs px-3 py-1.5 bg-slate-800 text-white rounded disabled:opacity-50">
-                                      <Save className="w-3 h-3" /> {tmplSaving ? 'Saving…' : 'Save'}
-                                    </button>
-                                    <button onClick={() => setEditingTmpl(null)} className="text-xs text-slate-400 hover:text-slate-700">Cancel</button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            {!isEditing && (
-                              <button onClick={() => startEditTmpl(t)}
-                                className="p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors flex-shrink-0">
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
             </CollapsibleSection>
 
             {/* ── Recent Edits ── */}

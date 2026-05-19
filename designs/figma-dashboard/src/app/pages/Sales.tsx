@@ -4,7 +4,7 @@ import {
   Target, Plus, X, ChevronRight, Check, AlertCircle, ExternalLink,
   Phone, Mail, User, Building2, FileText, MessageSquare, Handshake,
   Send, TrendingUp, CheckCircle2, XCircle, Clock, Edit3, Save,
-  Trash2, Search, Newspaper,
+  Trash2, Search,
 } from 'lucide-react';
 import { cls } from '../components/tokens';
 import { CVCNavbar } from '../components/CVCNavbar';
@@ -1557,12 +1557,6 @@ export default function SalesPage() {
   const [showAdd, setShowAdd]         = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
-  const [pageView, setPageView]       = useState<'pipeline' | 'news'>('pipeline');
-  const [salesNews, setSalesNews]     = useState<any[]>([]);
-  const [newsLoading, setNewsLoading] = useState(false);
-  const [newsDays, setNewsDays]       = useState(7);
-  const [newsTypeFilter, setNewsTypeFilter] = useState('all');
-  const [newsPersonFilter, setNewsPersonFilter] = useState('all');
 
   // Fetch all targets on mount (no stage filter — client-side filtering)
   const load = useCallback(async () => {
@@ -1586,16 +1580,6 @@ export default function SalesPage() {
       }
     })();
   }, []);
-
-  useEffect(() => {
-    if (pageView !== 'news') return;
-    setNewsLoading(true);
-    fetch(`/news/sales?days=${newsDays}&limit=150${newsTypeFilter !== 'all' ? `&activity_type=${newsTypeFilter}` : ''}`, { headers: AUTH })
-      .then(r => r.ok ? r.json() : { articles: [] })
-      .then(d => setSalesNews(d.articles ?? []))
-      .catch(() => setSalesNews([]))
-      .finally(() => setNewsLoading(false));
-  }, [pageView, newsDays, newsTypeFilter]);
 
   function handleUpdate(updated: SalesTarget) {
     setTargets(ts => ts.map(t => t.id === updated.id ? updated : t));
@@ -1645,33 +1629,16 @@ export default function SalesPage() {
           </button>
         </div>
 
-        {/* View toggle */}
-        <div className="flex gap-1 border-b border-slate-200 mb-5">
-          {([['pipeline', 'Pipeline'], ['news', 'Intel Feed']] as const).map(([view, label]) => (
-            <button
-              key={view}
-              onClick={() => setPageView(view)}
-              className={`flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
-                pageView === view
-                  ? 'border-[#1E293B] text-[#1E293B]'
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              {view === 'news' && <Newspaper className="w-3.5 h-3.5" />}
-              {label}
-            </button>
-          ))}
-        </div>
 
-        {/* Person strip — pipeline only */}
-        {pageView === 'pipeline' && !leaderboardLoading && leaderboard.length > 0 && (
+        {/* Person strip */}
+        {!leaderboardLoading && leaderboard.length > 0 && (
           <div className="grid grid-cols-4 gap-3 mb-5">
             {leaderboard.map(entry => (
               <PersonMiniCard key={entry.username} entry={entry} />
             ))}
           </div>
         )}
-        {pageView === 'pipeline' && leaderboardLoading && (
+        {leaderboardLoading && (
           <div className="grid grid-cols-4 gap-3 mb-5">
             {[0, 1, 2, 3].map(i => (
               <div key={i} className="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-cvc animate-pulse h-[76px]" />
@@ -1679,8 +1646,8 @@ export default function SalesPage() {
           </div>
         )}
 
-        {/* Filter bar — pipeline only */}
-        {pageView === 'pipeline' && <div className="flex items-center gap-2 mb-5 flex-wrap">
+        {/* Filter bar */}
+        <div className="flex items-center gap-2 mb-5 flex-wrap">
           {/* Person pills */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <button
@@ -1719,10 +1686,10 @@ export default function SalesPage() {
               onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
-        </div>}
+        </div>
 
         {/* ── Pipeline view ── */}
-        {pageView === 'pipeline' && (
+        {(
           loading ? (
             <div className="flex justify-center items-center h-48">
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#1E293B] border-r-transparent" />
@@ -1737,127 +1704,6 @@ export default function SalesPage() {
           )
         )}
 
-        {/* ── Intel Feed view ── */}
-        {pageView === 'news' && (() => {
-          const TYPE_COLORS: Record<string, string> = {
-            venture:     'bg-emerald-50 text-emerald-700',
-            ma:          'bg-orange-50 text-orange-700',
-            lawsuit:     'bg-red-50 text-red-700',
-            budget:      'bg-blue-50 text-blue-700',
-            partnership: 'bg-purple-50 text-purple-700',
-            general:     'bg-amber-50 text-amber-700',
-          };
-          const STAGE_COLORS: Record<string, string> = {
-            target:      'bg-slate-100 text-slate-600',
-            nurturing:   'bg-blue-50 text-blue-700',
-            proposal:    'bg-violet-50 text-violet-700',
-            closed_won:  'bg-emerald-50 text-emerald-700',
-            closed_lost: 'bg-red-50 text-red-500',
-          };
-          const visibleNews = salesNews.filter((a: any) => {
-            if (newsPersonFilter === 'all') return true;
-            return a.assigned_to?.split(', ').includes(newsPersonFilter);
-          });
-          return (
-            <div>
-              {/* Controls */}
-              <div className="flex items-center gap-2 mb-4 flex-wrap">
-                {/* Person dropdown */}
-                <select
-                  value={newsPersonFilter}
-                  onChange={e => setNewsPersonFilter(e.target.value)}
-                  className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-semibold focus:outline-none focus:border-slate-400 capitalize"
-                >
-                  <option value="all">All reps</option>
-                  {persons.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-                {/* Day range */}
-                <div className="flex gap-1">
-                  {([7, 14, 30] as const).map(d => (
-                    <button key={d} onClick={() => setNewsDays(d)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                        newsDays === d ? 'bg-[#1E293B] text-[#F59E0B] border-[#1E293B]' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'
-                      }`}>{d}d</button>
-                  ))}
-                </div>
-                {/* Type filter */}
-                <div className="flex gap-1 flex-wrap">
-                  {(['all', 'venture', 'ma', 'lawsuit', 'budget', 'partnership'] as const).map(f => (
-                    <button key={f} onClick={() => setNewsTypeFilter(f)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                        newsTypeFilter === f ? 'bg-[#1E293B] text-[#F59E0B] border-[#1E293B]' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'
-                      }`}>
-                      {f === 'all' ? 'All' : f === 'ma' ? 'M&A' : f.charAt(0).toUpperCase() + f.slice(1)}
-                    </button>
-                  ))}
-                </div>
-                {!newsLoading && visibleNews.length > 0 && (
-                  <span className="ml-auto text-xs text-slate-400">{visibleNews.length} articles</span>
-                )}
-              </div>
-
-              {newsLoading ? (
-                <div className="flex justify-center py-20">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#1E293B] border-r-transparent" />
-                </div>
-              ) : visibleNews.length === 0 ? (
-                <div className="text-center py-20 text-slate-400">
-                  <Newspaper className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm font-medium">
-                    {salesNews.length === 0 ? `No news in the last ${newsDays} days` : 'No articles match these filters'}
-                  </p>
-                  {salesNews.length === 0 && <p className="text-xs mt-1">Articles will appear after the next 6-hour fetch run.</p>}
-                </div>
-              ) : (
-                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
-                  {visibleNews.map((a: any) => {
-                    const type = a.activity_type || 'general';
-                    const daysAgo = Math.floor((Date.now() - new Date(a.published_at).getTime()) / 86400000);
-                    const dateLabel = daysAgo === 0 ? 'today' : daysAgo === 1 ? '1d ago' : `${daysAgo}d ago`;
-                    return (
-                      <div key={a.id} className="flex items-start gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors group">
-                        <div className="flex-1 min-w-0">
-                          <a href={a.link} target="_blank" rel="noopener noreferrer" className="block">
-                            <p className="text-[13px] font-medium text-[#1E293B] leading-snug group-hover:text-[#6366F1] transition-colors line-clamp-2">
-                              {a.title}
-                            </p>
-                          </a>
-                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                            <span className="text-[11px] font-bold text-slate-700">{a.company_name}</span>
-                            {a.stage && (
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold capitalize ${STAGE_COLORS[a.stage] ?? 'bg-slate-100 text-slate-500'}`}>
-                                {a.stage.replace('_', ' ')}
-                              </span>
-                            )}
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wide ${TYPE_COLORS[type] ?? TYPE_COLORS.general}`}>
-                              {type === 'ma' ? 'M&A' : type}
-                            </span>
-                            {a.assigned_to && (
-                              <span className="text-[10px] text-slate-400">{a.assigned_to}</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
-                          <span className="text-[11px] text-slate-400 whitespace-nowrap">{dateLabel}</span>
-                          <button
-                            onClick={() => {
-                              fetch(`/news/article/${a.id}`, { method: 'DELETE', headers: AUTH });
-                              setSalesNews((prev: any[]) => prev.filter((x: any) => x.id !== a.id));
-                            }}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-red-400 ml-1"
-                            title="Hide article"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })()}
       </div>
 
       {/* Detail panel — slide-in overlay */}

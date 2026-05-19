@@ -1348,17 +1348,17 @@ export default function Homepage() {
               {
                 title: 'Startups Reviewed',
                 sub: 'startup profiles reviewed',
-                entries: leaderboards.startups_reviewed ?? [{ name: 'Nate', count: 0 }, { name: 'Jerry', count: 0 }],
+                entries: leaderboards.startups_reviewed ?? [],
               },
               {
                 title: 'Introductions',
                 sub: 'partner ↔ startup intros made',
-                entries: leaderboards.introductions ?? [{ name: 'Nate', count: 0 }, { name: 'Jerry', count: 0 }],
+                entries: leaderboards.introductions ?? [],
               },
               {
                 title: 'Partner Data',
                 sub: 'partner profiles enriched',
-                entries: leaderboards.partner_data ?? [{ name: 'Nate', count: 0 }, { name: 'Jerry', count: 0 }],
+                entries: leaderboards.partner_data ?? [],
               },
             ].map(board => {
               const max = Math.max(...board.entries.map(e => e.count), 1);
