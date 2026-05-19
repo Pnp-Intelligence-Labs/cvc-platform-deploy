@@ -96,7 +96,7 @@ def _extract_pdf_text(content: bytes) -> str | None:
         return None
 
 
-_INTEL_PROMPT = """You are analyzing a partner document for a venture capital firm (Plug and Play / CVC).
+_INTEL_PROMPT = """You are analyzing a partner document for a venture capital firm.
 Extract key information and return ONLY valid JSON — no commentary, no markdown fences.
 
 Document: {filename}

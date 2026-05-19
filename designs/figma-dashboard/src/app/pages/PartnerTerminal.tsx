@@ -2351,7 +2351,7 @@ function PartnerProfileTab({ partnerId, partnerBrief, onBriefSaved }: {
         <div className="mb-3">
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Partner Brief</p>
           <p className="text-[11px] text-slate-500 mt-0.5">
-            Who is this partner, what do they want from CVC, and what's unique about working with them?
+            Who is this partner, what do they want from your team, and what's unique about working with them?
           </p>
         </div>
         <textarea

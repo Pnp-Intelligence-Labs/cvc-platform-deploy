@@ -433,7 +433,7 @@ export default function DataExplorer({ reportId, report, sections, onAddSource }
                     <Sparkles className="w-4 h-4" /> Suggest data for this report
                   </button>
                   <p className="text-xs text-[#787569] text-center max-w-xs">
-                    AI will read your brief and sections and suggest relevant data from the CVC database
+                    AI will read your brief and sections and suggest relevant data from the platform database
                   </p>
                 </div>
               ) : (

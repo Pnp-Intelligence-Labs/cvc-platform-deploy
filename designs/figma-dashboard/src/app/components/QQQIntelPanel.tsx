@@ -157,7 +157,7 @@ export default function QQQIntelPanel() {
             <div>
               <p className="font-mono text-[10px] uppercase tracking-widest text-[#787569] font-bold">QQQ Market Intelligence</p>
               <p className="text-xs text-[#545249] mt-0.5">
-                Venture, CVC, M&A, Lawsuits & Budget signals from Nasdaq-100 companies
+                Venture, Corporate VC, M&A, Lawsuits & Budget signals from Nasdaq-100 companies
               </p>
             </div>
           </div>

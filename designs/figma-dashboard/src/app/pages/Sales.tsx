@@ -1218,7 +1218,7 @@ function AdvancePanel({
               <textarea className={`${cls.inputFull} min-h-[72px] resize-y`}
                 value={(gate.corporate_interests as string) || ''}
                 onChange={e => setGate(g => ({ ...g, corporate_interests: e.target.value }))}
-                placeholder="What is this company interested in from CVC?" />
+                placeholder="What is this company interested in from our team?" />
             </div>
             <div>
               <label className={`${cls.meta} mb-1 block`}>Outreach Date *</label>

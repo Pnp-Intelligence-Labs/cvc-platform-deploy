@@ -3553,7 +3553,7 @@ export default function CompanyProfile() {
           </div>
         )}
 
-        {/* CVC Position — one card per investment vehicle */}
+        {/* Investment Position — one card per investment vehicle */}
         {(company.term_sheets ?? (company.term_sheet ? [company.term_sheet] : [])).length > 0 && (
           <div className="mt-6">
             <h3 className={`${cls.sectionTitle} mb-3`}>Our Position</h3>

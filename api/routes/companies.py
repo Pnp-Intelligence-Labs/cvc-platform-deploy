@@ -215,7 +215,7 @@ def update_company(company_id: int, payload: CompanyUpdate, user=Depends(require
                 raise HTTPException(status_code=404, detail="Company not found")
 
             current = dict(row)
-            changed_by = user.get("username", "nate")
+            changed_by = user.get("username") or "system"
             updates = {}
             log_entries = []
 
@@ -780,7 +780,7 @@ def accept_suggestion(company_id: int, suggestion_id: int,
                     d.get("start_date"),
                     bool(d.get("stealth", False)),
                     notes or None,
-                    user.get("username", "nate"),
+                    user.get("username") or "system",
                 ))
 
             # Mark accepted
@@ -790,7 +790,7 @@ def accept_suggestion(company_id: int, suggestion_id: int,
                     reviewed_by = %s,
                     reviewed_at = NOW()
                 WHERE id = %s
-            """, (user.get("username", "nate"), suggestion_id))
+            """, (user.get("username") or "system", suggestion_id))
             conn.commit()
 
     return {"accepted": True, "suggestion_id": suggestion_id, "action_note": action_note}
@@ -809,7 +809,7 @@ def reject_suggestion(company_id: int, suggestion_id: int,
                     reviewed_at = NOW()
                 WHERE id = %s AND company_id = %s AND status = 'pending'
                 RETURNING id
-            """, (user.get("username", "nate"), suggestion_id, company_id))
+            """, (user.get("username") or "system", suggestion_id, company_id))
             if not cur.fetchone():
                 raise HTTPException(status_code=404, detail="Suggestion not found or already reviewed")
             conn.commit()
@@ -1029,7 +1029,7 @@ def update_funding_round(company_id: int, round_id: int, data: dict, user=Depend
     if not fields:
         raise HTTPException(status_code=400, detail="No valid fields to update")
     vals.extend([round_id, company_id])
-    username = user.get("username", "nate")
+    username = user.get("username") or "system"
     summary = ", ".join(f"{k}={v}" for k, v in data.items() if k in allowed)
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -1120,7 +1120,7 @@ def refresh_enrichment(company_id: int, body: RefreshEnrichmentBody, user=Depend
                     """INSERT INTO cvc.build_tasks (spec, priority, risk_level, requires_approval, status, created_by)
                        VALUES (%s, 'normal', 'low', FALSE, 'approved', %s)
                        RETURNING task_id""",
-                    (spec, user.get("username", "analyst") if isinstance(user, dict) else "analyst")
+                    (spec, (user.get("username") or "system") if isinstance(user, dict) else "system")
                 )
                 task_row = cur.fetchone()
                 results["industrial"] = f"task #{task_row['task_id']} queued"
@@ -1295,7 +1295,7 @@ def update_commercial_deployment(company_id: int, dep_id: int, body: CommercialD
         fields['stealth'] = body.stealth
     set_clause = ", ".join(f"{k} = %s" for k in fields)
     values = list(fields.values()) + [dep_id, company_id]
-    username = user.get("username", "nate")
+    username = user.get("username") or "system"
     summary = ", ".join(f"{k}={v}" for k, v in fields.items())
     with get_connection() as conn:
         with conn.cursor() as cur:

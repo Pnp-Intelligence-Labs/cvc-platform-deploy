@@ -211,12 +211,15 @@ def create_target(body: TargetCreate, user: UserInfo = Depends(require_jwt)):
                 user.username,
             ))
             row = cur.fetchone()
-            # Auto-enroll in news watch list
-            cur.execute("""
-                INSERT INTO cvc.news_watch_companies (company_name, category)
-                VALUES (%s, 'sales')
-                ON CONFLICT (company_name, category) DO NOTHING
-            """, (body.company_name.strip(),))
+            # Auto-enroll in news watch list (populated by news intelligence plugin — skip if not installed)
+            try:
+                cur.execute("""
+                    INSERT INTO cvc.news_watch_companies (company_name, category)
+                    VALUES (%s, 'sales')
+                    ON CONFLICT (company_name, category) DO NOTHING
+                """, (body.company_name.strip(),))
+            except Exception:
+                conn.rollback()
             conn.commit()
 
     return _serialize_row(dict(row))

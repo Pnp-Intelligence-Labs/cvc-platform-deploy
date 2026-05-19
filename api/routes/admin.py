@@ -110,7 +110,9 @@ async def create_batch_enrichment(
 ):
     if req.target == "sector" and not req.sector:
         raise HTTPException(status_code=400, detail="Sector required when target is 'sector'")
-    username = user.get("username", "nate") if isinstance(user, dict) else str(user)
+    username = user.get("username") if isinstance(user, dict) else str(user)
+    if not username:
+        raise HTTPException(status_code=401, detail="Username not found in token")
 
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -365,6 +367,42 @@ async def get_activity(user=Depends(require_auth)):
         "llm_usage":       [dict(r) for r in llm_usage],
         "company_changes": [dict(r) for r in company_changes],
     }
+
+
+@router.get("/status/{company_id}")
+def get_enrichment_status(company_id: int, user=Depends(require_auth)):
+    """Return last-run timestamps for each per-company enrichment step.
+
+    Used by the CompanyProfile enrichment panel to show last run and poll
+    for completion. Queries notifications inserted by refresh-enrichment.
+    """
+    STEP_PATTERNS = {
+        "founder": "Founder Research complete",
+        "fourD":   "4D Classification complete",
+        "funding": "Funding Rounds enrichment complete",
+        "cases":   "Case Studies & Deployments complete",
+    }
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT title, MAX(created_at) AS last_run
+                FROM cvc.notifications
+                WHERE type = 'enrichment'
+                  AND reference_id = %s
+                GROUP BY title
+            """, (company_id,))
+            rows = cur.fetchall()
+
+    title_to_last = {r["title"]: r["last_run"] for r in rows}
+    result = {}
+    for step, pattern in STEP_PATTERNS.items():
+        last_run = None
+        for title, ts in title_to_last.items():
+            if title.startswith(pattern):
+                last_run = ts.isoformat() if ts else None
+                break
+        result[step] = {"last_run": last_run, "done": last_run is not None}
+    return result
 
 
 @router.get("/kpis")

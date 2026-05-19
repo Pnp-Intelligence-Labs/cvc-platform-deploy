@@ -161,7 +161,7 @@ def intake_deal(data: DealIntake, user=Depends(require_auth)):
                 company_id = cur.fetchone()["id"]
 
             # Upsert lifecycle status
-            username = user.get("username", "nate") if isinstance(user, dict) else str(user)
+            username = (user.get("username") or "system") if isinstance(user, dict) else str(user)
             cur.execute("SELECT id FROM cvc.company_lifecycle WHERE company_id = %s", (company_id,))
             if cur.fetchone():
                 cur.execute("""
@@ -241,7 +241,7 @@ def save_term_sheet(company_id: int, data: TermSheetRequest, user=Depends(requir
             if not cur.fetchone():
                 raise HTTPException(status_code=404, detail="Company not found")
 
-            username = user.get("username", "nate") if isinstance(user, dict) else str(user)
+            username = (user.get("username") or "system") if isinstance(user, dict) else str(user)
 
             cur.execute("""
                 INSERT INTO cvc.term_sheets (

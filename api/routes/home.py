@@ -57,21 +57,25 @@ def delete_message(message_id: int, user=Depends(require_auth)):
     return {"deleted": True}
 
 
-TEAM_MEMBERS = ["nate", "jerry", "harry", "harvey", "harshal"]
-
-
 @router.get("/leaderboards")
 def get_leaderboards(user=Depends(require_auth)):
     """Live leaderboard stats for active team members."""
     with get_connection() as conn:
         with conn.cursor() as cur:
+            # Active team members from users table
+            cur.execute("SELECT username FROM cvc.users WHERE is_active = TRUE ORDER BY username")
+            team_members = [r["username"] for r in cur.fetchall()]
+
+            if not team_members:
+                return {"startups_reviewed": [], "introductions": [], "partner_data": []}
+
             # Startups reviewed — distinct companies touched per user
             cur.execute("""
                 SELECT changed_by, COUNT(DISTINCT company_id) AS count
                 FROM cvc.company_activity_log
                 WHERE changed_by = ANY(%s)
                 GROUP BY changed_by
-            """, (TEAM_MEMBERS,))
+            """, (team_members,))
             reviewed = {r["changed_by"]: int(r["count"]) for r in cur.fetchall()}
 
             # Introductions — companies where intro fields were updated by each user
@@ -81,7 +85,7 @@ def get_leaderboards(user=Depends(require_auth)):
                 WHERE changed_by = ANY(%s)
                   AND field_name IN ('intro_partners', 'intro_count', 'last_intro_date')
                 GROUP BY changed_by
-            """, (TEAM_MEMBERS,))
+            """, (team_members,))
             intros = {r["changed_by"]: int(r["count"]) for r in cur.fetchall()}
 
             # Partner data — companies with partner-related field updates
@@ -91,12 +95,12 @@ def get_leaderboards(user=Depends(require_auth)):
                 WHERE changed_by = ANY(%s)
                   AND (field_name ILIKE '%%partner%%' OR change_source IN ('funding_round', 'commercial_deployment'))
                 GROUP BY changed_by
-            """, (TEAM_MEMBERS,))
+            """, (team_members,))
             partner_data = {r["changed_by"]: int(r["count"]) for r in cur.fetchall()}
 
     def board(counts: dict) -> list:
         return sorted(
-            [{"name": m.capitalize(), "count": counts.get(m, 0)} for m in TEAM_MEMBERS],
+            [{"name": m.capitalize(), "count": counts.get(m, 0)} for m in team_members],
             key=lambda x: x["count"], reverse=True
         )
 
@@ -123,18 +127,24 @@ def get_dashboard():
         briefing_rows = cur.fetchall()
 
         # Fetch insights from briefing_insights table, grouped by week + sector
+        # This table is populated by the briefing plugin — graceful fallback if absent
         insights_by_week: dict = {}
         sectors_by_week: dict = {}
         if briefing_rows:
             week_starts = [r["week_start"] for r in briefing_rows]
-            cur.execute("""
-                SELECT id, week_start, source_type, source_title, source_url,
-                       show_name, insight, expert, confidence, sector, created_at
-                FROM cvc.briefing_insights
-                WHERE week_start = ANY(%s)
-                ORDER BY week_start DESC, sector, source_type, source_title
-            """, (week_starts,))
-            for ins in cur.fetchall():
+            try:
+                cur.execute("""
+                    SELECT id, week_start, source_type, source_title, source_url,
+                           show_name, insight, expert, confidence, sector, created_at
+                    FROM cvc.briefing_insights
+                    WHERE week_start = ANY(%s)
+                    ORDER BY week_start DESC, sector, source_type, source_title
+                """, (week_starts,))
+                briefing_insight_rows = cur.fetchall()
+            except Exception:
+                conn.rollback()
+                briefing_insight_rows = []
+            for ins in briefing_insight_rows:
                 key = str(ins["week_start"])
                 sector = ins["sector"] or "General"
                 entry = {
@@ -163,20 +173,25 @@ def get_dashboard():
             if weeks_needing_legacy:
                 min_start = min(r["week_start"] for r in weeks_needing_legacy)
                 max_end   = max(r["week_end"]   for r in weeks_needing_legacy)
-                cur.execute("""
-                    SELECT
-                        created_at::date                                   AS day,
-                        title,
-                        podcast_synthesis->>'source'                       AS show_name,
-                        jsonb_array_length(podcast_synthesis->'insights')  AS insight_count
-                    FROM cvc.content_items
-                    WHERE content_type = 'podcast_episode'
-                      AND enrichment_status = 'fully_enriched'
-                      AND podcast_synthesis IS NOT NULL
-                      AND created_at >= %s AND created_at < %s
-                    ORDER BY insight_count DESC
-                """, (min_start, max_end + timedelta(days=1)))
-                for s in cur.fetchall():
+                try:
+                    cur.execute("""
+                        SELECT
+                            created_at::date                                   AS day,
+                            title,
+                            podcast_synthesis->>'source'                       AS show_name,
+                            jsonb_array_length(podcast_synthesis->'insights')  AS insight_count
+                        FROM cvc.content_items
+                        WHERE content_type = 'podcast_episode'
+                          AND enrichment_status = 'fully_enriched'
+                          AND podcast_synthesis IS NOT NULL
+                          AND created_at >= %s AND created_at < %s
+                        ORDER BY insight_count DESC
+                    """, (min_start, max_end + timedelta(days=1)))
+                    legacy_content = cur.fetchall()
+                except Exception:
+                    conn.rollback()
+                    legacy_content = []
+                for s in legacy_content:
                     day = s["day"]
                     for r in weeks_needing_legacy:
                         if r["week_start"] <= day <= r["week_end"]:
@@ -198,17 +213,9 @@ def get_dashboard():
             week_start = row["week_start"]
             week_key   = str(week_start)
             insights   = insights_by_week.get(week_key) or legacy_sources_by_week.get(week_key, [])
-            # Sector order: CVC priority sectors first, then General
-            SECTOR_ORDER = ["Supply Chain", "Robotics", "Physical AI", "Industrial Automation", "Manufacturing", "General"]
             raw_sectors = sectors_by_week.get(week_key, {})
-            signals_by_sector = {
-                s: raw_sectors[s]
-                for s in SECTOR_ORDER if s in raw_sectors
-            }
-            # Any unexpected sectors appended after
-            for s in raw_sectors:
-                if s not in signals_by_sector:
-                    signals_by_sector[s] = raw_sectors[s]
+            # Return sectors alphabetically; frontend can apply team-specific ordering via config
+            signals_by_sector = dict(sorted(raw_sectors.items()))
 
             briefings.append({
                 "week_start":         week_key,
