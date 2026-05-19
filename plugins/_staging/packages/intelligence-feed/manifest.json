@@ -1,0 +1,16 @@
+{
+  "slug": "intelligence-feed",
+  "name": "Intelligence Feed",
+  "version": "1.0.0",
+  "routes": {
+    "prefix": "/intel",
+    "tag": "intelligence-feed"
+  },
+  "nav": null,
+  "requires_tables": [
+    "cvc.briefing_sources",
+    "cvc.llm_usage_log",
+    "cvc.cron_jobs"
+  ],
+  "config_schema": {}
+}
