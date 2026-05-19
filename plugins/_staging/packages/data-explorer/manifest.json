@@ -1,0 +1,18 @@
+{
+  "slug":        "data-explorer",
+  "name":        "Data Explorer",
+  "version":     "1.0.0",
+  "description": "Pre-built analytical report templates for non-technical users. Read-only queries against core platform data with provenance and data quality metadata.",
+  "routes": {
+    "prefix": "/explore",
+    "tag":    "data-explorer"
+  },
+  "nav": {
+    "label": "Data Explorer",
+    "path":  "/app/explore",
+    "icon":  "BarChart2",
+    "roles": ["GP", "Principal", "Director", "Ventures"]
+  },
+  "requires_tables": [],
+  "config_schema": {}
+}
