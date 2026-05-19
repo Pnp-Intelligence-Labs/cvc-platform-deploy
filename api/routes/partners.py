@@ -263,12 +263,6 @@ def create_partner(partner: dict):
                 partner.get("monday_item_id")
             ))
             new_partner = cur.fetchone()
-            # Auto-enroll in news watch list
-            cur.execute("""
-                INSERT INTO cvc.news_watch_companies (company_name, category, partner_id)
-                VALUES (%s, 'partner', %s)
-                ON CONFLICT (company_name, category) DO NOTHING
-            """, (partner.get("name"), new_partner["id"]))
             conn.commit()
             return new_partner
 
