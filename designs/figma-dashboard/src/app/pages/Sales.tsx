@@ -685,7 +685,7 @@ function NotesTab({ targetId }: { targetId: number }) {
       <div className="space-y-2">
         {notes.map(n => {
           const currentUser = (() => {
-            try { const t = localStorage.getItem('cvc_jwt'); if (!t) return ''; return JSON.parse(atob(t.split('.')[1])).sub ?? ''; }
+            try { const t = localStorage.getItem('platform_jwt'); if (!t) return ''; return JSON.parse(atob(t.split('.')[1])).sub ?? ''; }
             catch { return ''; }
           })();
           const isMeeting = n.note_type === 'meeting';

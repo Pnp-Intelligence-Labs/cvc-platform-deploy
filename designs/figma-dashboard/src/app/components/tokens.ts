@@ -1,5 +1,5 @@
 /**
- * CVC Intelligence — Design System Tokens
+ * Plug and Play Vertical OS — Design System Tokens
  * ─────────────────────────────────────────────────────────────────────────────
  * THE MASTER SWITCH: Edit here to update the entire platform.
  *
@@ -29,7 +29,7 @@ export const palette = {
   slate400:   '#94a3b8',  // placeholder / faint
   slate200:   '#e2e8f0',  // card borders
   slate50:    '#F8FAFC',  // data area backgrounds
-  gold:       '#F59E0B',  // CVC Gold — amber accent (cvc-gold)
+  gold:       '#F59E0B',  // brand accent (cvc-gold)
   goldDark:   '#92400e',  // amber text on light backgrounds
   darkest:    '#151411',  // navbar near-black
   success:    '#10b981',
@@ -98,7 +98,7 @@ export const cls = {
   dataArea: 'bg-[#F8FAFC] border border-slate-200 rounded-lg p-4',
 
   // ── Active state ─────────────────────────────────────────────────────────────
-  // Apply to the active list/sidebar item — CVC Gold left border, white bg
+  // Apply to the active list/sidebar item — brand accent left border, white bg
   activeItem: 'bg-white border-l-4 border-cvc-gold shadow-sm',
 
   // ── Typography ──────────────────────────────────────────────────────────────
@@ -106,7 +106,7 @@ export const cls = {
   pageTitle:    'text-3xl font-extrabold tracking-tight text-[#1E293B]',
   sectionTitle: 'text-lg font-bold text-[#334155]',
   cardTitle:    'text-base font-semibold text-[#1E293B]',
-  reportTitle:  'text-3xl font-extrabold tracking-tight text-[#1E293B]',  // CVCPage compat
+  reportTitle:  'text-3xl font-extrabold tracking-tight text-[#1E293B]',  // page compat
 
   // Metadata / technical labels — monospace all-caps for precision-tool feel
   meta:    'font-mono text-[10px] uppercase tracking-widest text-slate-500 font-bold',

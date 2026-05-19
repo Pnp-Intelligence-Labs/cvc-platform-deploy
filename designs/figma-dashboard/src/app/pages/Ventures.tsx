@@ -3,11 +3,10 @@ import { CVCNavbar } from '../components/CVCNavbar';
 import VenturesOverview from './VenturesOverview';
 import PortfolioHomepage from './PortfolioHomepage';
 import CompanySearch from './CompanySearch';
-import IndustrialMatrix from './IndustrialMatrix';
 
-type Tab = 'Overview' | 'Portfolio' | 'Companies' | 'Industrial';
+type Tab = 'Overview' | 'Portfolio' | 'Companies';
 
-const TABS: Tab[] = ['Overview', 'Portfolio', 'Companies', 'Industrial'];
+const TABS: Tab[] = ['Overview', 'Portfolio', 'Companies'];
 const VALID_TABS = new Set<string>(TABS);
 
 export default function Ventures() {
@@ -38,10 +37,9 @@ export default function Ventures() {
         </div>
       </div>
 
-      {tab === 'Overview'   && <VenturesOverview />}
-      {tab === 'Portfolio'  && <PortfolioHomepage />}
-      {tab === 'Companies'  && <CompanySearch />}
-      {tab === 'Industrial' && <IndustrialMatrix />}
+      {tab === 'Overview'  && <VenturesOverview />}
+      {tab === 'Portfolio' && <PortfolioHomepage />}
+      {tab === 'Companies' && <CompanySearch />}
     </div>
   );
 }

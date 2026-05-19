@@ -790,7 +790,7 @@ function HumanReviewPanel() {
     load();
 
     // SSE — removes row instantly when the extension fires a decision
-    const token = localStorage.getItem('cvc_jwt') ?? '';
+    const token = localStorage.getItem('platform_jwt') ?? '';
     const es = new EventSource(`/review/stream?token=${encodeURIComponent(token)}`);
     es.onmessage = (e) => {
       try {

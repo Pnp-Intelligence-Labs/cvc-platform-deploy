@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { X, MessageSquare, CheckCircle } from 'lucide-react';
 
 const getAuth = () => {
-  const token = localStorage.getItem('cvc_jwt');
+  const token = localStorage.getItem('platform_jwt');
   return token ? { Authorization: `Bearer ${token}` } : {} as Record<string, string>;
 };
 
 function getUsername(): string {
   try {
-    const token = localStorage.getItem('cvc_jwt');
+    const token = localStorage.getItem('platform_jwt');
     if (!token) return 'unknown';
     const payload = JSON.parse(atob(token.split('.')[1]));
     return payload.sub || payload.username || 'unknown';

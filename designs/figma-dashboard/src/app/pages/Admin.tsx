@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { api } from '../api/client';
 import { AUTH_HEADER as AUTH } from '../api/client';
-import EnrichmentQueue from './EnrichmentQueue';
 import {
   AlertTriangle, CheckCircle, Clock, ChevronDown, Filter, Check, Pencil, Trash2,
   Settings, Megaphone, Pin, Trash, Search, RefreshCw, Save, MessageSquare, Send, X,
@@ -11,8 +10,6 @@ import {
   Handshake, BadgeDollarSign, Cpu, Zap, Users, ListChecks, BarChart2, ThumbsUp,
   ExternalLink, ClipboardList,
 } from 'lucide-react';
-import { AdminBatchJobs } from './AdminBatchJobs';
-import BuildQueue from './BuildQueue';
 import { cls } from '../components/tokens';
 
 // ── Interfaces ───────────────────────────────────────────────────────────────
@@ -517,10 +514,10 @@ export default function Admin() {
   // ── Tab state ─────────────────────────────────────────────────────────────
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get('tab') ?? '';
-  const mainTab: 'team' | 'system' | 'enrichment' = (
-    rawTab === 'system' || rawTab === 'enrichment' ? rawTab : 'team'
+  const mainTab: 'team' | 'system' = (
+    rawTab === 'system' ? rawTab : 'team'
   );
-  const setMainTab = (t: 'team' | 'system' | 'enrichment') =>
+  const setMainTab = (t: 'team' | 'system') =>
     setSearchParams({ tab: t }, { replace: true });
 
   // ── Collapsible section state (system tab) ─────────────────────────────────
@@ -529,8 +526,6 @@ export default function Admin() {
     intros:             false,
     feedback:           false,
     system:             false,
-    batch:              false,
-    tasks:              false,
     'brave-templates':  false,
     'recent-edits':     false,
   });
@@ -838,8 +833,6 @@ export default function Admin() {
   const pendingFeedbackCount = feedbackItems.filter(f => f.status === 'pending').length;
 
   // ── Render ────────────────────────────────────────────────────────────────
-  if (mainTab === 'enrichment') return <EnrichmentQueue />;
-
   return (
     <div className={cls.page}>
       <CVCNavbar />
@@ -902,9 +895,6 @@ export default function Admin() {
                 <span className="font-semibold text-slate-600">{kpis.ventures.assignments_active} open tasks</span>
                 <span>{kpis.ventures.assignments_done_30d} done</span>
               </div>
-              {kpis.ventures.enrichment_pending > 0 && (
-                <p className="text-[10px] text-amber-600 font-semibold">{kpis.ventures.enrichment_pending} pending enrichment</p>
-              )}
             </div>
 
             {/* Requests */}
@@ -960,7 +950,6 @@ export default function Admin() {
           {([
             { key: 'team',       label: 'Team',       icon: <Users className="w-3.5 h-3.5" /> },
             { key: 'system',     label: 'System',     icon: <Settings className="w-3.5 h-3.5" /> },
-            { key: 'enrichment', label: 'Enrichment', icon: <Activity className="w-3.5 h-3.5" /> },
           ] as const).map(({ key, label, icon }) => (
             <button
               key={key}
@@ -1623,30 +1612,6 @@ export default function Admin() {
                   )}
                 </div>
               </div>
-            </CollapsibleSection>
-
-            {/* ── Batch Jobs ── */}
-            <CollapsibleSection
-              id="batch"
-              icon={<Settings className="w-4 h-4" />}
-              title="Batch Jobs"
-              sub="nightly enrichment worker controls"
-              open={open.batch}
-              onToggle={() => toggle('batch')}
-            >
-              <AdminBatchJobs />
-            </CollapsibleSection>
-
-            {/* ── Task Queue ── */}
-            <CollapsibleSection
-              id="tasks"
-              icon={<ListChecks className="w-4 h-4" />}
-              title="Task Queue"
-              sub="BigBossHog build queue"
-              open={open.tasks}
-              onToggle={() => toggle('tasks')}
-            >
-              <BuildQueue />
             </CollapsibleSection>
 
             {/* ── Brave Search Templates ── */}

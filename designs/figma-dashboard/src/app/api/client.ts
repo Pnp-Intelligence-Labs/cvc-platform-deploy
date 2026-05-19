@@ -1,8 +1,8 @@
 const API_BASE = '';
 
-// JWT token stored in localStorage under 'cvc_jwt'
+// JWT token stored in localStorage under 'platform_jwt'
 function getAuthHeader(): { Authorization: string } {
-  const token = localStorage.getItem('cvc_jwt');
+  const token = localStorage.getItem('platform_jwt');
   if (token) return { 'Authorization': 'Bearer ' + token };
   return { 'Authorization': '' };
 }
@@ -519,17 +519,17 @@ export const api = {
     });
     if (!response.ok) throw new Error('Invalid username or password');
     const data = await response.json();
-    localStorage.setItem('cvc_jwt', data.access_token);
+    localStorage.setItem('platform_jwt', data.access_token);
     localStorage.setItem('cvc_user', JSON.stringify({ username: data.username, role: data.role, full_name: data.full_name }));
   },
 
   logout(): void {
-    localStorage.removeItem('cvc_jwt');
+    localStorage.removeItem('platform_jwt');
     localStorage.removeItem('cvc_user');
   },
 
   isLoggedIn(): boolean {
-    const token = localStorage.getItem('cvc_jwt');
+    const token = localStorage.getItem('platform_jwt');
     if (!token) return false;
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));

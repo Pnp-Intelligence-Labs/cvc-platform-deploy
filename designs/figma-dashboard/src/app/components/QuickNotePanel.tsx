@@ -10,13 +10,13 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Pencil, ChevronRight, Star, Upload, Lock } from 'lucide-react';
 
 function getJwt(): { Authorization: string } {
-  const t = localStorage.getItem('cvc_jwt');
+  const t = localStorage.getItem('platform_jwt');
   return t ? { Authorization: `Bearer ${t}` } : { Authorization: '' };
 }
 
 function getCurrentUsername(): string {
   try {
-    const token = localStorage.getItem('cvc_jwt');
+    const token = localStorage.getItem('platform_jwt');
     if (!token) return '';
     const payload = JSON.parse(atob(token.split('.')[1]));
     return payload.sub ?? '';

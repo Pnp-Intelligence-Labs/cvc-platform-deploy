@@ -7,7 +7,7 @@ import { NotificationBell } from './NotificationBell';
 import { QuickNotePanel } from './QuickNotePanel';
 
 function getJwtHeader(): { Authorization: string } {
-  const token = localStorage.getItem('cvc_jwt');
+  const token = localStorage.getItem('platform_jwt');
   return token ? { Authorization: 'Bearer ' + token } : { Authorization: '' };
 }
 
@@ -113,8 +113,8 @@ const ASSIGN_STATUS_DOT: Record<string, string> = {
 };
 
 function avatarUrl(username: string): string {
-  const ext = localStorage.getItem(`cvc_avatar_ext_${username}`) ?? '.jpeg';
-  const v   = localStorage.getItem(`cvc_avatar_v_${username}`) ?? '1';
+  const ext = localStorage.getItem(`platform_avatar_ext_${username}`) ?? '.jpeg';
+  const v   = localStorage.getItem(`platform_avatar_v_${username}`) ?? '1';
   return `/static/avatars/${username}${ext}?v=${v}`;
 }
 
@@ -157,7 +157,7 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
   useEffect(() => {
     if (!open || !username) return;
     setLoadingA(true);
-    const token = localStorage.getItem('cvc_jwt');
+    const token = localStorage.getItem('platform_jwt');
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     fetch(`/requests?assignee=${encodeURIComponent(username)}`, { headers })
       .then(r => r.ok ? r.json() : { requests: [] })
@@ -169,7 +169,7 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const token = localStorage.getItem('cvc_jwt');
+    const token = localStorage.getItem('platform_jwt');
     const form  = new FormData();
     form.append('file', file);
     const res = await fetch('/auth/avatar', {
@@ -181,8 +181,8 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
       const data = await res.json();
       const ext  = '.' + (data.url?.split('.').pop() ?? file.name.split('.').pop()?.toLowerCase() ?? 'jpeg');
       const v    = String(Date.now());
-      localStorage.setItem(`cvc_avatar_ext_${username}`, ext);
-      localStorage.setItem(`cvc_avatar_v_${username}`, v);
+      localStorage.setItem(`platform_avatar_ext_${username}`, ext);
+      localStorage.setItem(`platform_avatar_v_${username}`, v);
       setPhotoSrc(`/static/avatars/${username}${ext}?v=${v}`);
       setPhotoOk(true);
     }
@@ -333,9 +333,9 @@ const CVCNavbar: React.FC = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 shrink-0">
             <div className="w-7 h-7 bg-cvc-gold rounded flex items-center justify-center">
-              <span className="text-[#151411] font-bold text-sm">S</span>
+              <span className="text-[#151411] font-bold text-sm">V</span>
             </div>
-            <span className="text-white font-bold text-base tracking-tight">SLAM Intelligence</span>
+            <span className="text-white font-bold text-base tracking-tight">Vertical OS</span>
           </Link>
 
           {/* Desktop Nav */}

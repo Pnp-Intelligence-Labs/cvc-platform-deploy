@@ -3894,7 +3894,7 @@ export default function CompanyProfile() {
                 {meetingNotes.map(note => {
                   const currentUser = (() => {
                     try {
-                      const t = localStorage.getItem('cvc_jwt');
+                      const t = localStorage.getItem('platform_jwt');
                       if (!t) return '';
                       return JSON.parse(atob(t.split('.')[1])).sub ?? '';
                     } catch { return ''; }
