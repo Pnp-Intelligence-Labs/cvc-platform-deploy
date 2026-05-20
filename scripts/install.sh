@@ -6,12 +6,13 @@
 #
 # What it does:
 #   1. Checks required dependencies (Docker, Python 3.10+, Node 18+, psql client)
-#   2. Copies .env.example → .env, sets a random JWT_SECRET and DB_PASSWORD
+#   2. Copies .env.example → .env, sets a random JWT_SECRET
 #   3. Prompts for team configuration → writes config/team.json
-#   4. Starts the PostgreSQL Docker container
-#   5. Creates the Python venv and installs requirements
-#   6. Runs all DB migrations
-#   7. Prints next steps
+#   4. Builds the React frontend (npm install + npm run build)
+#   5. Starts the PostgreSQL Docker container
+#   6. Creates the Python venv and installs requirements
+#   7. Runs all DB migrations
+#   8. Prints next steps
 
 set -euo pipefail
 
@@ -76,15 +77,13 @@ if [[ -f "$REPO/.env" ]]; then
 else
     cp "$REPO/.env.example" "$REPO/.env"
 
-    # Generate random secrets
+    # Generate a random JWT secret
     JWT_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
-    DB_PASSWORD=$(python3 -c "import secrets; print(secrets.token_urlsafe(16))")
 
     # Inject into .env
     sed -i "s|^JWT_SECRET=.*|JWT_SECRET=${JWT_SECRET}|" "$REPO/.env"
-    sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=${DB_PASSWORD}|" "$REPO/.env"
 
-    ok ".env created with random JWT_SECRET and DB_PASSWORD"
+    ok ".env created with random JWT_SECRET"
 fi
 
 # Load .env
@@ -151,7 +150,28 @@ print('Written.')
     ok "config/team.json updated for \"$TEAM_NAME\""
 fi
 
-# ── 4. Start PostgreSQL ───────────────────────────────────────────────────────
+# ── 4. Build frontend ─────────────────────────────────────────────────────────
+hdr "Building frontend..."
+
+FRONTEND_DIR="$REPO/designs/figma-dashboard"
+
+if [[ ! -d "$FRONTEND_DIR" ]]; then
+    die "Frontend directory not found at $FRONTEND_DIR"
+fi
+
+if [[ ! -d "$FRONTEND_DIR/node_modules" ]]; then
+    echo "  Installing Node dependencies..."
+    npm --prefix "$FRONTEND_DIR" install --silent
+    ok "Node dependencies installed"
+else
+    ok "Node dependencies already installed"
+fi
+
+echo "  Building React app → api/static/app..."
+npm --prefix "$FRONTEND_DIR" run build
+ok "Frontend built"
+
+# ── 5. Start PostgreSQL ───────────────────────────────────────────────────────
 hdr "Starting PostgreSQL..."
 
 if docker ps --filter "name=platform-db" --filter "status=running" -q | grep -q .; then
@@ -173,7 +193,7 @@ else
     ok "PostgreSQL running"
 fi
 
-# ── 5. Python venv ────────────────────────────────────────────────────────────
+# ── 6. Python venv ────────────────────────────────────────────────────────────
 hdr "Setting up Python environment..."
 
 if [[ -d "$REPO/.venv" ]]; then
@@ -185,21 +205,23 @@ else
     ok "venv created and dependencies installed"
 fi
 
-# ── 6. Run migrations ─────────────────────────────────────────────────────────
+# ── 7. Run migrations ─────────────────────────────────────────────────────────
 hdr "Running DB migrations..."
 
 bash "$REPO/scripts/migrate.sh"
 ok "Migrations complete"
 
-# ── 7. Done ───────────────────────────────────────────────────────────────────
+# ── 8. Done ───────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${GREEN}Installation complete.${NC}"
 echo ""
-echo "  Start the platform:    bash scripts/run_local.sh"
-echo "  Start the frontend:    cd designs/figma-dashboard && npm install && npm run dev"
+echo "  Start the API:         bash scripts/run_local.sh"
+echo "  Dev frontend:          cd designs/figma-dashboard && npm run dev"
+echo "  Production frontend:   already built → served at http://localhost:8002/app"
 echo ""
-echo "  Login at:              http://localhost:5173  (or :8002/app)"
+echo "  Login at:              http://localhost:5173  (dev)  or  :8002/app  (production)"
 echo "  Default credentials:   admin / changeme"
 echo ""
 echo -e "  ${YELLOW}Change the admin password via the Admin page after first login.${NC}"
+echo -e "  ${YELLOW}See config/team.example.json for what to customize next.${NC}"
 echo ""

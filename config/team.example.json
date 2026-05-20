@@ -1,0 +1,31 @@
+{
+  "_comment": "Copy this to team.json and fill in your team's values. install.sh does this interactively.",
+
+  "team_name": "Acme Ventures",
+  "team_short": "Acme",
+  "logo_char": "A",
+
+  "sectors": [
+    "SaaS",
+    "Fintech",
+    "Deep Tech",
+    "Other"
+  ],
+
+  "fund_names": [
+    "Fund I",
+    "Fund II"
+  ],
+  "default_fund": "Fund I",
+
+  "_customization_checklist": {
+    "1_team_name_logo":        "Set team_name, team_short, logo_char above",
+    "2_users_roles":           "Add users via Admin → Users after first login (admin / changeme)",
+    "3_partner_assignments":   "Admin → Team Cards → assign PSMs to partners",
+    "4_fund_details":          "Update fund_names and default_fund above",
+    "5_sector_focus":          "Update sectors array — drives Ventures filter and enrichment worker",
+    "6_partner_list":          "Import partners via Admin → Partners after first login",
+    "7_investment_thesis":     "Set INVESTMENT_THESIS in .env — used by AI enrichment workers",
+    "8_api_keys":              "Set OPENROUTER_API_KEY, BRAVE_API_KEY, PROXYCURL_API_KEY in .env (optional — only needed for plugin workers)"
+  }
+}
