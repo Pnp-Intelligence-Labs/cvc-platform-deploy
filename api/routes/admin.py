@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFile, File
 from pydantic import BaseModel, Field
 from typing import Optional, Literal, List
 import asyncio
+import csv
+import io
 import subprocess
 import sys
 import os
@@ -558,3 +560,127 @@ def plugin_health(user=Depends(require_auth)):
                     "tables_present": tables_ok,
                 })
     return {"installed": results}
+
+
+# ── Company CSV Import ────────────────────────────────────────────────────────
+
+# Columns accepted from the CSV (subset of cvc.companies).
+# All are optional except 'name'. Unknown columns are silently ignored.
+_CSV_STR_COLS  = {"name", "website", "one_liner", "description", "sector",
+                  "subsector", "stage", "hq_city", "hq_country", "country"}
+_CSV_INT_COLS  = {"founded", "employee_count"}
+_CSV_BIG_COLS  = {"total_raised_usd", "raised_total"}
+
+
+def _clean_row(raw: dict) -> dict | None:
+    """Normalise one CSV row into a DB-ready dict. Returns None to skip."""
+    row = {k.strip().lower(): (v.strip() if isinstance(v, str) else v)
+           for k, v in raw.items()}
+    name = row.get("name") or row.get("company") or row.get("company_name") or ""
+    name = name.strip()
+    if not name:
+        return None
+
+    out: dict = {"name": name}
+    for col in _CSV_STR_COLS - {"name"}:
+        val = row.get(col)
+        if val:
+            out[col] = val
+    for col in _CSV_INT_COLS:
+        val = row.get(col)
+        if val:
+            try:
+                out[col] = int(str(val).replace(",", "").split(".")[0])
+            except (ValueError, TypeError):
+                pass
+    for col in _CSV_BIG_COLS:
+        val = row.get(col)
+        if val:
+            try:
+                out[col] = int(str(val).replace(",", "").replace("$", "").split(".")[0])
+            except (ValueError, TypeError):
+                pass
+    return out
+
+
+@router.post("/companies/import")
+async def import_companies_csv(
+    file: UploadFile = File(...),
+    user=Depends(require_auth),
+):
+    """
+    Bulk import companies from a CSV file.
+
+    Required column: name (also accepts 'company' or 'company_name').
+    Optional columns: website, one_liner, description, sector, subsector,
+                      stage, hq_city, hq_country, country, founded,
+                      employee_count, total_raised_usd.
+
+    Deduplicates by name (case-insensitive). Existing companies are skipped.
+    Returns counts: inserted, skipped (duplicate), failed (bad row).
+    """
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="File must be a .csv")
+
+    content = await file.read()
+    try:
+        text = content.decode("utf-8-sig")  # strip BOM if present
+    except UnicodeDecodeError:
+        text = content.decode("latin-1")
+
+    reader = csv.DictReader(io.StringIO(text))
+    rows = list(reader)
+    if not rows:
+        raise HTTPException(status_code=400, detail="CSV is empty or has no data rows")
+
+    inserted = skipped = failed = 0
+    errors: list[str] = []
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            # Load existing names for dedup
+            cur.execute("SELECT LOWER(name) FROM cvc.companies")
+            existing_names = {r[0] for r in cur.fetchall()}
+
+            for i, raw in enumerate(rows, start=2):  # row 1 = header
+                cleaned = _clean_row(raw)
+                if not cleaned:
+                    failed += 1
+                    errors.append(f"Row {i}: missing name — skipped")
+                    continue
+
+                name_lower = cleaned["name"].lower()
+                if name_lower in existing_names:
+                    skipped += 1
+                    continue
+
+                cols = list(cleaned.keys())
+                vals = list(cleaned.values())
+                placeholders = ", ".join(["%s"] * len(cols))
+                col_clause = ", ".join(cols)
+
+                try:
+                    cur.execute(
+                        f"INSERT INTO cvc.companies ({col_clause}, enrichment_status, enrichment_source, created_at, updated_at) "
+                        f"VALUES ({placeholders}, 'pending', 'csv_import', NOW(), NOW()) "
+                        f"ON CONFLICT DO NOTHING",
+                        vals,
+                    )
+                    if cur.rowcount:
+                        existing_names.add(name_lower)
+                        inserted += 1
+                    else:
+                        skipped += 1
+                except Exception as e:
+                    failed += 1
+                    errors.append(f"Row {i} ({cleaned.get('name', '?')}): {e}")
+
+        conn.commit()
+
+    return {
+        "inserted": inserted,
+        "skipped":  skipped,
+        "failed":   failed,
+        "errors":   errors[:20],  # cap error list shown
+        "total_rows": len(rows),
+    }

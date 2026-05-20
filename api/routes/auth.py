@@ -4,11 +4,13 @@ api/routes/auth.py — JWT authentication for CVC Intelligence Platform.
 All authentication is JWT. Basic Auth has been fully removed.
 
 Endpoints (prefix /auth set in main.py):
-    POST /auth/login    — username + password → JWT token
-    GET  /auth/me       — token → current user + role
-    POST /auth/refresh  — extend session (returns new token)
-    GET  /auth/users    — list all users (GP/Principal/Director only)
+    POST /auth/login       — username + password → JWT token
+    GET  /auth/me          — token → current user + role
+    POST /auth/refresh     — extend session (returns new token)
+    GET  /auth/users       — list all users (GP/Principal/Director only)
+    POST /auth/users       — create a new user (GP/Principal/Director only)
     PATCH /auth/users/{id} — update user role/partner assignments
+    DELETE /auth/users/{id} — deactivate user (GP only)
 """
 
 import os
@@ -163,6 +165,90 @@ def list_users(caller: UserInfo = Depends(require_jwt)):
             )
             rows = cur.fetchall()
     return {"users": [dict(r) for r in rows]}
+
+
+class CreateUserRequest(BaseModel):
+    username: str
+    password: str
+    role: str
+    full_name: str = ""
+    email: str = ""
+
+
+@router.post("/users", status_code=201)
+def create_user(body: CreateUserRequest, caller: UserInfo = Depends(require_jwt)):
+    """Create a new platform user. Restricted to GP/Principal/Director."""
+    if caller.role not in _ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    valid_roles = {"GP", "Principal", "Director", "Ventures", "PSM", "Senior PSM"}
+    if body.role not in valid_roles:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(sorted(valid_roles))}")
+
+    username = body.username.strip().lower()
+    if not username:
+        raise HTTPException(status_code=400, detail="username is required")
+    if len(body.password) < 8:
+        raise HTTPException(status_code=400, detail="password must be at least 8 characters")
+
+    pw_hash = bcrypt.hashpw(body.password.encode(), bcrypt.gensalt()).decode()
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM cvc.users WHERE username = %s", (username,))
+            if cur.fetchone():
+                raise HTTPException(status_code=409, detail=f"Username '{username}' already exists")
+            cur.execute(
+                "INSERT INTO cvc.users (username, password_hash, role, full_name, email) "
+                "VALUES (%s, %s, %s, %s, %s) RETURNING id, username, role, full_name, email, is_active, created_at",
+                (username, pw_hash, body.role, body.full_name.strip(), body.email.strip()),
+            )
+            row = dict(cur.fetchone())
+        conn.commit()
+
+    return row
+
+
+@router.delete("/users/{user_id}", status_code=200)
+def deactivate_user(user_id: int, caller: UserInfo = Depends(require_jwt)):
+    """Deactivate a user (soft delete). Restricted to GP only."""
+    if caller.role != "GP":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only GP can deactivate users")
+    if caller.user_id == user_id:
+        raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE cvc.users SET is_active = FALSE, updated_at = NOW() WHERE id = %s RETURNING id, username",
+                (user_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="User not found")
+        conn.commit()
+    return {"deactivated": True, "user_id": row["id"], "username": row["username"]}
+
+
+@router.post("/users/{user_id}/reset-password", status_code=200)
+def reset_password(user_id: int, body: dict, caller: UserInfo = Depends(require_jwt)):
+    """Set a new password for a user. GP/Principal/Director, or the user resetting their own."""
+    is_self = caller.user_id == user_id
+    if not is_self and caller.role not in _ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    new_password = (body.get("password") or "").strip()
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="password must be at least 8 characters")
+    pw_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE cvc.users SET password_hash = %s, updated_at = NOW() WHERE id = %s RETURNING id",
+                (pw_hash, user_id),
+            )
+            if not cur.fetchone():
+                raise HTTPException(status_code=404, detail="User not found")
+        conn.commit()
+    return {"updated": True}
 
 
 @router.get("/team")

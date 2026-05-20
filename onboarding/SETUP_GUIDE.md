@@ -55,9 +55,11 @@ The installer will:
 1. Check that all dependencies are installed
 2. Generate a `.env` file with a random JWT secret and DB password
 3. Prompt you for your team name, sectors, and fund name
-4. Start a PostgreSQL Docker container
-5. Create a Python virtualenv and install dependencies
-6. Run all database migrations
+4. Build the React frontend
+5. Start a PostgreSQL Docker container
+6. Create a Python virtualenv and install dependencies
+7. Run all database migrations
+8. Prompt you to install optional plugins (Y/n per plugin)
 
 **When it asks for team details:**
 - **Team name**: your firm's full name (e.g. "Acme Ventures")
@@ -132,17 +134,38 @@ Each user sets their own password on first login.
 
 ### Companies / Deal Flow
 
-1. Go to **Ventures** → **Import CSV**
-2. Download the CSV template
-3. Fill it in with your portfolio companies and pipeline
-4. Upload — the platform maps columns automatically
+Import your existing pipeline via CSV (any spreadsheet export works):
 
-Or add companies one at a time via **Ventures** → **Add Company**.
+```bash
+curl -X POST http://localhost:8002/admin/companies/import \
+  -H "Authorization: Bearer <your-token>" \
+  -F "file=@your_companies.csv"
+```
+
+**Supported columns** (all optional except `name`):
+
+| Column | Example |
+|---|---|
+| `name` | Acme Robotics |
+| `website` | https://acmerobotics.com |
+| `sector` | Robotics |
+| `stage` | Series A |
+| `hq_city` | Boston |
+| `hq_country` | US |
+| `founded` | 2021 |
+| `employee_count` | 45 |
+| `total_raised_usd` | 12000000 |
+| `one_liner` | Autonomous warehouse robots |
+
+Column names are case-insensitive. Existing companies (matched by name) are skipped. The response includes `inserted`, `skipped`, and `failed` counts.
+
+After import, set `enrichment_status = 'pending'` and the overnight enrichment worker will fill in missing fields automatically.
+
+Or add companies one at a time via **Ventures** → **Add Company** → quick-add by URL.
 
 ### Partners
 
 Go to **Partners** → **Add Partner** to build your partner CRM.
-Partners can also be bulk-imported via CSV.
 
 ---
 
@@ -160,26 +183,38 @@ After editing `.env`, restart the API for changes to take effect.
 
 ---
 
-## Step 8 — Install Plugins (Optional)
+## Step 8 — Plugins
 
-After the base platform is running, install optional plugins:
+The installer already prompted you to install plugins. If you want to add or remove one later:
 
+**Install a plugin:**
 ```bash
-bash scripts/install_plugin.sh <slug> <path-to-plugin.tar.gz>
+cp -r plugins/_staging/packages/<slug> plugins/installed/<slug>
+# Then restart the API — it auto-discovers installed/ at startup
 ```
 
-Available plugins (from the private registry):
+**Remove a plugin:**
+```bash
+rm -rf plugins/installed/<slug>
+# Restart the API
+```
+
+**Available plugins** (all included in the repo under `plugins/_staging/packages/`):
 
 | Plugin | Slug | What it adds |
 |---|---|---|
-| LP Portal | `lp-portal` | Fund metrics, LP-facing reporting |
-| DD Pipeline | `dd-pipeline` | Due diligence workflow + dataroom processing |
-| Intelligence Feed | `intelligence-feed` | Weekly briefing pipeline, trend reports |
-| Industrial Matrix | `industrial-matrix` | Sector readiness scoring |
-| Data Explorer | `data-explorer` | AI-assisted data query tool |
-| Portfolio News | `portfolio-news` | Company news tracking |
+| Enrichment Queue | `enrichment` | Company enrichment pipeline, DD workflow, quickadd by URL |
+| Industrial Matrix | `industrial-matrix` | Sector readiness scoring with configurable metrics |
+| Intelligence Feed | `intelligence-feed` | Weekly briefing pipeline, podcast + research signals |
+| LP Portal | `lp-portal` | Fund metrics and LP-facing reporting |
+| News Feed | `news-feed` | Company news tracking via Brave Search |
+| Trend Reports | `trend-reports` | AI-assisted venture intelligence report builder |
 
-Contact your platform provider to get plugin packages.
+**Check plugin health after restart:**
+```
+GET /admin/plugins/health
+```
+Returns `healthy` or `degraded` per plugin (degraded = missing DB tables).
 
 ---
 
