@@ -1,0 +1,26 @@
+{
+  "slug":        "enrichment",
+  "name":        "Enrichment Queue",
+  "version":     "1.0.0",
+  "description": "Company enrichment pipeline UI — quickadd by URL, 4D classification, industrial scoring, DD pipeline management, intel suggestion review, and activity log.",
+  "routes": {
+    "prefix": "/enrichment",
+    "tag":    "enrichment"
+  },
+  "nav": {
+    "label": "Enrichment",
+    "path":  "/enrichment",
+    "icon":  "FlaskConical",
+    "roles": ["GP", "Principal", "Director", "Admin"]
+  },
+  "requires_tables": [
+    "cvc.companies",
+    "cvc.funding_rounds",
+    "cvc.build_tasks",
+    "cvc.company_lifecycle",
+    "cvc.intel_suggestions",
+    "cvc.company_activity_log",
+    "cvc.enrichment_snapshots"
+  ],
+  "config_schema": {}
+}

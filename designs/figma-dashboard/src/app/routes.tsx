@@ -13,6 +13,7 @@ import SalesPage from "./pages/Sales";
 import DataExplorerPage from "./pages/DataExplorerPage";
 import LPPortalPage from "./pages/LPPortalPage";
 import IndustrialMatrix from "./pages/IndustrialMatrix";
+import EnrichmentQueue from "./pages/EnrichmentQueue";
 
 function Guard({ component: Component }: { component: React.ComponentType }) {
   return <AuthGuard><Component /></AuthGuard>;
@@ -61,17 +62,16 @@ export const router = createBrowserRouter([
   { path: "/explore",                 Component: () => <Guard component={DataExplorerPage} />, errorElement: <AppError /> },
   { path: "/lp",                      Component: () => <Guard component={LPPortalPage} />,     errorElement: <AppError /> },
   { path: "/industrial",              Component: () => <Guard component={IndustrialMatrix} />, errorElement: <AppError /> },
+  { path: "/enrichment",              Component: () => <Guard component={EnrichmentQueue} />,  errorElement: <AppError /> },
 
   // Redirects for removed/plugin routes
   { path: "/portfolio",               Component: () => <Navigate to="/ventures" replace /> },
   { path: "/companies",               Component: () => <Navigate to="/ventures" replace /> },
-  { path: "/industrial",              Component: () => <Navigate to="/ventures" replace /> },
   { path: "/lp-portal",               Component: () => <Navigate to="/" replace /> },
   { path: "/sectors",                 Component: () => <Navigate to="/ventures" replace /> },
   { path: "/sectors/:sector",         Component: () => <Navigate to="/ventures" replace /> },
   { path: "/trends",                  Component: () => <Navigate to="/" replace /> },
   { path: "/tasks",                   Component: () => <Navigate to="/" replace /> },
-  { path: "/enrichment",              Component: () => <Navigate to="/" replace /> },
   { path: "/brambles",                Component: () => <Navigate to="/" replace /> },
   { path: "/brambles/review/:id",     Component: () => <Navigate to="/" replace /> },
   { path: "/ventures/evaluation",     Component: () => <Navigate to="/ventures" replace /> },
