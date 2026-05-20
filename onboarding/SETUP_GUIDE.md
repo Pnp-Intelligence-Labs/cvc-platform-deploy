@@ -190,13 +190,15 @@ The installer already prompted you to install plugins. If you want to add or rem
 **Install a plugin:**
 ```bash
 cp -r plugins/_staging/packages/<slug> plugins/installed/<slug>
+# Run the plugin's migrations (creates any plugin-specific DB tables)
+bash scripts/migrate.sh
 # Then restart the API — it auto-discovers installed/ at startup
 ```
 
 **Remove a plugin:**
 ```bash
 rm -rf plugins/installed/<slug>
-# Restart the API
+# Restart the API (plugin tables are left in the DB — no data loss)
 ```
 
 **Available plugins** (all included in the repo under `plugins/_staging/packages/`):

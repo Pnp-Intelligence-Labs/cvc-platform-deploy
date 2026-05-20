@@ -253,6 +253,16 @@ for slug in "${DEFAULT_PLUGINS[@]}"; do
     if [[ "$choice" =~ ^[Yy]$ ]]; then
         cp -r "$src" "$dst"
         ok "Installed: $slug"
+        # Run plugin-specific migrations if present
+        if [[ -d "$dst/migrations" ]]; then
+            for mig in $(ls "$dst/migrations"/*.sql 2>/dev/null | sort); do
+                echo "    → migration: $(basename "$mig")"
+                PGPASSWORD="${DB_PASSWORD:-platform_local}" psql \
+                    -h "${DB_HOST:-localhost}" -p "${DB_PORT:-5432}" \
+                    -U "${DB_USER:-platform}" -d "${DB_NAME:-platform_db}" \
+                    -v ON_ERROR_STOP=0 -q -f "$mig" 2>/dev/null || true
+            done
+        fi
     else
         warn "Skipped: $slug"
     fi
