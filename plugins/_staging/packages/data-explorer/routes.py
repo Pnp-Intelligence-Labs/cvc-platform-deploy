@@ -260,7 +260,7 @@ def stage_distribution(
             WHERE stage IS NULL
             {'AND sector = %s' if safe_sector else ''}
         """, ([safe_sector] if safe_sector else []))
-        no_stage = cur.fetchone()[0]
+        no_stage = cur.fetchone()["count"]
 
         quality = _company_data_quality(cur, where, params)
 
@@ -321,7 +321,7 @@ def score_distribution(
             WHERE score_composite IS NULL
             {'AND sector = %s' if safe_sector else ''}
         """, ([safe_sector] if safe_sector else []))
-        no_score = cur.fetchone()[0]
+        no_score = cur.fetchone()["count"]
 
         quality = _company_data_quality(cur, where, params)
 
