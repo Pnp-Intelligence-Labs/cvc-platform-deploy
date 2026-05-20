@@ -134,20 +134,22 @@ if 'Other' not in sectors:
 print(json.dumps(sectors))
 " "$SECTORS_RAW")
 
-    python3 -c "
-import json
+    python3 - "$TEAM_NAME" "$TEAM_SHORT" "$LOGO_CHAR" "$FUND_NAME" "$REPO" <<PYEOF
+import json, sys
+team_name, team_short, logo_char, fund_name, repo = sys.argv[1:]
+sectors = $SECTORS_JSON
 config = {
-    'team_name': '$TEAM_NAME',
-    'team_short': '$TEAM_SHORT',
-    'logo_char': '$LOGO_CHAR',
-    'sectors': $SECTORS_JSON,
-    'fund_names': ['$FUND_NAME'],
-    'default_fund': '$FUND_NAME'
+    'team_name': team_name,
+    'team_short': team_short,
+    'logo_char': logo_char,
+    'sectors': sectors,
+    'fund_names': [fund_name],
+    'default_fund': fund_name,
 }
-with open('$REPO/config/team.json', 'w') as f:
+with open(f'{repo}/config/team.json', 'w') as f:
     json.dump(config, f, indent=2)
 print('Written.')
-"
+PYEOF
     ok "config/team.json updated for \"$TEAM_NAME\""
 fi
 

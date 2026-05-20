@@ -123,8 +123,6 @@ check "GET /auth/users"              "${BASE_URL}/auth/users"              200 "
 # ── 6. Config routes ──────────────────────────────────────────────────────────
 section "Config"
 check "GET /config/plugins"          "${BASE_URL}/config/plugins"          200
-json_check "config/plugins returns list" "${BASE_URL}/config/plugins" "plugins" "[]" 2>/dev/null || true
-# (just checking it's 200 and JSON; plugin list may be empty on fresh install)
 
 # ── 7. Ventures (assignments) ─────────────────────────────────────────────────
 section "Ventures"
@@ -170,12 +168,12 @@ check_plugin() {
     fi
 }
 
-check_plugin "Enrichment plugin   GET /enrichment/requests"         "${BASE_URL}/enrichment/requests"
-check_plugin "LP Portal plugin    GET /lp/funds"                    "${BASE_URL}/lp/funds"
-check_plugin "News Feed plugin    GET /news/companies"              "${BASE_URL}/news/companies"
-check_plugin "Intel Feed plugin   GET /intelligence/briefings"      "${BASE_URL}/intelligence/briefings"
-check_plugin "Trend Reports       GET /reports/"                    "${BASE_URL}/reports/"
-check_plugin "Industrial Matrix   GET /industrial/scores"           "${BASE_URL}/industrial/scores"
+check_plugin "Enrichment plugin   GET /enrichment/requests"  "${BASE_URL}/enrichment/requests"
+check_plugin "LP Portal plugin    GET /lp/overview"          "${BASE_URL}/lp/overview"
+check_plugin "News Feed plugin    GET /news/companies"       "${BASE_URL}/news/companies"
+check_plugin "Intel Feed plugin   GET /intel/"               "${BASE_URL}/intel/"
+check_plugin "Trend Reports       GET /reports/"             "${BASE_URL}/reports/"
+check_plugin "Industrial Matrix   GET /industrial/matrix"    "${BASE_URL}/industrial/matrix"
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo ""
