@@ -684,3 +684,122 @@ async def import_companies_csv(
         "errors":   errors[:20],  # cap error list shown
         "total_rows": len(rows),
     }
+
+
+# ── Partner CSV Import ────────────────────────────────────────────────────────
+
+_PARTNER_STR_COLS = {"name", "industry", "contact_name", "contact_email", "notes"}
+_PARTNER_ARRAY_COLS = {"challenge_areas", "sectors_of_interest", "environments"}
+
+
+def _clean_partner_row(raw: dict) -> dict | None:
+    """Normalise one CSV row into a partner-ready dict. Returns None to skip."""
+    row = {k.strip().lower(): (v.strip() if isinstance(v, str) else v)
+           for k, v in raw.items()}
+    name = row.get("name") or row.get("partner") or row.get("organization") or ""
+    name = name.strip()
+    if not name:
+        return None
+
+    out: dict = {"name": name}
+    for col in _PARTNER_STR_COLS - {"name"}:
+        val = row.get(col)
+        if val:
+            out[col] = val
+    for col in _PARTNER_ARRAY_COLS:
+        val = row.get(col)
+        if val:
+            # Accept comma-separated strings → array
+            out[col] = [s.strip() for s in str(val).split(",") if s.strip()]
+    return out
+
+
+@router.post("/partners/import")
+async def import_partners_csv(
+    file: UploadFile = File(...),
+    user=Depends(require_auth),
+):
+    """
+    Bulk import partners from a CSV file.
+
+    Required column: name (also accepts 'partner' or 'organization').
+    Optional columns: industry, contact_name, contact_email, notes,
+                      challenge_areas, sectors_of_interest, environments
+                      (comma-separated values become arrays).
+
+    Deduplicates by name (case-insensitive). Existing partners are skipped.
+    Returns counts: inserted, skipped, failed.
+    """
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="File must be a .csv")
+
+    content = await file.read()
+    try:
+        text = content.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = content.decode("latin-1")
+
+    reader = csv.DictReader(io.StringIO(text))
+    rows = list(reader)
+    if not rows:
+        raise HTTPException(status_code=400, detail="CSV is empty or has no data rows")
+
+    inserted = skipped = failed = 0
+    errors: list[str] = []
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT LOWER(name) FROM cvc.partners")
+            existing_names = {r[0] for r in cur.fetchall()}
+
+            for i, raw in enumerate(rows, start=2):
+                cleaned = _clean_partner_row(raw)
+                if not cleaned:
+                    failed += 1
+                    errors.append(f"Row {i}: missing name — skipped")
+                    continue
+
+                name_lower = cleaned["name"].lower()
+                if name_lower in existing_names:
+                    skipped += 1
+                    continue
+
+                try:
+                    cur.execute(
+                        """
+                        INSERT INTO cvc.partners
+                            (name, industry, contact_name, contact_email, notes,
+                             challenge_areas, sectors_of_interest, environments,
+                             created_at, updated_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                        ON CONFLICT DO NOTHING
+                        """,
+                        (
+                            cleaned.get("name"),
+                            cleaned.get("industry"),
+                            cleaned.get("contact_name"),
+                            cleaned.get("contact_email"),
+                            cleaned.get("notes"),
+                            cleaned.get("challenge_areas", []),
+                            cleaned.get("sectors_of_interest", []),
+                            cleaned.get("environments", []),
+                        ),
+                    )
+                    if cur.rowcount:
+                        existing_names.add(name_lower)
+                        inserted += 1
+                    else:
+                        skipped += 1
+                except Exception as e:
+                    failed += 1
+                    errors.append(f"Row {i} ({cleaned.get('name', '?')}): {e}")
+
+        conn.commit()
+
+    return {
+        "inserted":   inserted,
+        "skipped":    skipped,
+        "failed":     failed,
+        "errors":     errors[:20],
+        "total_rows": len(rows),
+    }

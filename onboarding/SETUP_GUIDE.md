@@ -335,6 +335,7 @@ Verify the plugin directory exists in `plugins/installed/<slug>/`.
 
 ## Getting Help
 
+- **End-user guide** (for team members logging in): `onboarding/USER_GUIDE.md`
 - Architecture decisions: `docs/DECISIONS.md`
 - Plugin interface spec: `docs/PLUGIN_INTERFACE.md`
 - Build plan history: `docs/PHASE1_BUILD_PLAN.md`

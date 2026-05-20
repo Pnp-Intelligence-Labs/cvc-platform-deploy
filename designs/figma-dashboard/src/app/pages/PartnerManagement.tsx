@@ -537,6 +537,41 @@ export default function PartnerManagement() {
   const [newForm, setNewForm] = useState({ name: '', industry: '', contact_name: '', contact_email: '', sectors_of_interest: '', challenge_areas: '', notes: '' });
   const [savingPartner, setSavingPartner] = useState(false);
 
+  // Partner CSV import
+  const currentUser = api.getCurrentUser();
+  const canImport = ['GP', 'Principal', 'Director'].includes(currentUser?.role ?? '');
+  const [showImport, setShowImport] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  interface PartnerImportResult { inserted: number; skipped: number; failed: number; errors: string[]; total_rows: number; }
+  const [importResult, setImportResult] = useState<PartnerImportResult | null>(null);
+
+  async function handlePartnerImport() {
+    if (!importFile) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const form = new FormData();
+      form.append('file', importFile);
+      const res = await fetch(`${api.baseUrl}/admin/partners/import`, {
+        method: 'POST',
+        headers: { ...AUTH },
+        body: form,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Import failed');
+      setImportResult(data);
+      if (data.inserted > 0) {
+        const updated = await fetch(`${api.baseUrl}/partners/`, { headers: { ...AUTH } });
+        if (updated.ok) setPartners(await updated.json());
+      }
+    } catch (e: unknown) {
+      setImportResult({ inserted: 0, skipped: 0, failed: 1, errors: [e instanceof Error ? e.message : String(e)], total_rows: 0 });
+    } finally {
+      setImporting(false);
+    }
+  }
+
   // Add Match modal
   const [showAddMatch, setShowAddMatch] = useState(false);
   const [matchQuery, setMatchQuery] = useState('');
@@ -1000,6 +1035,15 @@ export default function PartnerManagement() {
                 <Search className="w-4 h-4" />
                 Search documents
               </button>
+              {canImport && (
+                <button
+                  onClick={() => { setShowImport(true); setImportFile(null); setImportResult(null); }}
+                  className="flex items-center gap-2 px-3 py-2 border border-slate-200 bg-white text-sm text-[#545249] rounded hover:border-[#33322c] hover:text-[#33322c] transition-colors"
+                >
+                  <Upload className="w-4 h-4" />
+                  Import CSV
+                </button>
+              )}
               <button
                 onClick={() => setShowNewPartner(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-[#33322c] text-white text-sm font-semibold rounded hover:bg-[#151411] transition-colors"
@@ -2563,6 +2607,72 @@ export default function PartnerManagement() {
             <div className="flex justify-end gap-3">
               <button onClick={() => setConfirmDelete(false)} className="px-4 py-2 text-sm text-[#545249] hover:text-[#33322c]">Cancel</button>
               <button onClick={handleDeletePartner} className="px-4 py-2 bg-red-500 text-white text-sm rounded hover:bg-red-600">Delete Partner</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Partner CSV Import Modal ──────────────────────────────────────────── */}
+      {showImport && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b border-slate-200">
+              <h2 className={cls.sectionTitle}>Import Partners from CSV</h2>
+              <button onClick={() => setShowImport(false)} className="text-[#545249] hover:text-[#33322c]"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-5">
+              {!importResult ? (
+                <>
+                  <p className="text-sm text-[#545249] mb-4">
+                    Upload a CSV with partner data. Required column: <code className="bg-slate-100 px-1 rounded">name</code>.<br />
+                    Optional: <code className="bg-slate-100 px-1 rounded">industry</code>, <code className="bg-slate-100 px-1 rounded">contact_name</code>, <code className="bg-slate-100 px-1 rounded">contact_email</code>, <code className="bg-slate-100 px-1 rounded">challenge_areas</code>, <code className="bg-slate-100 px-1 rounded">sectors_of_interest</code>, <code className="bg-slate-100 px-1 rounded">notes</code>.<br />
+                    Comma-separated values in a cell become arrays. Existing partners (matched by name) are skipped.
+                  </p>
+                  <label className="block w-full border-2 border-dashed border-slate-200 rounded-lg p-6 text-center cursor-pointer hover:border-[#33322c] transition-colors">
+                    <Upload className="w-6 h-6 mx-auto mb-2 text-[#787569]" />
+                    <span className="text-sm text-[#545249]">
+                      {importFile ? importFile.name : 'Click to select a CSV file'}
+                    </span>
+                    <input type="file" accept=".csv" className="hidden" onChange={e => setImportFile(e.target.files?.[0] ?? null)} />
+                  </label>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="bg-green-50 rounded-lg p-3">
+                      <div className="text-2xl font-bold text-green-700">{importResult.inserted}</div>
+                      <div className="text-xs text-green-600 mt-1">Added</div>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <div className="text-2xl font-bold text-[#545249]">{importResult.skipped}</div>
+                      <div className="text-xs text-[#787569] mt-1">Skipped</div>
+                    </div>
+                    <div className="bg-red-50 rounded-lg p-3">
+                      <div className="text-2xl font-bold text-red-600">{importResult.failed}</div>
+                      <div className="text-xs text-red-500 mt-1">Failed</div>
+                    </div>
+                  </div>
+                  {importResult.errors.length > 0 && (
+                    <div className="bg-red-50 rounded p-3 text-xs text-red-700 space-y-1 max-h-32 overflow-y-auto">
+                      {importResult.errors.map((e, i) => <div key={i}>{e}</div>)}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 px-5 py-4 border-t border-slate-200">
+              <button onClick={() => setShowImport(false)} className="px-4 py-2 text-sm text-[#545249] hover:text-[#33322c]">
+                {importResult ? 'Close' : 'Cancel'}
+              </button>
+              {!importResult && (
+                <button
+                  onClick={handlePartnerImport}
+                  disabled={!importFile || importing}
+                  className="px-4 py-2 bg-[#33322c] text-white text-sm rounded hover:bg-[#33322c]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {importing ? 'Importing...' : 'Import'}
+                </button>
+              )}
             </div>
           </div>
         </div>
