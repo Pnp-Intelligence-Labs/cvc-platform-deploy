@@ -31,7 +31,7 @@ _TEAM_CONFIG_PATH = os.path.join(
 )
 
 _FALLBACK_SECTORS = (
-    "Robotics", "Manufacturing", "Supply Chain", "Industrial Automation", "Physical AI"
+    "Software", "Fintech", "Healthcare", "Other"
 )
 
 try:

@@ -433,7 +433,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                     "chart_type": "pie",
                     "x_key": "outcome",
                     "y_key": "count",
-                    "description": "Outcomes of partner introductions across the CVC ecosystem",
+                    "description": "Outcomes of partner introductions across the platform's partner ecosystem",
                 },
                 {
                     "title": "Employee Count Distribution",
@@ -1502,7 +1502,7 @@ def download_docx(report_id: int, user: UserInfo = Depends(require_jwt)):
 
 # ── Data Explorer ─────────────────────────────────────────────────────────────
 
-_SCHEMA_DIGEST = """Available tables in the CVC database (PostgreSQL, schema: cvc):
+_SCHEMA_DIGEST = """Available tables in the platform database (PostgreSQL, schema: cvc):
 
 IMPORTANT RULES FOR QUERY GENERATION:
 1. stage data in cvc.companies is inconsistently cased ('Seed','seed','series_a','Series A' are all present).
@@ -1523,12 +1523,12 @@ IMPORTANT RULES FOR QUERY GENERATION:
 3. Always alias COUNT(*) AS count, SUM(...) AS total, AVG(...) AS avg_score etc. x_key/y_key must exactly match an alias.
 
 cvc.companies — 1,700+ tracked startups
-  name (text), sector (text: 'Robotics','Supply Chain','Manufacturing','Industrial Automation','Physical AI'),
+  name (text), sector (text — team-configured, see config/team.json for valid sector values),
   stage (text — RAW, inconsistent casing, always normalize — see rule 1 above),
   score_composite (float 0-10), score_irs (float), score_commercial (float), score_tdf (float),
   is_portfolio (bool), founded (int — year founded e.g. 2019), country (text), hq_city (text),
   total_raised_usd (bigint), employee_count (int)
-  Example stage query: SELECT CASE WHEN LOWER(stage) IN ('seed') THEN 'Seed' WHEN LOWER(stage) IN ('series a','series_a') THEN 'Series A' ELSE 'Other' END AS stage_normalized, COUNT(*) AS count FROM cvc.companies WHERE sector = 'Robotics' GROUP BY stage_normalized ORDER BY count DESC LIMIT 20
+  Example stage query: SELECT CASE WHEN LOWER(stage) IN ('seed') THEN 'Seed' WHEN LOWER(stage) IN ('series a','series_a') THEN 'Series A' ELSE 'Other' END AS stage_normalized, COUNT(*) AS count FROM cvc.companies GROUP BY stage_normalized ORDER BY count DESC LIMIT 20
 
 cvc.funding_rounds — funding history per company
   company_id (FK → cvc.companies.id), round_type (text), amount_usd (bigint), announced_date (date)
@@ -1549,14 +1549,14 @@ cvc.partner_intros — introductions between startups and corporate partners
   company_id (FK → cvc.companies.id), partner_id (FK → cvc.partners.id),
   startup_name (text), partner_name (text), intro_date (date), outcome (text), status_1 (text), status_2 (text)
   Join to companies: JOIN cvc.companies c ON c.id = pi.company_id (NOT on name columns)
-  Example: SELECT pi.partner_name, COUNT(*) AS count FROM cvc.partner_intros pi JOIN cvc.companies c ON c.id = pi.company_id WHERE c.sector = 'Robotics' GROUP BY pi.partner_name ORDER BY count DESC LIMIT 15
+  Example: SELECT pi.partner_name, COUNT(*) AS count FROM cvc.partner_intros pi JOIN cvc.companies c ON c.id = pi.company_id GROUP BY pi.partner_name ORDER BY count DESC LIMIT 15
 
 cvc.content_items — raw intelligence items (podcasts, articles, signals)
   title (text), content_type (text: 'podcast','article','signal'), url (text),
   published_at (timestamptz), sentiment (text), briefing_flag (text),
   tags (jsonb — array of strings), summary (text), created_at (timestamptz)
   Example: SELECT content_type, COUNT(*) AS count FROM cvc.content_items GROUP BY content_type ORDER BY count DESC LIMIT 10
-  Note: no sector column — use tags JSONB to filter by topic, e.g. WHERE tags::text ILIKE '%robotics%'
+  Note: no sector column — use tags JSONB to filter by topic, e.g. WHERE tags::text ILIKE '%your-topic%'
 """
 
 

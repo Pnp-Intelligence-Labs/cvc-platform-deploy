@@ -36,8 +36,7 @@ _DD_DIR    = _REPO_ROOT / "workers" / "dd"
 
 # ── Team sector config ─────────────────────────────────────────────────────────
 _TEAM_CONFIG_PATH = _REPO_ROOT / "config" / "team.json"
-_FALLBACK_SECTORS = ["Robotics", "Supply Chain", "Industrial Automation",
-                     "Physical AI", "Manufacturing", "Other"]
+_FALLBACK_SECTORS = ["Software", "Fintech", "Healthcare", "Other"]
 try:
     with open(_TEAM_CONFIG_PATH) as _f:
         _team_cfg = json.load(_f)
@@ -462,7 +461,7 @@ async def add_company_to_queue(data: AddCompanyRequest, user=Depends(require_aut
                 cur.execute("""
                     INSERT INTO cvc.build_tasks
                         (spec, priority, risk_level, requires_approval, status, created_by, assigned_to, task_type, notes, status_changed_at)
-                    VALUES (%s, 'medium', 'low', FALSE, 'pending', %s, 'bigclaw', 'enrichment', %s, NOW())
+                    VALUES (%s, 'medium', 'low', FALSE, 'pending', %s, 'enrichment-worker', 'enrichment', %s, NOW())
                     RETURNING task_id
                 """, (spec, username, data.notes))
                 fourd_task_id = cur.fetchone()["task_id"]
@@ -477,7 +476,7 @@ async def add_company_to_queue(data: AddCompanyRequest, user=Depends(require_aut
                 cur.execute("""
                     INSERT INTO cvc.build_tasks
                         (spec, priority, risk_level, requires_approval, status, created_by, assigned_to, task_type, notes, status_changed_at)
-                    VALUES (%s, 'medium', 'low', FALSE, 'pending', %s, 'bigclaw', 'enrichment', %s, NOW())
+                    VALUES (%s, 'medium', 'low', FALSE, 'pending', %s, 'enrichment-worker', 'enrichment', %s, NOW())
                     RETURNING task_id
                 """, (spec, username, data.notes))
                 industrial_task_id = cur.fetchone()["task_id"]
@@ -492,7 +491,7 @@ async def add_company_to_queue(data: AddCompanyRequest, user=Depends(require_aut
                 cur.execute("""
                     INSERT INTO cvc.build_tasks
                         (spec, priority, risk_level, requires_approval, status, created_by, assigned_to, task_type, notes, status_changed_at)
-                    VALUES (%s, 'medium', 'low', FALSE, 'pending', %s, 'bigclaw', 'enrichment', %s, NOW())
+                    VALUES (%s, 'medium', 'low', FALSE, 'pending', %s, 'enrichment-worker', 'enrichment', %s, NOW())
                     RETURNING task_id
                 """, (spec, username, data.notes))
                 funding_task_id = cur.fetchone()["task_id"]
@@ -507,7 +506,7 @@ async def add_company_to_queue(data: AddCompanyRequest, user=Depends(require_aut
                 cur.execute("""
                     INSERT INTO cvc.build_tasks
                         (spec, priority, risk_level, requires_approval, status, created_by, assigned_to, task_type, notes, status_changed_at)
-                    VALUES (%s, 'medium', 'low', FALSE, 'pending', %s, 'bigclaw', 'enrichment', %s, NOW())
+                    VALUES (%s, 'medium', 'low', FALSE, 'pending', %s, 'enrichment-worker', 'enrichment', %s, NOW())
                     RETURNING task_id
                 """, (spec, username, data.notes))
                 news_task_id = cur.fetchone()["task_id"]
@@ -522,7 +521,7 @@ async def add_company_to_queue(data: AddCompanyRequest, user=Depends(require_aut
                 cur.execute("""
                     INSERT INTO cvc.build_tasks
                         (spec, priority, risk_level, requires_approval, status, created_by, assigned_to, task_type, notes, status_changed_at)
-                    VALUES (%s, 'medium', 'low', FALSE, 'pending', %s, 'bigclaw', 'enrichment', %s, NOW())
+                    VALUES (%s, 'medium', 'low', FALSE, 'pending', %s, 'enrichment-worker', 'enrichment', %s, NOW())
                     RETURNING task_id
                 """, (spec, username, data.notes))
                 founder_task_id = cur.fetchone()["task_id"]
@@ -1413,7 +1412,7 @@ async def trigger_dd_action(
                         (spec, priority, risk_level, requires_approval, status,
                          created_by, assigned_to, task_type, status_changed_at)
                     VALUES (%s, 'medium', 'low', FALSE, 'pending',
-                            %s, 'bigclaw', 'enrichment', NOW())
+                            %s, 'enrichment-worker', 'enrichment', NOW())
                     RETURNING task_id
                 """, (spec, username))
                 task_id = cur.fetchone()["task_id"]
