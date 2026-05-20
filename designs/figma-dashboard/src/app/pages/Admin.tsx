@@ -8,7 +8,7 @@ import {
   Settings, Megaphone, Pin, Trash, Search, RefreshCw, Save, MessageSquare, Send, X,
   Activity, Building2, GitBranch, CheckCircle2, Rocket, PencilLine, ShieldCheck,
   Handshake, BadgeDollarSign, Cpu, Zap, Users, ListChecks, BarChart2, ThumbsUp,
-  ExternalLink, ClipboardList, UserPlus, UserX, Eye, EyeOff, Package,
+  ExternalLink, ClipboardList, UserPlus, UserX, Eye, EyeOff, Package, KeyRound,
 } from 'lucide-react';
 import { cls } from '../components/tokens';
 
@@ -178,7 +178,7 @@ function CollapsibleSection({ id, icon, title, sub, badge, open, onToggle, child
 
 function PersonCard({
   user, userActivity, userAssignments, userRequests, draft, partners, dirty, saving,
-  onDraftChange, onSave, onDeactivate, canDeactivate,
+  onDraftChange, onSave, onDeactivate, canDeactivate, onResetPassword, canResetPassword,
 }: {
   user: StaffUser;
   userActivity: any[];
@@ -192,10 +192,27 @@ function PersonCard({
   onSave: () => void;
   onDeactivate?: () => void;
   canDeactivate?: boolean;
+  onResetPassword?: (newPassword: string) => Promise<void>;
+  canResetPassword?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showAllActivity, setShowAllActivity] = useState(false);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+  const [showResetPw, setShowResetPw]   = useState(false);
+  const [resetPw, setResetPw]           = useState('');
+  const [resetPwErr, setResetPwErr]     = useState('');
+  const [resetPwSaving, setResetPwSaving] = useState(false);
+
+  const submitResetPw = async () => {
+    if (resetPw.length < 8) { setResetPwErr('Must be at least 8 characters'); return; }
+    setResetPwSaving(true); setResetPwErr('');
+    try {
+      await onResetPassword!(resetPw);
+      setShowResetPw(false); setResetPw('');
+    } catch (e: any) {
+      setResetPwErr(e.message || 'Failed');
+    } finally { setResetPwSaving(false); }
+  };
 
   const openAssignments = userAssignments.filter(a => a.status !== 'completed' && a.status !== 'cancelled');
   const visibleActivity = showAllActivity ? userActivity : userActivity.slice(0, 4);
@@ -300,6 +317,43 @@ function PersonCard({
               </div>
             )}
           </div>
+
+          {/* Reset password (admin only, inline) */}
+          {canResetPassword && onResetPassword && (
+            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
+              {!showResetPw ? (
+                <button
+                  onClick={() => { setShowResetPw(true); setResetPw(''); setResetPwErr(''); }}
+                  className="flex items-center gap-1.5 text-[10px] text-slate-500 hover:text-slate-700 font-semibold transition-colors"
+                >
+                  <KeyRound className="w-3 h-3" /> Reset password for @{user.username}
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400 shrink-0">New password</span>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={resetPw}
+                    onChange={e => { setResetPw(e.target.value); setResetPwErr(''); }}
+                    placeholder="min 8 characters"
+                    className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded focus:outline-none focus:border-slate-400 bg-white"
+                  />
+                  <button
+                    onClick={submitResetPw}
+                    disabled={resetPwSaving || resetPw.length < 8}
+                    className="px-2.5 py-1 bg-slate-800 text-white text-xs font-semibold rounded hover:bg-slate-700 disabled:opacity-50 transition-colors shrink-0"
+                  >
+                    {resetPwSaving ? '…' : 'Set'}
+                  </button>
+                  <button onClick={() => setShowResetPw(false)} className="text-slate-400 hover:text-slate-600 shrink-0">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                  {resetPwErr && <span className="text-[10px] text-red-500">{resetPwErr}</span>}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Partner Assignment (PSM / Senior PSM only) */}
           {(draft.role === 'PSM' || draft.role === 'Senior PSM') && partners.length > 0 && (
@@ -718,6 +772,18 @@ export default function Admin() {
     } catch { /* silent */ }
   };
 
+  const resetUserPassword = async (userId: number, newPassword: string) => {
+    const res = await fetch(`/auth/users/${userId}/reset-password`, {
+      method: 'POST',
+      headers: { ...AUTH, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: newPassword }),
+    });
+    if (!res.ok) {
+      const d = await res.json();
+      throw new Error(d.detail || 'Reset failed');
+    }
+  };
+
   useEffect(() => {
     if (!isAdmin) return;
     setStaffLoading(true);
@@ -1058,6 +1124,8 @@ export default function Admin() {
                               onSave={() => saveStaffUser(user.id)}
                               canDeactivate={currentUser?.role === 'GP' && user.username !== currentUser?.username}
                               onDeactivate={() => deactivateUser(user.id)}
+                              canResetPassword={['GP', 'Principal', 'Director'].includes(currentUser?.role ?? '') && user.username !== currentUser?.username}
+                              onResetPassword={(pw) => resetUserPassword(user.id, pw)}
                             />
                           );
                         })}

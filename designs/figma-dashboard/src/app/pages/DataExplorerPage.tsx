@@ -6,7 +6,7 @@
  * and sees the data as a bar chart or table plus provenance metadata.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { CVCNavbar } from '../components/CVCNavbar';
 import { AUTH_HEADER as AUTH } from '../api/client';
 import { cls, chartFallbacks } from '../components/tokens';
@@ -15,7 +15,7 @@ import {
 } from 'recharts';
 import {
   BarChart2, TrendingUp, PieChart, Users2, Building2, Activity,
-  Star, Shuffle, AlertCircle, RefreshCw, Info, ChevronDown,
+  Star, Shuffle, AlertCircle, RefreshCw, Info, ChevronDown, Download,
 } from 'lucide-react';
 
 // ── Report registry ────────────────────────────────────────────────────────────
@@ -206,6 +206,24 @@ function QualityBadge({ score }: { score: number }) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
+function exportCSV(data: Record<string, any>[], filename: string) {
+  if (!data.length) return;
+  const cols = Object.keys(data[0]);
+  const rows = [cols.join(','), ...data.map(row =>
+    cols.map(c => {
+      const v = row[c] ?? '';
+      const s = String(v);
+      return s.includes(',') || s.includes('"') || s.includes('\n')
+        ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',')
+  )];
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function DataExplorerPage() {
   const [selectedKey, setSelectedKey]   = useState<string>(REPORTS[0].key);
   const [filters, setFilters]           = useState<Record<string, string>>({});
@@ -213,6 +231,7 @@ export default function DataExplorerPage() {
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState<string | null>(null);
   const [showMeta, setShowMeta]         = useState(false);
+  const debounceRef                     = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const report = REPORTS.find(r => r.key === selectedKey)!;
 
@@ -227,11 +246,11 @@ export default function DataExplorerPage() {
     setError(null);
   }, [selectedKey]);
 
-  const run = useCallback(async () => {
+  const run = useCallback(async (f: Record<string, string>) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(report.endpoint(filters), { headers: AUTH });
+      const res = await fetch(report.endpoint(f), { headers: AUTH });
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       const json = await res.json();
       setResult(json);
@@ -240,10 +259,24 @@ export default function DataExplorerPage() {
     } finally {
       setLoading(false);
     }
-  }, [report, filters]);
+  }, [report]);
 
-  // Auto-run when report changes
-  useEffect(() => { run(); }, [selectedKey]);
+  // Auto-run when report changes (immediately)
+  useEffect(() => {
+    const defaults: Record<string, string> = {};
+    for (const f of report.filters ?? []) {
+      if (f.default) defaults[f.key] = f.default;
+    }
+    run(defaults);
+  }, [selectedKey]);
+
+  // Debounced auto-run when filters change (300ms)
+  const updateFilter = (key: string, value: string) => {
+    const next = { ...filters, [key]: value };
+    setFilters(next);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => run(next), 300);
+  };
 
   return (
     <div className={cls.page}>
@@ -252,11 +285,18 @@ export default function DataExplorerPage() {
       <div className="max-w-[1400px] mx-auto px-8 py-8">
 
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Data Explorer</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Pre-built analytical reports. Every number shows where it came from.
-          </p>
+        <div className="border-b-2 border-[#33322c] pb-5 mb-6">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-[#787569] mb-2">
+            Vertical OS · Analytics
+          </div>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h1 className={cls.pageTitle}>Data Explorer</h1>
+              <p className="text-sm text-[#545249] mt-1">
+                Pre-built analytical reports. Every number shows where it came from.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-6">
@@ -296,12 +336,12 @@ export default function DataExplorerPage() {
                   <p className="text-sm text-slate-500 mt-0.5">{report.description}</p>
                 </div>
                 <button
-                  onClick={run}
+                  onClick={() => run(filters)}
                   disabled={loading}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 text-white text-sm font-semibold rounded hover:bg-slate-700 transition-colors disabled:opacity-50 shrink-0"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                  {loading ? 'Loading…' : 'Run'}
+                  {loading ? 'Running…' : 'Refresh'}
                 </button>
               </div>
 
@@ -315,7 +355,7 @@ export default function DataExplorerPage() {
                         <div className="relative">
                           <select
                             value={filters[f.key] ?? f.default ?? ''}
-                            onChange={e => setFilters(prev => ({ ...prev, [f.key]: e.target.value }))}
+                            onChange={e => updateFilter(f.key, e.target.value)}
                             className="appearance-none pr-7 pl-2.5 py-1.5 text-sm border border-slate-200 rounded bg-white text-slate-700 focus:outline-none focus:border-slate-400"
                           >
                             {(f.options ?? []).map(o => (
@@ -329,7 +369,7 @@ export default function DataExplorerPage() {
                           type={f.type}
                           value={filters[f.key] ?? f.default ?? ''}
                           placeholder={f.placeholder}
-                          onChange={e => setFilters(prev => ({ ...prev, [f.key]: e.target.value }))}
+                          onChange={e => updateFilter(f.key, e.target.value)}
                           className="px-2.5 py-1.5 text-sm border border-slate-200 rounded bg-white text-slate-700 focus:outline-none focus:border-slate-400 w-28"
                         />
                       )}
@@ -347,11 +387,21 @@ export default function DataExplorerPage() {
               </div>
             )}
 
+            {/* Loading skeleton */}
+            {loading && (
+              <div className="bg-white rounded border border-slate-200 p-5 mb-4 animate-pulse">
+                <div className="h-4 bg-slate-100 rounded w-1/4 mb-4" />
+                <div className="h-56 bg-slate-50 rounded" />
+              </div>
+            )}
+
             {/* Chart */}
-            {result && result.data.length > 0 && (
+            {!loading && result && result.data.length > 0 && (
               <div className="bg-white rounded border border-slate-200 p-5 mb-4">
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm font-semibold text-slate-700">{report.yLabel} by {report.xKey}</p>
+                  <p className="text-sm font-semibold text-slate-700">
+                    {report.label} — {report.yLabel}
+                  </p>
                   {result.meta?.data_quality && (
                     <QualityBadge score={result.meta.data_quality.data_score} />
                   )}
@@ -365,7 +415,10 @@ export default function DataExplorerPage() {
                       textAnchor="end"
                       interval={0}
                     />
-                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} width={48} />
+                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} width={48} label={{
+                      value: report.yLabel, angle: -90, position: 'insideLeft',
+                      offset: 10, style: { fontSize: 10, fill: '#94a3b8' },
+                    }} />
                     <Tooltip
                       contentStyle={{ fontSize: 12, borderRadius: 6 }}
                       labelStyle={{ fontWeight: 600 }}
@@ -381,12 +434,23 @@ export default function DataExplorerPage() {
             )}
 
             {/* Table */}
-            {result && result.data.length > 0 && (
+            {!loading && result && result.data.length > 0 && (
               <div className="bg-white rounded border border-slate-200 overflow-hidden mb-4">
+                <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    {result.data.length} row{result.data.length !== 1 ? 's' : ''}
+                  </span>
+                  <button
+                    onClick={() => exportCSV(result.data, `${report.key}.csv`)}
+                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 font-semibold transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Export CSV
+                  </button>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-slate-100 bg-slate-50">
+                      <tr className="border-b border-slate-100">
                         {Object.keys(result.data[0]).map(col => (
                           <th key={col} className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">
                             {col.replace(/_/g, ' ')}
@@ -410,9 +474,11 @@ export default function DataExplorerPage() {
               </div>
             )}
 
-            {result && result.data.length === 0 && !loading && (
-              <div className="bg-white rounded border border-slate-200 p-8 text-center text-slate-400 mb-4">
-                No data for this filter combination.
+            {!loading && result && result.data.length === 0 && (
+              <div className="bg-white rounded border border-slate-200 p-10 text-center mb-4">
+                <BarChart2 className="w-8 h-8 text-slate-200 mx-auto mb-3" />
+                <p className="text-sm font-medium text-slate-400">No data for this filter combination.</p>
+                <p className="text-xs text-slate-300 mt-1">Try clearing the filters or selecting a different report.</p>
               </div>
             )}
 
