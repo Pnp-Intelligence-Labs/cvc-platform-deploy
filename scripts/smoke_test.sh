@@ -103,8 +103,8 @@ check "GET /companies/"          "${BASE_URL}/companies/"          200 "${AUTH[@
 check "GET /companies/sectors"   "${BASE_URL}/companies/sectors"   200 "${AUTH[@]}"
 check "GET /partners/"           "${BASE_URL}/partners/"           200 "${AUTH[@]}"
 check "GET /sourcing/"           "${BASE_URL}/sourcing/"           200 "${AUTH[@]}"
-check "GET /requests/"           "${BASE_URL}/requests/"           200 "${AUTH[@]}"
-check "GET /sales/"              "${BASE_URL}/sales/"              200 "${AUTH[@]}"
+check "GET /requests"            "${BASE_URL}/requests"            200 "${AUTH[@]}"
+check "GET /sales/targets"       "${BASE_URL}/sales/targets"       200 "${AUTH[@]}"
 check "GET /shortlists/"         "${BASE_URL}/shortlists/"         200 "${AUTH[@]}"
 check "GET /dealflow/"           "${BASE_URL}/dealflow/"           200 "${AUTH[@]}"
 
