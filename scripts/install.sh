@@ -270,7 +270,23 @@ done
 
 echo ""
 
-# ── 9. Done ───────────────────────────────────────────────────────────────────
+# ── 9. Demo seed (optional) ───────────────────────────────────────────────────
+hdr "Demo data..."
+echo ""
+echo "  Load 30 sample companies, 4 partners, and pipeline data so the platform"
+echo "  looks populated on first login? Useful for demos and evaluation."
+echo ""
+read -rp "  Load demo data? [y/N] " seed_choice
+seed_choice="${seed_choice:-N}"
+if [[ "$seed_choice" =~ ^[Yy]$ ]]; then
+    "$REPO/.venv/bin/python3" "$REPO/scripts/seed_demo.py" && ok "Demo data loaded"
+else
+    warn "Skipped demo data — run 'python3 scripts/seed_demo.py' anytime to load it"
+fi
+
+echo ""
+
+# ── 10. Done ──────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${GREEN}Installation complete.${NC}"
 echo ""

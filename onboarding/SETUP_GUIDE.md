@@ -132,6 +132,15 @@ Each user sets their own password on first login.
 
 ## Step 6 — Import Your Data
 
+**Want to see the platform populated before importing real data?**
+Load the demo dataset (30 companies, 4 partners, pipeline data):
+```bash
+python3 scripts/seed_demo.py
+```
+The installer offers this automatically — you can also run it anytime.
+Demo data is clearly labelled (`enrichment_source = 'demo_seed'`) and can be
+deleted at any time: `DELETE FROM cvc.companies WHERE enrichment_source = 'demo_seed';`
+
 ### Companies / Deal Flow
 
 Import your existing pipeline via CSV (any spreadsheet export works):
