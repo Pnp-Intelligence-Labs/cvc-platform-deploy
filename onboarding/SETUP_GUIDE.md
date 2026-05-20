@@ -291,6 +291,25 @@ Set this up as a cron job to run nightly.
 
 ---
 
+## Verify Your Installation
+
+After setup, run the smoke test to confirm the API and all core routes are working:
+
+```bash
+bash scripts/smoke_test.sh
+```
+
+With custom credentials or a remote server:
+```bash
+bash scripts/smoke_test.sh http://your-server:8002 admin yourpassword
+```
+
+The script checks: login, all core API routes, admin endpoints, plugin health, and
+that data exists (companies + partners). Installed plugins are checked; uninstalled
+plugins are skipped. Exits with code 0 (all pass) or 1 (any failure).
+
+---
+
 ## Troubleshooting
 
 **API won't start:** Check `.env` exists and has valid values. Run:
