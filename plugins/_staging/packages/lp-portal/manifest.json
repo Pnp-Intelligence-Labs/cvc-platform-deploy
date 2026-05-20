@@ -6,12 +6,7 @@
     "prefix": "/lp",
     "tag": "lp-portal"
   },
-  "nav": {
-    "label": "LP Portal",
-    "path": "/lp",
-    "icon": "BadgeDollarSign",
-    "roles": ["GP", "Principal", "Director"]
-  },
+  "nav": null,
   "requires_tables": [
     "cvc.fund_metrics",
     "cvc.fund_nav_history",

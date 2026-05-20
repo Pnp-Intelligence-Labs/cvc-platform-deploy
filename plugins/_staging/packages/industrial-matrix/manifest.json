@@ -7,12 +7,7 @@
     "prefix": "/industrial",
     "tag":    "industrial-matrix"
   },
-  "nav": {
-    "label": "Industrial Matrix",
-    "path":  "/industrial",
-    "icon":  "Cpu",
-    "roles": ["GP", "Principal", "Director", "Ventures"]
-  },
+  "nav": null,
   "requires_tables": [
     "cvc.companies",
     "cvc.funding_rounds"

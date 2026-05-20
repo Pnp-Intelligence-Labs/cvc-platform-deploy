@@ -1,6 +1,5 @@
 import { Building, Mail, User, Plus, X, ChevronRight, ChevronDown, Upload, Trash2, FileText, StickyNote, Search, Eye, ExternalLink, Check, Pencil, AlertTriangle, Star, Sparkles, Download, RefreshCw, TrendingUp, Zap, Info } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import QQQIntelPanel from '../components/QQQIntelPanel';
 import { CVCNavbar } from '../components/CVCNavbar';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router';
@@ -441,13 +440,6 @@ function PSMHub({ partners, onSelect, onSelectWithTab }: {
 
       </div>}
 
-
-      {/* QQQ Market Intelligence — PSM Home only */}
-      {!activePsm && (
-        <div className="mt-6">
-          <QQQIntelPanel />
-        </div>
-      )}
 
       {/* Partner quick-select grid — PSM Home only */}
       {!activePsm && (

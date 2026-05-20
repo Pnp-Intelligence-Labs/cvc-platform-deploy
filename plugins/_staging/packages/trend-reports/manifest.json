@@ -7,12 +7,7 @@
     "prefix": "/reports",
     "tag":    "trend-reports"
   },
-  "nav": {
-    "label": "Reports",
-    "path":  "/reports",
-    "icon":  "BookOpen",
-    "roles": ["GP", "Principal", "Director"]
-  },
+  "nav": null,
   "requires_tables": [
     "cvc.trend_reports",
     "cvc.report_sections",

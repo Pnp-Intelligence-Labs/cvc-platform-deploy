@@ -7,12 +7,7 @@
     "prefix": "/enrichment",
     "tag":    "enrichment"
   },
-  "nav": {
-    "label": "Enrichment",
-    "path":  "/enrichment",
-    "icon":  "FlaskConical",
-    "roles": ["GP", "Principal", "Director", "Admin"]
-  },
+  "nav": null,
   "requires_tables": [
     "cvc.companies",
     "cvc.funding_rounds",
