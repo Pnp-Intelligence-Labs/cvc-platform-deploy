@@ -177,6 +177,19 @@ ok "Frontend built"
 # ── 5. Start PostgreSQL ───────────────────────────────────────────────────────
 hdr "Starting PostgreSQL..."
 
+# Fix Docker credential store issue common on WSL2 — desktop.exe creds fail in non-GUI sessions
+DOCKER_CFG="${HOME}/.docker/config.json"
+if [[ -f "$DOCKER_CFG" ]] && python3 -c "import json; d=json.load(open('$DOCKER_CFG')); exit(0 if 'credsStore' in d else 1)" 2>/dev/null; then
+    warn "Docker credential store detected (may fail in WSL2/SSH) — removing credsStore..."
+    python3 -c "
+import json
+with open('$DOCKER_CFG') as f: cfg = json.load(f)
+cfg.pop('credsStore', None)
+with open('$DOCKER_CFG', 'w') as f: json.dump(cfg, f, indent=2)
+"
+    ok "Docker config patched"
+fi
+
 if docker ps --filter "name=platform-db" --filter "status=running" -q | grep -q .; then
     ok "PostgreSQL container already running"
 else
@@ -202,10 +215,19 @@ hdr "Setting up Python environment..."
 if [[ -d "$REPO/.venv" ]]; then
     ok "venv already exists — skipping"
 else
-    python3 -m venv "$REPO/.venv"
+    # Try standard venv first; fall back to --without-pip if python3-venv is missing
+    # (common on Ubuntu 24.04 where python3-venv requires apt and may not be installed)
+    if python3 -m venv "$REPO/.venv" 2>/dev/null; then
+        ok "venv created"
+    else
+        warn "python3-venv not available — bootstrapping without pip..."
+        python3 -m venv --without-pip "$REPO/.venv"
+        curl -sSL https://bootstrap.pypa.io/get-pip.py | "$REPO/.venv/bin/python3"
+        ok "venv created (pip bootstrapped)"
+    fi
     "$REPO/.venv/bin/pip" install --quiet --upgrade pip
     "$REPO/.venv/bin/pip" install --quiet -r "$REPO/requirements.txt"
-    ok "venv created and dependencies installed"
+    ok "Python dependencies installed"
 fi
 
 # ── 7. Run migrations ─────────────────────────────────────────────────────────

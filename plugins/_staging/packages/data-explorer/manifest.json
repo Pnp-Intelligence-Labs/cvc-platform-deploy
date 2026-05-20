@@ -13,6 +13,7 @@
     "icon":  "BarChart2",
     "roles": ["GP", "Principal", "Director", "Ventures"]
   },
+  "nav_enabled": true,
   "requires_tables": [],
   "config_schema": {}
 }

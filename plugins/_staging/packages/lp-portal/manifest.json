@@ -2,11 +2,18 @@
   "slug": "lp-portal",
   "name": "LP Portal",
   "version": "1.0.0",
+  "description": "Fund metrics dashboard and LP-facing portfolio reporting.",
   "routes": {
     "prefix": "/lp",
     "tag": "lp-portal"
   },
-  "nav": null,
+  "nav": {
+    "label": "LP Portal",
+    "path": "/lp",
+    "icon": "BadgeDollarSign",
+    "roles": ["GP", "Principal", "Director"]
+  },
+  "nav_enabled": false,
   "requires_tables": [
     "cvc.fund_metrics",
     "cvc.fund_nav_history",

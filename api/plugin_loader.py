@@ -103,12 +103,16 @@ def load_plugins(app: FastAPI, require_auth) -> List[dict]:
                 tags=[tag],
                 dependencies=[Depends(require_auth)],
             )
+            nav_config  = manifest.get("nav")
+            nav_enabled = manifest.get("nav_enabled", True)  # default True for backwards compat
             _loaded_plugins.append({
-                "slug":    manifest["slug"],
-                "name":    manifest["name"],
-                "version": manifest["version"],
-                "prefix":  prefix,
-                "nav":     manifest.get("nav"),
+                "slug":            manifest["slug"],
+                "name":            manifest["name"],
+                "version":         manifest["version"],
+                "prefix":          prefix,
+                "nav":             nav_config if (nav_config and nav_enabled) else None,
+                "nav_config":      nav_config,   # preserved even when nav is disabled
+                "nav_enabled":     nav_enabled,
                 "requires_tables": manifest.get("requires_tables", []),
             })
             logger.info("Plugin loaded: %s v%s at %s", manifest["name"], manifest["version"], prefix)
@@ -121,3 +125,32 @@ def load_plugins(app: FastAPI, require_auth) -> List[dict]:
 def get_loaded_plugins() -> List[dict]:
     """Return the list of successfully loaded plugin manifests."""
     return _loaded_plugins
+
+
+def update_plugin_nav(slug: str, enabled: bool) -> bool:
+    """Toggle a plugin's nav visibility in memory and on disk.
+
+    Updates _loaded_plugins immediately (no restart required).
+    Also writes nav_enabled to the manifest.json on disk so it survives restarts.
+
+    Returns True if the plugin was found, False if not installed.
+    """
+    global _loaded_plugins
+    for plugin in _loaded_plugins:
+        if plugin["slug"] == slug:
+            if not plugin.get("nav_config"):
+                return False  # no nav config — cannot enable
+            plugin["nav_enabled"] = enabled
+            plugin["nav"] = plugin["nav_config"] if enabled else None
+
+            # Persist to manifest on disk
+            manifest_path = _PLUGINS_DIR / slug / "manifest.json"
+            if manifest_path.exists():
+                try:
+                    manifest = json.loads(manifest_path.read_text())
+                    manifest["nav_enabled"] = enabled
+                    manifest_path.write_text(json.dumps(manifest, indent=2))
+                except Exception as e:
+                    logger.warning("Failed to write manifest for %s: %s", slug, e)
+            return True
+    return False

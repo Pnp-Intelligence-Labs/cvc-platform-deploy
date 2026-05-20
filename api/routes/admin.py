@@ -11,7 +11,7 @@ from datetime import datetime
 from psycopg2.extras import RealDictCursor
 from core.db.connection import get_connection
 from api.auth import require_auth
-from api.plugin_loader import get_loaded_plugins
+from api.plugin_loader import get_loaded_plugins, update_plugin_nav
 
 router = APIRouter()
 
@@ -528,6 +528,26 @@ def get_admin_kpis(user=Depends(require_auth)):
 
 
 # ── Plugin Health ──────────────────────────────────────────────────────────────
+
+class PluginNavUpdate(BaseModel):
+    enabled: bool
+
+
+@router.patch("/plugins/{slug}/nav")
+def toggle_plugin_nav(slug: str, body: PluginNavUpdate, user=Depends(require_auth)):
+    """Enable or disable a plugin's nav entry. Takes effect immediately — no restart required."""
+    if user.get("role") not in _ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="Admin only")
+    updated = update_plugin_nav(slug, body.enabled)
+    if not updated:
+        plugins = get_loaded_plugins()
+        plugin = next((p for p in plugins if p["slug"] == slug), None)
+        if not plugin:
+            raise HTTPException(status_code=404, detail=f"Plugin '{slug}' not installed")
+        raise HTTPException(status_code=400, detail=f"Plugin '{slug}' has no nav config — cannot toggle")
+    plugin = next(p for p in get_loaded_plugins() if p["slug"] == slug)
+    return {"slug": slug, "nav_enabled": body.enabled, "nav": plugin["nav"]}
+
 
 @router.get("/plugins/health")
 def plugin_health(user=Depends(require_auth)):
