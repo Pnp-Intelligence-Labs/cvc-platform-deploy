@@ -46,8 +46,13 @@ bash scripts/install.sh
 
 The installer handles everything: dependencies → `.env` → team config → frontend build → database → migrations → plugin selection → optional demo data.
 
-Full setup instructions: [`onboarding/SETUP_GUIDE.md`](onboarding/SETUP_GUIDE.md)
-End-user guide (share with your team): [`onboarding/USER_GUIDE.md`](onboarding/USER_GUIDE.md)
+| Doc | Audience |
+|---|---|
+| [`onboarding/SETUP_GUIDE.md`](onboarding/SETUP_GUIDE.md) | Admin setting up the server |
+| [`onboarding/GOLIVE_CHECKLIST.md`](onboarding/GOLIVE_CHECKLIST.md) | Admin — security + ops before going live |
+| [`onboarding/DATA_MIGRATION.md`](onboarding/DATA_MIGRATION.md) | Admin — migrating from Airtable, Notion, Excel |
+| [`onboarding/USER_GUIDE.md`](onboarding/USER_GUIDE.md) | Every team member logging in |
+| [`onboarding/TEAM_INVITE.md`](onboarding/TEAM_INVITE.md) | Admin — copy-paste invite templates |
 
 ---
 

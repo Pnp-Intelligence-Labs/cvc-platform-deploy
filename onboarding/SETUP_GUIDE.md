@@ -416,8 +416,15 @@ Verify the plugin directory exists in `plugins/installed/<slug>/`.
 
 ## Getting Help
 
-- **End-user guide** (for team members logging in): `onboarding/USER_GUIDE.md`
-- Architecture decisions: `docs/DECISIONS.md`
-- Plugin interface spec: `docs/PLUGIN_INTERFACE.md`
-- Build plan history: `docs/PHASE1_BUILD_PLAN.md`
-- Product vision: `PRODUCT_VISION.md`
+**Onboarding docs:**
+- `onboarding/USER_GUIDE.md` — end-user guide (share with your team)
+- `onboarding/GOLIVE_CHECKLIST.md` — security + ops checklist before going live
+- `onboarding/DATA_MIGRATION.md` — how to export from Airtable, Notion, Excel
+- `onboarding/TEAM_INVITE.md` — copy-paste templates for inviting your team
+- `onboarding/sample_companies.csv` — companies CSV template
+- `onboarding/sample_partners.csv` — partners CSV template
+
+**Technical docs:**
+- `docs/DECISIONS.md` — architecture decisions
+- `docs/PLUGIN_INTERFACE.md` — how to build a plugin
+- `PRODUCT_VISION.md` — product vision and design principles
