@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import OnboardingWizard from '../components/OnboardingWizard';
 import useEmblaCarousel from 'embla-carousel-react';
 import { Link } from 'react-router';
 import { Bell, Activity, FileText, ChevronRight, ChevronDown, AlertCircle, CheckCircle2, Building2, GitBranch, Cpu, Rocket, Zap, Trophy, PencilLine, X, Handshake, BadgeDollarSign, ShieldCheck, AlertTriangle, ThumbsUp, MessageCircle, Send, Target, Swords, Info } from 'lucide-react';
@@ -6,6 +7,7 @@ import CVCNavbar from '../components/CVCNavbar';
 import { api } from '../api/client';
 import { AUTH_HEADER as AUTH } from '../api/client';
 import { cls } from '../components/tokens';
+import { useConfig } from '../hooks/useConfig';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -1391,6 +1393,7 @@ export default function Homepage() {
   const currentUser = api.getCurrentUser();
   const role = currentUser?.role ?? '';
   const isPSM = role === 'PSM' || role === 'Senior PSM';
+  const config = useConfig();
   const isVentures = role === 'Ventures';
   // Carousel initial slide: PSMs → Pipeline Pulse (1), Ventures → Traction (2), others → Announcements (0)
   const carouselInitialIndex = isPSM ? 1 : isVentures ? 2 : 0;
@@ -1402,6 +1405,7 @@ export default function Homepage() {
   const [expandedMsg, setExpandedMsg] = useState<number | null>(null);
   const [leaderboards, setLeaderboards] = useState<Record<string, {name: string; count: number}[]>>({});
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -1420,9 +1424,31 @@ export default function Homepage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Show onboarding wizard for fresh installs:
+  // admin role + not previously dismissed + no company data yet
+  useEffect(() => {
+    const dismissed = localStorage.getItem('platform_onboarding_v1');
+    if (dismissed) return;
+    const adminRoles = ['GP', 'Principal', 'Director'];
+    if (!adminRoles.includes(role)) return;
+    fetch('/companies/?limit=1', { headers: AUTH })
+      .then(r => r.json())
+      .then(d => {
+        const count = Array.isArray(d) ? d.length : (d?.companies?.length ?? d?.count ?? 1);
+        if (count === 0) setShowOnboarding(true);
+      })
+      .catch(() => {});
+  }, [role]);
+
   return (
     <div className={cls.page}>
       <CVCNavbar />
+      {showOnboarding && (
+        <OnboardingWizard
+          teamName={config?.team_name ?? 'Your Platform'}
+          onComplete={() => setShowOnboarding(false)}
+        />
+      )}
 
       <div className="max-w-[1400px] mx-auto px-6 py-8">
 

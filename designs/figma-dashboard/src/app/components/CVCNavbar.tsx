@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { Menu, LogOut, MessageSquare, Search, Camera, ClipboardList, FileText, ChevronDown, KeyRound, Eye, EyeOff, X } from 'lucide-react';
+import { Menu, LogOut, MessageSquare, Search, Camera, ClipboardList, FileText, ChevronDown, KeyRound, Eye, EyeOff, X, HelpCircle } from 'lucide-react';
+import HelpPanel from './HelpPanel';
 import { api } from '../api/client';
 import { FeedbackModal } from './FeedbackModal';
 import { useConfig } from '../hooks/useConfig';
@@ -424,6 +425,7 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
 const CVCNavbar: React.FC = () => {
   const [menuOpen, setMenuOpen]         = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showHelp, setShowHelp]         = useState(false);
   const location = useLocation();
   const navigate  = useNavigate();
 
@@ -515,6 +517,13 @@ const CVCNavbar: React.FC = () => {
                 Admin
               </Link>
             )}
+            <button
+              onClick={() => setShowHelp(true)}
+              title="Help"
+              className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded transition-colors"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </button>
             <UserMenu onLogout={handleLogout} />
             <button
               className="lg:hidden p-2 text-white/70 hover:text-white hover:bg-white/10 rounded transition-colors"
@@ -549,6 +558,7 @@ const CVCNavbar: React.FC = () => {
     {showFeedback && (
       <FeedbackModal currentPath={location.pathname} onClose={() => setShowFeedback(false)} />
     )}
+    <HelpPanel open={showHelp} onClose={() => setShowHelp(false)} currentRole={currentUser?.role} />
     <QuickNotePanel />
     </>
   );

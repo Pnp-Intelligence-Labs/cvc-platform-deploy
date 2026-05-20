@@ -803,3 +803,115 @@ async def import_partners_csv(
         "errors":     errors[:20],
         "total_rows": len(rows),
     }
+
+
+# ── Demo Seed ─────────────────────────────────────────────────────────────────
+
+_DEMO_COMPANIES = [
+    ("Acme Robotics", "https://acmerobotics.com", "Robotics", "Series A", "Boston", "US", 2020, 42, 8500000, "Autonomous warehouse robots for e-commerce fulfillment"),
+    ("BlueSky AI", "https://blueskyai.io", "AI / ML", "Seed", "San Francisco", "US", 2022, 12, 2000000, "Predictive maintenance for industrial equipment"),
+    ("Circadian Health", "https://circadianhealth.com", "Healthcare", "Pre-Seed", "Austin", "US", 2023, 6, 750000, "Wearable biosensors for shift workers"),
+    ("Dendrite Systems", None, "Deep Tech", "Series B", "Chicago", "US", 2018, 95, 32000000, "Neuromorphic computing chips for edge AI"),
+    ("EchoGrid", "https://echogrid.io", "Climate Tech", "Seed", "Denver", "US", 2021, 18, 3200000, "Grid-scale energy storage using thermal batteries"),
+    ("Fieldwork AI", None, "AgTech", "Series A", "Des Moines", "US", 2019, 35, 11000000, "Computer vision crop monitoring for row crops"),
+    ("Groundline", "https://groundline.co", "Construction Tech", "Pre-Seed", "Nashville", "US", 2023, 8, 500000, "Underground utility mapping using ground-penetrating radar"),
+    ("Harbor Logistics", None, "Logistics", "Series A", "Seattle", "US", 2020, 60, 15000000, "Autonomous last-mile delivery for suburban markets"),
+    ("Ironclad Defense", None, "Defense Tech", "Seed", "San Diego", "US", 2022, 14, 4000000, "Counter-drone systems for critical infrastructure"),
+    ("Juno Materials", "https://junomaterials.com", "Advanced Manufacturing", "Series B", "Pittsburgh", "US", 2017, 110, 28000000, "Sustainable composites replacing carbon fiber in aerospace"),
+    ("Kova Bio", None, "Biotech", "Seed", "Cambridge", "US", 2022, 9, 1800000, "Cell-free protein synthesis for rapid drug prototyping"),
+    ("Lattice Energy", "https://latticeenergy.io", "Climate Tech", "Series A", "Austin", "US", 2020, 28, 9000000, "Molten salt thermal storage for industrial decarbonization"),
+    ("Meridian Autonomy", None, "Robotics", "Series A", "Detroit", "US", 2019, 55, 18500000, "Autonomous guided vehicles for automotive assembly lines"),
+    ("NovaStar", "https://novastar.io", "Defense Tech", "Seed", "Huntsville", "US", 2021, 20, 5500000, "Satellite-based positioning resilient to GPS jamming"),
+    ("Orbit Compute", None, "Deep Tech", "Pre-Seed", "Raleigh", "US", 2023, 5, 600000, "Quantum-classical hybrid algorithms for logistics optimization"),
+    ("Patrol AI", "https://patrolai.com", "AI / ML", "Series A", "Washington", "US", 2020, 38, 12000000, "Anomaly detection for critical infrastructure monitoring"),
+    ("Quorra Systems", None, "Advanced Manufacturing", "Seed", "Cleveland", "US", 2021, 15, 2800000, "Digital twin platform for legacy factory equipment"),
+    ("Rigflow", "https://rigflow.io", "Energy", "Pre-Seed", "Houston", "US", 2023, 7, 900000, "Drilling operations optimization using real-time sensor fusion"),
+    ("Slate Genomics", None, "Biotech", "Seed", "San Diego", "US", 2022, 11, 2200000, "Rapid pathogen sequencing for point-of-care diagnostics"),
+    ("Talon Freight", "https://talonfreight.com", "Logistics", "Series A", "Chicago", "US", 2019, 45, 13500000, "AI freight brokerage with autonomous load matching"),
+]
+
+_DEMO_PARTNERS = [
+    ("Acme Corporation", "Automotive", "Jane Smith", "jane.smith@acmecorp.com", ["Supply chain visibility", "Warehouse automation"], ["Robotics", "Logistics", "AI / ML"], "Met at AutoTech Summit 2024. Active innovation budget."),
+    ("Beacon Group", "Logistics", "Marcus Lee", "m.lee@beacongroup.com", ["Last-mile delivery", "Fleet management"], ["Logistics", "Climate Tech"], "Warm intro via portfolio company. Looking for Series A+ pilots."),
+    ("Crestline Energy", "Energy", "Sarah Okonkwo", "sokonkwo@crestlineenergy.com", ["Grid stability", "Carbon reduction"], ["Climate Tech", "Deep Tech"], "RFP issued for storage tech partners. Decision Q3."),
+    ("Delta Manufacturing", "Advanced Manufacturing", "Tom Briggs", "tbriggs@deltamfg.com", ["Quality control automation", "Predictive maintenance"], ["AI / ML", "Robotics", "Advanced Manufacturing"], "Long-standing relationship. Open to co-investment."),
+    ("Evergreen Health Systems", "Healthcare", "Dr. Lisa Park", "lpark@evergreenhealth.org", ["Remote patient monitoring", "Staff scheduling"], ["Healthcare", "AI / ML"], "Pilot-friendly. Procurement lead is a champion for startups."),
+]
+
+
+@router.post("/seed-demo")
+async def seed_demo(user=Depends(require_auth)):
+    """
+    Load sample demo data for platform evaluation.
+    Inserts 20 companies and 5 partners. Idempotent — skips existing records.
+    Requires GP, Principal, or Director role.
+    """
+    if user.get("role") not in ("GP", "Principal", "Director"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    co_inserted = co_skipped = pa_inserted = pa_skipped = 0
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            # Companies
+            cur.execute("SELECT LOWER(name) FROM cvc.companies")
+            existing_co = {r[0] for r in cur.fetchall()}
+
+            for (name, website, sector, stage, city, country, founded,
+                 employees, raised, one_liner) in _DEMO_COMPANIES:
+                if name.lower() in existing_co:
+                    co_skipped += 1
+                    continue
+                cur.execute(
+                    """
+                    INSERT INTO cvc.companies
+                        (name, website, sector, stage, hq_city, hq_country,
+                         founded, employee_count, total_raised_usd, one_liner,
+                         enrichment_status, enrichment_source, created_at, updated_at)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending','demo_seed',NOW(),NOW())
+                    ON CONFLICT DO NOTHING
+                    """,
+                    (name, website, sector, stage, city, country,
+                     founded, employees, raised, one_liner),
+                )
+                if cur.rowcount:
+                    existing_co.add(name.lower())
+                    co_inserted += 1
+                else:
+                    co_skipped += 1
+
+            # Partners
+            cur.execute("SELECT LOWER(name) FROM cvc.partners")
+            existing_pa = {r[0] for r in cur.fetchall()}
+
+            for (name, industry, contact_name, contact_email,
+                 challenge_areas, sectors_of_interest, notes) in _DEMO_PARTNERS:
+                if name.lower() in existing_pa:
+                    pa_skipped += 1
+                    continue
+                cur.execute(
+                    """
+                    INSERT INTO cvc.partners
+                        (name, industry, contact_name, contact_email,
+                         challenge_areas, sectors_of_interest, notes,
+                         created_at, updated_at)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,NOW(),NOW())
+                    ON CONFLICT DO NOTHING
+                    """,
+                    (name, industry, contact_name, contact_email,
+                     challenge_areas, sectors_of_interest, notes),
+                )
+                if cur.rowcount:
+                    existing_pa.add(name.lower())
+                    pa_inserted += 1
+                else:
+                    pa_skipped += 1
+
+        conn.commit()
+
+    return {
+        "companies_inserted": co_inserted,
+        "companies_skipped":  co_skipped,
+        "partners_inserted":  pa_inserted,
+        "partners_skipped":   pa_skipped,
+    }
