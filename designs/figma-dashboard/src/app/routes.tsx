@@ -15,6 +15,7 @@ import LPPortalPage from "./pages/LPPortalPage";
 import IndustrialMatrix from "./pages/IndustrialMatrix";
 import EnrichmentQueue from "./pages/EnrichmentQueue";
 import ReportsPage from "./pages/ReportsPage";
+import AdminBatchPage from "./pages/AdminBatchPage";
 
 function Guard({ component: Component }: { component: React.ComponentType }) {
   return <AuthGuard><Component /></AuthGuard>;
@@ -58,6 +59,7 @@ export const router = createBrowserRouter([
   { path: "/sales",                   Component: () => <Guard component={SalesPage} />,        errorElement: <AppError /> },
   { path: "/requests",                Component: () => <Guard component={RequestsPage} />,     errorElement: <AppError /> },
   { path: "/admin",                   Component: () => <Guard component={Admin} />,            errorElement: <AppError /> },
+  { path: "/admin/batch",             Component: () => <Guard component={AdminBatchPage} />,   errorElement: <AppError /> },
 
   // Plugin pages — only reachable when the corresponding plugin is installed
   { path: "/explore",                 Component: () => <Guard component={DataExplorerPage} />, errorElement: <AppError /> },

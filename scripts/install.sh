@@ -12,7 +12,8 @@
 #   5. Starts the PostgreSQL Docker container
 #   6. Creates the Python venv and installs requirements
 #   7. Runs all DB migrations
-#   8. Prints next steps
+#   8. Installs plugins (copies from _staging/packages/ → installed/)
+#   9. Prints next steps
 
 set -euo pipefail
 
@@ -211,7 +212,55 @@ hdr "Running DB migrations..."
 bash "$REPO/scripts/migrate.sh"
 ok "Migrations complete"
 
-# ── 8. Done ───────────────────────────────────────────────────────────────────
+# ── 8. Install plugins ────────────────────────────────────────────────────────
+hdr "Installing plugins..."
+
+STAGING_PKGS="$REPO/plugins/_staging/packages"
+INSTALLED="$REPO/plugins/installed"
+mkdir -p "$INSTALLED"
+
+# Core plugins installed by default (can be extended by the team)
+DEFAULT_PLUGINS=(
+    "enrichment"
+    "industrial-matrix"
+    "intelligence-feed"
+    "lp-portal"
+    "news-feed"
+    "trend-reports"
+)
+
+echo ""
+echo "  Available plugins (default: all selected)."
+echo "  Press ENTER to accept, or type 'n' to skip each one."
+echo ""
+
+for slug in "${DEFAULT_PLUGINS[@]}"; do
+    src="$STAGING_PKGS/$slug"
+    dst="$INSTALLED/$slug"
+
+    if [[ ! -d "$src" ]]; then
+        warn "Plugin '$slug' not found in _staging/packages — skipping"
+        continue
+    fi
+
+    if [[ -d "$dst" ]]; then
+        ok "Plugin already installed: $slug"
+        continue
+    fi
+
+    read -rp "  Install plugin '$slug'? [Y/n] " choice
+    choice="${choice:-Y}"
+    if [[ "$choice" =~ ^[Yy]$ ]]; then
+        cp -r "$src" "$dst"
+        ok "Installed: $slug"
+    else
+        warn "Skipped: $slug"
+    fi
+done
+
+echo ""
+
+# ── 9. Done ───────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${GREEN}Installation complete.${NC}"
 echo ""
@@ -224,4 +273,5 @@ echo "  Default credentials:   admin / changeme"
 echo ""
 echo -e "  ${YELLOW}Change the admin password via the Admin page after first login.${NC}"
 echo -e "  ${YELLOW}See config/team.example.json for what to customize next.${NC}"
+echo -e "  ${YELLOW}Add/remove plugins: copy folders between plugins/_staging/packages/ and plugins/installed/.${NC}"
 echo ""
