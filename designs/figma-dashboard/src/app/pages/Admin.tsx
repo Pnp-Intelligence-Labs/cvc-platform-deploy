@@ -8,7 +8,7 @@ import {
   Settings, Megaphone, Pin, Trash, Search, RefreshCw, Save, MessageSquare, Send, X,
   Activity, Building2, GitBranch, CheckCircle2, Rocket, PencilLine, ShieldCheck,
   Handshake, BadgeDollarSign, Cpu, Zap, Users, ListChecks, BarChart2, ThumbsUp,
-  ExternalLink, ClipboardList,
+  ExternalLink, ClipboardList, UserPlus, UserX, Eye, EyeOff,
 } from 'lucide-react';
 import { cls } from '../components/tokens';
 
@@ -178,7 +178,7 @@ function CollapsibleSection({ id, icon, title, sub, badge, open, onToggle, child
 
 function PersonCard({
   user, userActivity, userAssignments, userRequests, draft, partners, dirty, saving,
-  onDraftChange, onSave,
+  onDraftChange, onSave, onDeactivate, canDeactivate,
 }: {
   user: StaffUser;
   userActivity: any[];
@@ -190,9 +190,12 @@ function PersonCard({
   saving: boolean;
   onDraftChange: (field: string, value: any) => void;
   onSave: () => void;
+  onDeactivate?: () => void;
+  canDeactivate?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showAllActivity, setShowAllActivity] = useState(false);
+  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
 
   const openAssignments = userAssignments.filter(a => a.status !== 'completed' && a.status !== 'cancelled');
   const visibleActivity = showAllActivity ? userActivity : userActivity.slice(0, 4);
@@ -270,6 +273,31 @@ function PersonCard({
               >
                 {saving ? '…' : 'Save'}
               </button>
+            )}
+            {canDeactivate && onDeactivate && !confirmDeactivate && (
+              <button
+                onClick={() => setConfirmDeactivate(true)}
+                className="ml-auto flex items-center gap-1 px-2 py-1 text-[10px] text-red-500 border border-red-200 rounded hover:bg-red-50 transition-colors"
+              >
+                <UserX className="w-3 h-3" /> Deactivate
+              </button>
+            )}
+            {canDeactivate && onDeactivate && confirmDeactivate && (
+              <div className="ml-auto flex items-center gap-1.5">
+                <span className="text-[10px] text-red-600 font-semibold">Confirm deactivate?</span>
+                <button
+                  onClick={() => { onDeactivate(); setConfirmDeactivate(false); }}
+                  className="px-2 py-1 text-[10px] bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                >
+                  Yes, deactivate
+                </button>
+                <button
+                  onClick={() => setConfirmDeactivate(false)}
+                  className="px-2 py-1 text-[10px] text-slate-500 border border-slate-200 rounded hover:bg-slate-100 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             )}
           </div>
 
@@ -645,6 +673,50 @@ export default function Admin() {
   const [savingUserId, setSavingUserId]   = useState<number | null>(null);
   const [staffDrafts, setStaffDrafts]     = useState<Record<number, { role: string; assigned_partner_ids: number[] }>>({});
 
+  // Add User modal
+  const [showAddUser, setShowAddUser]     = useState(false);
+  const [addUserForm, setAddUserForm]     = useState({ username: '', password: '', role: 'Ventures', full_name: '', email: '' });
+  const [addUserError, setAddUserError]   = useState('');
+  const [addUserSaving, setAddUserSaving] = useState(false);
+  const [showAddPw, setShowAddPw]         = useState(false);
+
+  const createUser = async () => {
+    const { username, password, role, full_name, email } = addUserForm;
+    if (!username.trim() || !password.trim()) { setAddUserError('Username and password are required'); return; }
+    if (password.length < 8) { setAddUserError('Password must be at least 8 characters'); return; }
+    setAddUserSaving(true);
+    setAddUserError('');
+    try {
+      const res = await fetch('/auth/users', {
+        method: 'POST',
+        headers: { ...AUTH, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username.trim().toLowerCase(), password, role, full_name: full_name.trim(), email: email.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+      // Add to local state
+      const newUser: StaffUser = { ...data, assigned_partner_ids: [] };
+      setStaffUsers(prev => [...prev, newUser]);
+      setStaffDrafts(d => ({ ...d, [data.id]: { role: data.role, assigned_partner_ids: [] } }));
+      setAddUserForm({ username: '', password: '', role: 'Ventures', full_name: '', email: '' });
+      setShowAddUser(false);
+    } catch (err: any) {
+      setAddUserError(err.message || 'Failed to create user');
+    } finally {
+      setAddUserSaving(false);
+    }
+  };
+
+  const deactivateUser = async (userId: number) => {
+    try {
+      const res = await fetch(`/auth/users/${userId}`, { method: 'DELETE', headers: AUTH });
+      if (res.ok) {
+        setStaffUsers(prev => prev.filter(u => u.id !== userId));
+        setStaffDrafts(d => { const next = { ...d }; delete next[userId]; return next; });
+      }
+    } catch { /* silent */ }
+  };
+
   useEffect(() => {
     if (!isAdmin) return;
     setStaffLoading(true);
@@ -917,6 +989,14 @@ export default function Admin() {
                           <p className={cls.sectionTitle}>Team</p>
                           <p className="text-[10px] text-slate-400 mt-0.5">bandwidth · activity · open work</p>
                         </div>
+                        {isAdmin && (
+                          <button
+                            onClick={() => { setShowAddUser(true); setAddUserError(''); }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E293B] text-cvc-gold text-xs font-semibold rounded hover:bg-slate-700 transition-colors"
+                          >
+                            <UserPlus className="w-3.5 h-3.5" /> Add User
+                          </button>
+                        )}
                       </div>
                       <div className="flex gap-0 -mb-px">
                         {([
@@ -960,6 +1040,8 @@ export default function Admin() {
                                 setStaffDrafts(d => ({ ...d, [user.id]: { ...d[user.id], [field]: value } }))
                               }
                               onSave={() => saveStaffUser(user.id)}
+                              canDeactivate={currentUser?.role === 'GP' && user.username !== currentUser?.username}
+                              onDeactivate={() => deactivateUser(user.id)}
                             />
                           );
                         })}
@@ -1398,6 +1480,110 @@ export default function Admin() {
 
         <div className="h-16" />
       </div>
+
+      {/* Add User Modal */}
+      {showAddUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm mx-4 p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-base font-semibold text-[#33322c]">Add Team Member</h2>
+              <button onClick={() => setShowAddUser(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wide text-slate-400 block mb-1">Username *</label>
+                <input
+                  autoFocus
+                  type="text"
+                  value={addUserForm.username}
+                  onChange={e => setAddUserForm(f => ({ ...f, username: e.target.value }))}
+                  placeholder="e.g. jsmith"
+                  className="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:outline-none focus:border-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wide text-slate-400 block mb-1">Password * (min 8 chars)</label>
+                <div className="relative">
+                  <input
+                    type={showAddPw ? 'text' : 'password'}
+                    value={addUserForm.password}
+                    onChange={e => setAddUserForm(f => ({ ...f, password: e.target.value }))}
+                    placeholder="Temporary password"
+                    className="w-full px-3 py-2 pr-9 border border-slate-200 rounded text-sm focus:outline-none focus:border-slate-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAddPw(v => !v)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showAddPw ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wide text-slate-400 block mb-1">Role *</label>
+                <select
+                  value={addUserForm.role}
+                  onChange={e => setAddUserForm(f => ({ ...f, role: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:outline-none focus:border-slate-400"
+                >
+                  {['GP', 'Principal', 'Director', 'Ventures', 'Senior PSM', 'PSM'].map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wide text-slate-400 block mb-1">Full Name</label>
+                <input
+                  type="text"
+                  value={addUserForm.full_name}
+                  onChange={e => setAddUserForm(f => ({ ...f, full_name: e.target.value }))}
+                  placeholder="Jane Smith"
+                  className="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:outline-none focus:border-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wide text-slate-400 block mb-1">Email</label>
+                <input
+                  type="email"
+                  value={addUserForm.email}
+                  onChange={e => setAddUserForm(f => ({ ...f, email: e.target.value }))}
+                  placeholder="jsmith@firm.com"
+                  className="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:outline-none focus:border-slate-400"
+                />
+              </div>
+
+              {addUserError && (
+                <p className="text-xs text-red-500">{addUserError}</p>
+              )}
+            </div>
+
+            <div className="flex gap-2 justify-end mt-5">
+              <button
+                onClick={() => setShowAddUser(false)}
+                className="px-4 py-2 text-sm text-slate-600 border border-slate-200 rounded hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={createUser}
+                disabled={addUserSaving}
+                className="flex items-center gap-1.5 px-4 py-2 bg-[#1E293B] text-cvc-gold text-sm font-semibold rounded hover:bg-slate-700 transition-colors disabled:opacity-50"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                {addUserSaving ? 'Creating…' : 'Create User'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
