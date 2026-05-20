@@ -72,11 +72,15 @@ The private plugin registry manages packaging and versioning.
 | `version` | yes | Semver string |
 | `routes.prefix` | yes | URL prefix where this plugin's router mounts |
 | `routes.tag` | yes | OpenAPI tag for this router |
-| `nav` | no | If present, platform nav injects this entry |
+| `nav` | no | If present and non-null, platform nav injects this entry. Set to `null` to install the plugin without surfacing it in the UI. |
 | `nav.roles` | no | Which roles see this nav item. Omit = all roles. |
 | `nav.path` | yes (if nav present) | React Router path — no `/app` prefix (e.g. `/explore` not `/app/explore`) |
 | `requires_tables` | no | List of table names (under `cvc.` schema) this plugin creates. Used by health check. |
 | `config_schema` | no | JSON Schema fragment for plugin-specific config keys in team.json |
+
+**`nav: null` is the correct default for most plugins.** A plugin installed with `nav: null` is fully functional — its API routes are mounted and its migrations run — but it does not inject a nav item. Teams enable the nav entry only for plugins they have licensed and want to surface to users. This prevents a new deployment from accidentally exposing the full feature set before a team has been onboarded to it.
+
+**API restart required after manifest changes.** The platform reads all plugin manifests once at startup and caches them in memory. If you change a manifest (including toggling `nav`), you must restart the API for the change to take effect. A hard browser refresh alone is not enough — the frontend reads plugin config from the API, not from disk.
 
 ---
 

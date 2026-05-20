@@ -282,14 +282,20 @@ The installer already prompted you to install plugins. If you want to add or rem
 cp -r plugins/_staging/packages/<slug> plugins/installed/<slug>
 # Run the plugin's migrations (creates any plugin-specific DB tables)
 bash scripts/migrate.sh
-# Then restart the API — it auto-discovers installed/ at startup
+# Restart the API — it reads installed/ at startup and caches it
+pkill -f "uvicorn api.main" && bash scripts/run_local.sh
 ```
 
 **Remove a plugin:**
 ```bash
 rm -rf plugins/installed/<slug>
 # Restart the API (plugin tables are left in the DB — no data loss)
+pkill -f "uvicorn api.main" && bash scripts/run_local.sh
 ```
+
+> **Important — API restart always required.** The platform loads plugin manifests once at startup and caches them. Any change to a plugin (install, remove, or editing a manifest) requires an API restart before it takes effect. A hard browser refresh alone is not enough.
+
+**Plugins ship with `nav: null` by default.** Installing a plugin does not automatically add it to the navigation bar. The plugin's API routes are active and its data is available, but the nav entry is off. To surface a plugin in the nav, edit its `manifest.json` in `plugins/installed/<slug>/` and set the `nav` field, then restart the API. This is intentional — it lets you install and configure a plugin before making it visible to your team.
 
 **Available plugins** (all included in the repo under `plugins/_staging/packages/`):
 
