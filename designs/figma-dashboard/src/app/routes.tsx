@@ -14,6 +14,7 @@ import DataExplorerPage from "./pages/DataExplorerPage";
 import LPPortalPage from "./pages/LPPortalPage";
 import IndustrialMatrix from "./pages/IndustrialMatrix";
 import EnrichmentQueue from "./pages/EnrichmentQueue";
+import ReportsPage from "./pages/ReportsPage";
 
 function Guard({ component: Component }: { component: React.ComponentType }) {
   return <AuthGuard><Component /></AuthGuard>;
@@ -63,6 +64,7 @@ export const router = createBrowserRouter([
   { path: "/lp",                      Component: () => <Guard component={LPPortalPage} />,     errorElement: <AppError /> },
   { path: "/industrial",              Component: () => <Guard component={IndustrialMatrix} />, errorElement: <AppError /> },
   { path: "/enrichment",              Component: () => <Guard component={EnrichmentQueue} />,  errorElement: <AppError /> },
+  { path: "/reports",                 Component: () => <Guard component={ReportsPage} />,       errorElement: <AppError /> },
 
   // Redirects for removed/plugin routes
   { path: "/portfolio",               Component: () => <Navigate to="/ventures" replace /> },

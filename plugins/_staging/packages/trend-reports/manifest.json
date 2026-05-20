@@ -1,0 +1,29 @@
+{
+  "slug":        "trend-reports",
+  "name":        "Trend Reports",
+  "version":     "1.0.0",
+  "description": "Report Workspace — compose, generate, and publish AI-assisted venture intelligence reports. Includes section generation, source management, DB query charts, Brave web search, and DOCX export.",
+  "routes": {
+    "prefix": "/reports",
+    "tag":    "trend-reports"
+  },
+  "nav": {
+    "label": "Reports",
+    "path":  "/reports",
+    "icon":  "BookOpen",
+    "roles": ["GP", "Principal", "Director"]
+  },
+  "requires_tables": [
+    "cvc.trend_reports",
+    "cvc.report_sections",
+    "cvc.report_sources",
+    "cvc.companies",
+    "cvc.funding_rounds",
+    "cvc.briefing_insights"
+  ],
+  "requires_env": [
+    "OPENROUTER_API_KEY",
+    "BRAVE_SEARCH_KEY"
+  ],
+  "config_schema": {}
+}
