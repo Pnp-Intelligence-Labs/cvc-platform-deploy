@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { Menu, LogOut, MessageSquare, Search, Camera, ClipboardList, FileText, ChevronDown } from 'lucide-react';
+import { Menu, LogOut, MessageSquare, Search, Camera, ClipboardList, FileText, ChevronDown, KeyRound, Eye, EyeOff, X } from 'lucide-react';
 import { api } from '../api/client';
 import { FeedbackModal } from './FeedbackModal';
 import { useConfig } from '../hooks/useConfig';
@@ -135,6 +135,46 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
   const dropRef   = useRef<HTMLDivElement>(null);
   const fileRef   = useRef<HTMLInputElement>(null);
 
+  // Change password modal
+  const [showChangePw,  setShowChangePw]  = useState(false);
+  const [cpCurrent,     setCpCurrent]     = useState('');
+  const [cpNew,         setCpNew]         = useState('');
+  const [cpConfirm,     setCpConfirm]     = useState('');
+  const [cpError,       setCpError]       = useState('');
+  const [cpSuccess,     setCpSuccess]     = useState(false);
+  const [cpSaving,      setCpSaving]      = useState(false);
+  const [cpShowNew,     setCpShowNew]     = useState(false);
+
+  const openChangePw = () => {
+    setShowChangePw(true); setOpen(false);
+    setCpCurrent(''); setCpNew(''); setCpConfirm(''); setCpError(''); setCpSuccess(false);
+  };
+
+  const submitChangePw = async () => {
+    if (cpNew.length < 8) { setCpError('New password must be at least 8 characters'); return; }
+    if (cpNew !== cpConfirm) { setCpError('Passwords do not match'); return; }
+    setCpSaving(true); setCpError('');
+    try {
+      // Verify current password via login
+      const loginRes = await fetch('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password: cpCurrent }),
+      });
+      if (!loginRes.ok) { setCpError('Current password is incorrect'); setCpSaving(false); return; }
+      const loginData = await loginRes.json();
+      const userId = JSON.parse(atob(loginData.access_token.split('.')[1])).sub;
+      const res = await fetch(`/auth/users/${userId}/reset-password`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${loginData.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: cpNew }),
+      });
+      if (!res.ok) { const d = await res.json(); setCpError(d.detail || 'Failed'); setCpSaving(false); return; }
+      setCpSuccess(true);
+    } catch { setCpError('Request failed'); }
+    setCpSaving(false);
+  };
+
   // Probe for server-side avatar on mount
   useEffect(() => {
     if (!username) return;
@@ -201,6 +241,7 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
   };
 
   return (
+    <>
     <div className="relative" ref={dropRef}>
       {/* Avatar button */}
       <button
@@ -277,6 +318,13 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
               {photoOk ? 'Change Photo' : 'Add Photo'}
             </button>
             <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+            <button
+              onClick={openChangePw}
+              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+            >
+              <KeyRound className="w-4 h-4 text-slate-500 shrink-0" />
+              Change Password
+            </button>
           </div>
 
           <div className="border-t border-slate-700/60 py-1.5">
@@ -291,6 +339,85 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
         </div>
       )}
     </div>
+
+    {/* Change Password Modal */}
+    {showChangePw && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
+        <div className="bg-white rounded-lg shadow-2xl w-full max-w-sm mx-4 p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-slate-500" /> Change Password
+            </h2>
+            <button onClick={() => setShowChangePw(false)} className="text-slate-400 hover:text-slate-600">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {cpSuccess ? (
+            <div className="text-center py-4">
+              <div className="text-emerald-600 font-semibold mb-2">Password updated successfully.</div>
+              <p className="text-xs text-slate-400 mb-4">You'll need to use your new password next time you log in.</p>
+              <button onClick={() => setShowChangePw(false)}
+                className="px-4 py-2 bg-slate-800 text-white text-sm rounded hover:bg-slate-700">
+                Done
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wide text-slate-400 block mb-1">Current Password</label>
+                <input
+                  type="password"
+                  autoFocus
+                  value={cpCurrent}
+                  onChange={e => { setCpCurrent(e.target.value); setCpError(''); }}
+                  className="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:outline-none focus:border-slate-400"
+                  placeholder="Your current password"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wide text-slate-400 block mb-1">New Password (min 8 chars)</label>
+                <div className="relative">
+                  <input
+                    type={cpShowNew ? 'text' : 'password'}
+                    value={cpNew}
+                    onChange={e => { setCpNew(e.target.value); setCpError(''); }}
+                    className="w-full px-3 py-2 pr-9 border border-slate-200 rounded text-sm focus:outline-none focus:border-slate-400"
+                    placeholder="New password"
+                  />
+                  <button type="button" onClick={() => setCpShowNew(v => !v)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    {cpShowNew ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wide text-slate-400 block mb-1">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={cpConfirm}
+                  onChange={e => { setCpConfirm(e.target.value); setCpError(''); }}
+                  className="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:outline-none focus:border-slate-400"
+                  placeholder="Repeat new password"
+                />
+              </div>
+              {cpError && <p className="text-xs text-red-500">{cpError}</p>}
+              <div className="flex gap-2 justify-end pt-1">
+                <button onClick={() => setShowChangePw(false)}
+                  className="px-4 py-2 text-sm text-slate-600 border border-slate-200 rounded hover:bg-slate-50">
+                  Cancel
+                </button>
+                <button onClick={submitChangePw} disabled={cpSaving || !cpCurrent || !cpNew || !cpConfirm}
+                  className="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded hover:bg-slate-700 disabled:opacity-50 transition-colors">
+                  {cpSaving ? 'Updating…' : 'Update Password'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

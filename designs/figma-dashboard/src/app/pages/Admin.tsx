@@ -8,7 +8,7 @@ import {
   Settings, Megaphone, Pin, Trash, Search, RefreshCw, Save, MessageSquare, Send, X,
   Activity, Building2, GitBranch, CheckCircle2, Rocket, PencilLine, ShieldCheck,
   Handshake, BadgeDollarSign, Cpu, Zap, Users, ListChecks, BarChart2, ThumbsUp,
-  ExternalLink, ClipboardList, UserPlus, UserX, Eye, EyeOff,
+  ExternalLink, ClipboardList, UserPlus, UserX, Eye, EyeOff, Package,
 } from 'lucide-react';
 import { cls } from '../components/tokens';
 
@@ -549,6 +549,7 @@ export default function Admin() {
     issues:         false,
     feedback:       false,
     'recent-edits': false,
+    plugins:        true,   // open by default so new deployers see health immediately
   });
   const toggle = (id: string) => setOpen(prev => ({ ...prev, [id]: !prev[id] }));
 
@@ -793,6 +794,21 @@ export default function Admin() {
       .then(d => setRecentEdits(d.company_changes ?? []))
       .catch(() => {});
   }, []);
+
+  // ── Plugin health ─────────────────────────────────────────────────────────
+  const [pluginHealth, setPluginHealth]     = useState<any[]>([]);
+  const [pluginLoading, setPluginLoading]   = useState(false);
+
+  const loadPluginHealth = () => {
+    setPluginLoading(true);
+    fetch('/admin/plugins/health', { headers: AUTH })
+      .then(r => r.json())
+      .then(d => setPluginHealth(d.installed ?? []))
+      .catch(() => setPluginHealth([]))
+      .finally(() => setPluginLoading(false));
+  };
+
+  useEffect(() => { loadPluginHealth(); }, []);
 
   // ── Auto-open urgent sections ─────────────────────────────────────────────
   useEffect(() => {
@@ -1208,6 +1224,56 @@ export default function Admin() {
                 </Link>
               ))}
             </div>
+
+            {/* ── Plugin Health ── */}
+            <CollapsibleSection
+              id="plugins"
+              icon={<Package className="w-4 h-4" />}
+              title="Installed Plugins"
+              sub="DB table verification per plugin"
+              badge={pluginHealth.filter(p => p.status === 'degraded').length}
+              open={open.plugins}
+              onToggle={() => toggle('plugins')}
+            >
+              <div className="space-y-2">
+                <div className="flex justify-end mb-1">
+                  <button onClick={loadPluginHealth}
+                    className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700">
+                    <RefreshCw className={`w-3.5 h-3.5 ${pluginLoading ? 'animate-spin' : ''}`} /> Refresh
+                  </button>
+                </div>
+                {pluginLoading ? (
+                  <div className="text-center py-8 text-slate-400 text-sm">Checking…</div>
+                ) : pluginHealth.length === 0 ? (
+                  <div className="text-center py-8 text-slate-400 text-sm">No plugins installed.</div>
+                ) : (
+                  <div className="divide-y divide-slate-100 border border-slate-200 rounded-lg overflow-hidden">
+                    {pluginHealth.map((p: any) => (
+                      <div key={p.slug} className="flex items-center gap-3 px-4 py-3 bg-white">
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${p.status === 'healthy' ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium text-slate-700">{p.name}</span>
+                          <span className="text-[10px] text-slate-400 ml-2 font-mono">{p.slug}</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 shrink-0">v{p.version}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                          p.status === 'healthy'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-red-50 text-red-600 border-red-200'
+                        }`}>
+                          {p.status === 'healthy' ? 'Healthy' : 'Degraded'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {pluginHealth.some(p => p.status === 'degraded') && (
+                  <p className="text-xs text-red-500 pt-1">
+                    Degraded plugins have missing DB tables. Run <code className="bg-slate-100 px-1 rounded">bash scripts/migrate.sh</code> to fix.
+                  </p>
+                )}
+              </div>
+            </CollapsibleSection>
 
             {/* ── Staff Feedback ── */}
             <CollapsibleSection
