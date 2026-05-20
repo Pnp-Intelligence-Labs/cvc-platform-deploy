@@ -182,15 +182,94 @@ Go to **Partners** → **Add Partner** to build your partner CRM.
 
 ## Step 7 — Configure API Keys (Optional)
 
-Some features require external API keys. Set these in your `.env` file:
+Some features use external APIs. None are required to run the platform —
+the core product works without them. They unlock specific AI-powered features.
 
-| Key | Feature | Where to get it |
-|---|---|---|
-| `OPENROUTER_API_KEY` | AI enrichment, partner analysis | openrouter.ai |
-| `BRAVE_API_KEY` | Company research, news signals | api.search.brave.com |
-| `PROXYCURL_API_KEY` | Founder LinkedIn data | nubela.co/proxycurl |
+### OpenRouter (`OPENROUTER_API_KEY`)
 
-After editing `.env`, restart the API for changes to take effect.
+**What it is:** A single API that routes requests to any major AI model
+(Claude, GPT-4, Gemini, Llama, etc.). You pick the model; you pay per use.
+
+**What it unlocks in this platform:**
+
+| Feature | What happens |
+|---|---|
+| Quick-add by URL | Paste a company URL → AI reads the site and pre-fills the company card (name, sector, one-liner, stage, headcount) |
+| Trend Reports plugin | AI drafts venture intelligence reports from your pipeline data and signals |
+| Intelligence Feed plugin | AI summarizes podcast transcripts and research papers into weekly briefings |
+
+**What happens without it:** Those specific actions fall back to manual entry.
+Everything else — the full company database, partners, pipeline, admin — works fine.
+
+**Cost:** You're billed per AI call, not per seat. A typical quick-add costs roughly
+$0.002–0.01 depending on which model you choose. A full trend report is $0.05–0.20.
+Most teams spend $5–20/month total.
+
+**How to get it:**
+1. Go to [openrouter.ai](https://openrouter.ai) and create an account
+2. Add a credit card and load a small amount (e.g. $10 to start)
+3. Go to **Keys** → **Create Key**
+4. Paste it into `.env` as `OPENROUTER_API_KEY=sk-or-...`
+
+**Which model to use:** The platform defaults to a fast, cheap model for enrichment
+and a more capable model for reports. You can override this in `.env`:
+```env
+OPENROUTER_DEFAULT_MODEL=anthropic/claude-3-haiku   # fast + cheap (enrichment)
+OPENROUTER_REPORT_MODEL=anthropic/claude-3-5-sonnet  # capable (reports)
+```
+If you don't set these, the platform picks sensible defaults.
+
+---
+
+### Brave Search (`BRAVE_API_KEY`)
+
+**What it is:** A web search API. Brave offers a free tier (2,000 searches/month)
+and paid tiers beyond that.
+
+**What it unlocks:** Company news tracking in the News Feed plugin — the background
+worker searches for recent news about your watched companies and stores the results.
+
+**What happens without it:** The News Feed plugin still installs and the UI still
+loads, but the news fetch worker won't find new articles.
+
+**How to get it:**
+1. Go to [api.search.brave.com](https://api.search.brave.com)
+2. Create an account → **Create App** → copy the API key
+3. Paste into `.env` as `BRAVE_API_KEY=BSA...`
+
+The free tier is enough for most teams (up to ~60 companies watched).
+
+---
+
+### Proxycurl (`PROXYCURL_API_KEY`)
+
+**What it is:** A LinkedIn data API — pulls founder and executive profiles
+from LinkedIn URLs without scraping.
+
+**What it unlocks:** Founder LinkedIn enrichment in the DD pipeline worker.
+When you run enrichment on a company, Proxycurl fills in founder background,
+previous companies, and education.
+
+**What happens without it:** The enrichment worker skips the LinkedIn step.
+All other enrichment (website, sector, stage, description) still runs.
+
+**How to get it:**
+1. Go to [nubela.co/proxycurl](https://nubela.co/proxycurl)
+2. Create an account — they offer a free trial (10 credits)
+3. Paste into `.env` as `PROXYCURL_API_KEY=...`
+
+Proxycurl is optional even if you're running enrichment. Start without it.
+
+---
+
+After editing `.env`, restart the API for changes to take effect:
+```bash
+# If running via systemd:
+sudo systemctl restart platform-api
+
+# If running manually:
+# Stop the process and re-run: bash scripts/run_local.sh
+```
 
 ---
 
