@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, SlidersHorizontal, X, Users, BookOpen, Plus, Loader2 } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Users, BookOpen, Plus, Loader2, Upload } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
 import { cls } from '../components/tokens';
-import { AUTH_HEADER as AUTH } from '../api/client';
+import { AUTH_HEADER as AUTH, api } from '../api/client';
 
 
 const STAGES = ['All Stages', 'pre_seed', 'seed', 'series_a', 'series_b', 'series_c', 'undisclosed'];
@@ -54,8 +54,20 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
+interface ImportResult {
+  inserted: number;
+  skipped: number;
+  failed: number;
+  total_rows: number;
+  errors: string[];
+}
+
 export default function CompanySearch() {
   const navigate = useNavigate();
+
+  // Current user role — used to gate Import CSV button
+  const currentUser = api.getCurrentUser();
+  const canImport = ['GP', 'Principal', 'Director'].includes(currentUser?.role ?? '');
 
   // Quick Add
   const [showQA, setShowQA]           = useState(false);
@@ -64,6 +76,47 @@ export default function CompanySearch() {
   const [qaError, setQaError]         = useState('');
   const [qaAddPipeline, setQaAddPipeline] = useState(false);
   const qaInputRef                    = useRef<HTMLInputElement>(null);
+
+  // CSV Import
+  const [showImport, setShowImport]       = useState(false);
+  const [importFile, setImportFile]       = useState<File | null>(null);
+  const [importing, setImporting]         = useState(false);
+  const [importResult, setImportResult]   = useState<ImportResult | null>(null);
+  const [importError, setImportError]     = useState('');
+  const fileInputRef                      = useRef<HTMLInputElement>(null);
+
+  const handleImport = async () => {
+    if (!importFile) return;
+    setImporting(true);
+    setImportError('');
+    setImportResult(null);
+    try {
+      const form = new FormData();
+      form.append('file', importFile);
+      const res = await fetch('/admin/companies/import', {
+        method: 'POST',
+        headers: AUTH,
+        body: form,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+      setImportResult(data);
+      setImportFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (err: any) {
+      setImportError(err.message || 'Import failed');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const closeImport = () => {
+    setShowImport(false);
+    setImportFile(null);
+    setImportResult(null);
+    setImportError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleQuickAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,12 +227,22 @@ export default function CompanySearch() {
             </div>
             <div className="flex flex-col items-end gap-1.5 shrink-0">
               {!showQA ? (
-                <button
-                  onClick={() => { setShowQA(true); setTimeout(() => qaInputRef.current?.focus(), 50); }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E293B] text-cvc-gold text-xs font-semibold rounded hover:bg-slate-700 transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Quick Add
-                </button>
+                <div className="flex items-center gap-2">
+                  {canImport && (
+                    <button
+                      onClick={() => setShowImport(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 text-slate-600 text-xs font-semibold rounded hover:border-slate-400 hover:text-slate-800 transition-colors"
+                    >
+                      <Upload className="w-3.5 h-3.5" /> Import CSV
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setShowQA(true); setTimeout(() => qaInputRef.current?.focus(), 50); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E293B] text-cvc-gold text-xs font-semibold rounded hover:bg-slate-700 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Quick Add
+                  </button>
+                </div>
               ) : (
                 <div className="flex flex-col items-end gap-1.5">
                   <form onSubmit={handleQuickAdd} className="flex items-center gap-2">
@@ -418,6 +481,112 @@ export default function CompanySearch() {
           </div>
         )}
       </main>
+
+      {/* CSV Import Modal */}
+      {showImport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-[#33322c]">Import Companies from CSV</h2>
+              <button onClick={closeImport} className="text-slate-400 hover:text-slate-600">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {!importResult ? (
+              <>
+                <p className="text-xs text-slate-500 mb-4">
+                  Upload a CSV with company data. Only <code className="bg-slate-100 px-1 rounded">name</code> is
+                  required — all other columns are optional. Existing companies (matched by name) are skipped.
+                </p>
+                <div className="text-xs text-slate-400 mb-4 space-y-0.5">
+                  <div className="font-medium text-slate-500 mb-1">Supported columns:</div>
+                  {['name', 'website', 'sector', 'stage', 'hq_city', 'hq_country', 'founded',
+                    'employee_count', 'total_raised_usd', 'one_liner'].map(col => (
+                    <span key={col} className="inline-block mr-1.5 mb-1 px-1.5 py-0.5 bg-slate-100 rounded font-mono">{col}</span>
+                  ))}
+                </div>
+
+                <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:border-slate-400 hover:bg-slate-50 transition-colors mb-4">
+                  <Upload className="w-6 h-6 text-slate-400 mb-1.5" />
+                  <span className="text-sm text-slate-500">
+                    {importFile ? importFile.name : 'Click to select CSV file'}
+                  </span>
+                  {importFile && (
+                    <span className="text-xs text-slate-400 mt-0.5">
+                      {(importFile.size / 1024).toFixed(1)} KB
+                    </span>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,text/csv"
+                    className="hidden"
+                    onChange={e => { setImportFile(e.target.files?.[0] ?? null); setImportError(''); }}
+                  />
+                </label>
+
+                {importError && (
+                  <p className="text-xs text-red-500 mb-3">{importError}</p>
+                )}
+
+                <div className="flex gap-2 justify-end">
+                  <button onClick={closeImport}
+                    className="px-4 py-2 text-sm text-slate-600 border border-slate-200 rounded hover:bg-slate-50 transition-colors">
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleImport}
+                    disabled={!importFile || importing}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-[#1E293B] text-cvc-gold text-sm font-semibold rounded hover:bg-slate-700 transition-colors disabled:opacity-50"
+                  >
+                    {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                    {importing ? 'Importing…' : 'Import'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="text-center p-3 bg-emerald-50 rounded-lg">
+                    <div className="text-2xl font-bold text-emerald-600">{importResult.inserted}</div>
+                    <div className="text-xs text-emerald-700 mt-0.5">Added</div>
+                  </div>
+                  <div className="text-center p-3 bg-slate-50 rounded-lg">
+                    <div className="text-2xl font-bold text-slate-500">{importResult.skipped}</div>
+                    <div className="text-xs text-slate-500 mt-0.5">Skipped</div>
+                  </div>
+                  <div className="text-center p-3 bg-red-50 rounded-lg">
+                    <div className="text-2xl font-bold text-red-500">{importResult.failed}</div>
+                    <div className="text-xs text-red-600 mt-0.5">Failed</div>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-400 mb-3">
+                  {importResult.total_rows} rows processed.
+                  {importResult.inserted > 0 && ' New companies are queued for enrichment.'}
+                </p>
+                {importResult.errors.length > 0 && (
+                  <div className="bg-red-50 rounded p-3 mb-4 max-h-32 overflow-y-auto">
+                    {importResult.errors.map((e, i) => (
+                      <p key={i} className="text-xs text-red-600">{e}</p>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => { setImportResult(null); }}
+                    className="px-4 py-2 text-sm text-slate-600 border border-slate-200 rounded hover:bg-slate-50 transition-colors">
+                    Import Another
+                  </button>
+                  <button onClick={closeImport}
+                    className="px-4 py-2 bg-[#1E293B] text-cvc-gold text-sm font-semibold rounded hover:bg-slate-700 transition-colors">
+                    Done
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
