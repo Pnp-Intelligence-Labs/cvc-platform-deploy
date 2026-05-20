@@ -1,126 +1,97 @@
-# Ventures Platform
+# Vertical OS — Plug and Play VC Platform
 
-Internal operations platform for venture capital teams. Manages deal flow, partner CRM, sourcing, requests, and portfolio tracking.
-
-**This repo is the generalized version of CVC Intelligence** — stripped of fund-specific features and built for deployment to any VC team.
-
----
-
-## Architecture
-
-- **Backend:** FastAPI (Python), port 8002
-- **Frontend:** React SPA (Vite + Tailwind), served at `/app`
-- **Database:** PostgreSQL 16
-- **Auth:** JWT (HS256, 7-day tokens)
-- **Deployment:** Docker Compose
+A self-hosted, single-tenant operations platform for venture capital teams.
+Deploy it on your own server in under an hour. Your data never leaves your infrastructure.
 
 ---
 
-## Core Features
+## What's Included
 
-| Section | Description |
+### Core Platform
+
+| Section | What it does |
 |---|---|
-| Homepage | Configurable team + personal widgets, Google Calendar |
-| Ventures | Startup tracking, CSV import, deal flow, portfolio tab |
-| Partners | Partner CRM — team-managed data |
-| Sales Pipeline | Deal stage tracking |
-| Requests | PSM service requests → task assignment workflow |
-| Quick Notes | Meeting notes and observations |
+| **Homepage** | Role-aware dashboard — KPIs, pipeline summary, team activity, leaderboard |
+| **Ventures** | Company database, deal flow pipeline, CSV import, bulk enrichment |
+| **Partners** | Corporate partner CRM — contacts, matched startups, notes, documents, CSV import |
+| **Partner Terminal** | Per-partner deep-dive: advisory logs, document intel, AI-assisted briefing |
+| **Sales Pipeline** | Outbound deal tracking by stage |
+| **Requests** | Inbound partnership requests → triage → assignment workflow |
+| **Meeting Notes** | Structured note-taking tied to companies and partners |
+| **Admin** | User management, role assignment, partner assignments, plugin health |
 
-**Plugins** (optional, shipped separately): LP Portal, Advisory Terminal, Industrial Matrix, Intelligence Feed, DD Pipeline, Portfolio News, Meeting Intelligence
+### Plugins (optional)
+
+Install any combination during setup or later. Each plugin ships with its own DB migrations.
+
+| Plugin | Slug | What it adds |
+|---|---|---|
+| Enrichment Queue | `enrichment` | Automated company enrichment, DD workflow, quick-add by URL |
+| Industrial Matrix | `industrial-matrix` | Sector readiness scoring with configurable metrics |
+| Intelligence Feed | `intelligence-feed` | Weekly briefing pipeline — podcasts, research, signals |
+| LP Portal | `lp-portal` | Fund metrics and LP-facing reporting |
+| News Feed | `news-feed` | Company news tracking via Brave Search |
+| Trend Reports | `trend-reports` | AI-assisted venture intelligence report builder |
+| Data Explorer | `data-explorer` | Pre-built analytical reports — pipeline funnel, sector mix, stage breakdown |
+
+---
+
+## Quick Start
+
+```bash
+git clone https://github.com/natelouie11-tech/cvc-platform-deploy
+cd cvc-platform-deploy
+bash scripts/install.sh
+```
+
+The installer handles everything: dependencies → `.env` → team config → frontend build → database → migrations → plugin selection → optional demo data.
+
+Full setup instructions: [`onboarding/SETUP_GUIDE.md`](onboarding/SETUP_GUIDE.md)
+End-user guide (share with your team): [`onboarding/USER_GUIDE.md`](onboarding/USER_GUIDE.md)
 
 ---
 
 ## Local Development
 
-### Prerequisites
-- Docker + Docker Compose
-- Python 3.11+
-- Node 18+ (for frontend)
-
-### First-time setup
-
 ```bash
-# 1. Clone and enter the repo
-git clone https://github.com/natelouie11-tech/cvc-platform-deploy
-cd cvc-platform-deploy
-
-# 2. Create your .env
-cp .env.example .env
-# Edit .env: set JWT_SECRET (any random string is fine for dev)
-
-# 3. Start the platform
-bash scripts/run_local.sh
+bash scripts/run_local.sh        # starts PostgreSQL (Docker) + API at :8002
+cd designs/figma-dashboard && npm run dev   # frontend dev server at :5173
 ```
 
-This will:
-- Pull and start PostgreSQL in Docker
-- Run all DB migrations
-- Create a Python venv and install dependencies
-- Start the API at http://127.0.0.1:8002
-
-### Stopping the DB
-
-```bash
-bash scripts/run_local.sh --stop
-```
-
-### Running the frontend (hot reload)
-
-```bash
-cd designs/figma-dashboard
-npm install
-npm run dev
-# Runs at http://localhost:5173 — proxies API calls to :8002
-```
-
-### Run migrations only
-
-```bash
-bash scripts/migrate.sh
-```
+Default login: `admin` / `changeme`
 
 ---
 
-## Deployment (Docker)
+## Architecture
 
-```bash
-cp .env.example .env
-# Fill in all values — especially DB_PASSWORD and JWT_SECRET
-
-docker compose up -d
-
-# Run migrations (first deploy only)
-bash scripts/migrate.sh
-```
-
----
-
-## Project Structure
+| Layer | Stack |
+|---|---|
+| Backend | FastAPI (Python 3.10+), port 8002 |
+| Frontend | React SPA — Vite + Tailwind, served at `/app` |
+| Database | PostgreSQL 16 (Docker) |
+| Auth | JWT HS256, 7-day tokens |
+| Plugins | Discovered from `plugins/installed/` at startup |
 
 ```
-├── api/
-│   ├── main.py              # FastAPI app — routes, CORS, SPA fallback
-│   ├── auth.py              # Auth shim (require_auth)
-│   ├── routes/              # One file per feature area
-│   └── static/app/          # Built React SPA
-├── core/
-│   ├── config.py            # Shared config (API keys, model names)
-│   └── db/
-│       ├── connection.py    # DB connection (reads DB_* env vars)
-│       └── migrations/      # Numbered SQL migrations (idempotent)
-├── designs/
-│   └── figma-dashboard/     # React SPA source (Vite + Tailwind)
-├── workers/                 # Background workers
+├── api/                    # FastAPI backend
+│   ├── main.py             # App entry point — routes, CORS, plugin loader
+│   ├── auth.py             # JWT auth middleware
+│   ├── plugin_loader.py    # Discovers and mounts installed plugins
+│   └── routes/             # One file per feature area
+├── core/db/migrations/     # Numbered SQL migrations (idempotent)
+├── designs/figma-dashboard/ # React SPA source
 ├── plugins/
-│   └── _staging/            # Plugin code staged for packaging
-├── scripts/
-│   ├── run_local.sh         # Start local dev environment
-│   └── migrate.sh           # Run DB migrations
-├── docker-compose.yml       # Production: API + DB
-├── docker-compose.dev.yml   # Dev: DB only
-├── Dockerfile
-└── .env.example
+│   ├── _staging/packages/  # All plugins (staged, not active)
+│   └── installed/          # Active plugins (copied here to enable)
+├── config/
+│   └── team.json           # Runtime team config (name, sectors, fund names)
+├── onboarding/             # Setup guide, user guide, sample CSVs
+└── scripts/
+    ├── install.sh          # One-command bootstrap
+    ├── migrate.sh          # Run core + plugin migrations
+    ├── run_local.sh        # Local dev stack
+    ├── smoke_test.sh       # API smoke test (post-install verification)
+    └── seed_demo.py        # Load 30 demo companies + 4 partners
 ```
 
 ---
@@ -137,13 +108,37 @@ bash scripts/migrate.sh
 | `JWT_SECRET` | Yes | Secret for signing JWT tokens |
 | `PORT` | No | API port (default: 8002) |
 | `ALLOWED_ORIGINS` | No | Comma-separated CORS origins |
+| `OPENROUTER_API_KEY` | Plugin | AI enrichment, partner analysis, report builder |
+| `BRAVE_API_KEY` | Plugin | Company news, research signals |
+| `PROXYCURL_API_KEY` | Plugin | Founder LinkedIn data |
 
-Plugin API keys (OPENROUTER_API_KEY, BRAVE_API_KEY, PROXYCURL_API_KEY) are only needed if plugins are installed.
+---
+
+## Roles
+
+| Role | Access |
+|---|---|
+| **GP** | Everything — full admin |
+| **Principal / Director** | Everything except system configuration |
+| **Ventures** | Companies, deal flow, DD, fund metrics |
+| **PSM** | Assigned partners only, no fund data |
+
+---
+
+## Verification
+
+After install, run the smoke test to confirm everything is working:
+
+```bash
+bash scripts/smoke_test.sh
+```
 
 ---
 
 ## Key Docs
 
-- `docs/PHASE1_BUILD_PLAN.md` — auth + roles build plan (complete)
-- `docs/DECISIONS.md` — architecture decisions (do not re-litigate)
-- `PRODUCT_VISION.md` — what the platform is and does
+- [`onboarding/SETUP_GUIDE.md`](onboarding/SETUP_GUIDE.md) — admin setup and deployment guide
+- [`onboarding/USER_GUIDE.md`](onboarding/USER_GUIDE.md) — end-user guide for team members
+- [`docs/DECISIONS.md`](docs/DECISIONS.md) — architecture decisions
+- [`docs/PLUGIN_INTERFACE.md`](docs/PLUGIN_INTERFACE.md) — how to build a plugin
+- [`PRODUCT_VISION.md`](PRODUCT_VISION.md) — product vision and design principles

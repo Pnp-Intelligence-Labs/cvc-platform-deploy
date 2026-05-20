@@ -229,6 +229,7 @@ DEFAULT_PLUGINS=(
     "lp-portal"
     "news-feed"
     "trend-reports"
+    "data-explorer"
 )
 
 echo ""

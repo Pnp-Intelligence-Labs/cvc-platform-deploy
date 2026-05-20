@@ -151,6 +151,8 @@ curl -X POST http://localhost:8002/admin/companies/import \
   -F "file=@your_companies.csv"
 ```
 
+A sample file is at `onboarding/sample_companies.csv`. Use it as a template or to test the import flow.
+
 **Supported columns** (all optional except `name`):
 
 | Column | Example |

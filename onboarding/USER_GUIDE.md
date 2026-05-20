@@ -84,6 +84,8 @@ Use the filters (sector, stage, status) to narrow the list.
 2. Upload a spreadsheet exported from any tool (Excel, Airtable, Notion, etc.)
 3. The platform matches columns automatically
 
+A sample file is included at `onboarding/sample_companies.csv` — use it as a template.
+
 Supported CSV columns:
 
 | Column | Example |
@@ -150,6 +152,8 @@ Click any partner to open their profile.
 **Bulk import (GP / Principal / Director only):**
 1. Click **Import CSV** (top-right)
 2. Upload a CSV with your partner list
+
+A sample file is included at `onboarding/sample_partners.csv` — use it as a template.
 
 Supported CSV columns:
 
