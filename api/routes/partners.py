@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Query, Depends
 from typing import List, Optional
 from core.db.connection import get_connection
+from core.storage import storage as _storage
 from psycopg2.extras import RealDictCursor, Json
 from api.routes.auth import require_jwt, UserInfo
 import io
@@ -560,7 +561,7 @@ def get_documents(id: int, user: UserInfo = Depends(require_jwt)):
                 SELECT id, filename, COALESCE(title, filename) AS title, file_type, source_label,
                        parsed, uploaded_at, document_date, summary, extracted_intel,
                        length(coalesce(raw_text, '')) AS text_length,
-                       file_data IS NOT NULL AS has_file,
+                       (file_data IS NOT NULL OR storage_backend = 'minio') AS has_file,
                        visibility, assigned_psm
                 FROM cvc.partner_documents
                 WHERE partner_id = %s {vis_clause}
@@ -589,15 +590,32 @@ def upload_document(id: int, file: UploadFile = File(...), source_label: str = F
 
     vis, psm = ("psm_only", user.username) if user.role == "PSM" else ("team", None)
 
+    # Attempt MinIO upload; fall back to bytea on failure
+    storage_backend = "db"
+    storage_key = None
+    file_data_val = content
+    try:
+        storage_key = _storage.upload(
+            f"partners/{id}/documents/{fname}",
+            content,
+            file.content_type or "application/octet-stream",
+        )
+        storage_backend = "minio"
+        file_data_val = None   # don't duplicate bytes in DB
+    except Exception:
+        pass  # MinIO unavailable — fall back to bytea
+
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
                 INSERT INTO cvc.partner_documents
-                    (partner_id, filename, title, file_type, file_data, source_label, parsed, raw_text, document_date, visibility, assigned_psm)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    (partner_id, filename, title, file_type, file_data, source_label, parsed, raw_text,
+                     document_date, visibility, assigned_psm, storage_backend, storage_key)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id, filename, COALESCE(title, filename) AS title, file_type,
                           source_label, parsed, uploaded_at, document_date
-            """, (id, fname, title, file.content_type, content, source_label, parsed, raw_text, doc_date, vis, psm))
+            """, (id, fname, title, file.content_type, file_data_val, source_label, parsed, raw_text,
+                  doc_date, vis, psm, storage_backend, storage_key))
             conn.commit()
             result = cur.fetchone()
 
@@ -641,7 +659,8 @@ def analyze_document(id: int, doc_id: int):
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
-                "SELECT id, raw_text, filename, title, file_data FROM cvc.partner_documents WHERE id=%s AND partner_id=%s",
+                "SELECT id, raw_text, filename, title, file_data, storage_backend, storage_key "
+                "FROM cvc.partner_documents WHERE id=%s AND partner_id=%s",
                 (doc_id, id),
             )
             doc = cur.fetchone()
@@ -650,10 +669,20 @@ def analyze_document(id: int, doc_id: int):
     doc_title = doc.get("title") or doc["filename"]
     if doc["raw_text"]:
         threading.Thread(target=_analyze_document_bg, args=(doc["id"], doc["raw_text"], doc["filename"], doc_title), daemon=True).start()
-    elif doc["file_data"]:
-        threading.Thread(target=_analyze_document_vision_bg, args=(doc["id"], bytes(doc["file_data"]), doc["filename"], doc_title), daemon=True).start()
     else:
-        raise HTTPException(status_code=400, detail="No content available for this document")
+        # Need raw bytes for vision LLM — fetch from MinIO or bytea
+        pdf_bytes = None
+        if doc["storage_backend"] == "minio" and doc["storage_key"]:
+            try:
+                pdf_bytes = _storage.download(doc["storage_key"])
+            except Exception:
+                raise HTTPException(status_code=503, detail="File storage unavailable")
+        elif doc["file_data"]:
+            pdf_bytes = bytes(doc["file_data"])
+        if pdf_bytes:
+            threading.Thread(target=_analyze_document_vision_bg, args=(doc["id"], pdf_bytes, doc["filename"], doc_title), daemon=True).start()
+        else:
+            raise HTTPException(status_code=400, detail="No content available for this document")
     return {"status": "analyzing", "doc_id": doc_id}
 
 @router.get("/{id}/intel-summary")
@@ -776,26 +805,44 @@ def download_document(id: int, doc_id: int):
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
-                SELECT filename, file_type, file_data FROM cvc.partner_documents 
+                SELECT filename, file_type, file_data, storage_backend, storage_key
+                FROM cvc.partner_documents
                 WHERE id = %s AND partner_id = %s
             """, (doc_id, id))
             result = cur.fetchone()
-            if not result:
-                raise HTTPException(status_code=404, detail="Document not found")
-            return Response(
-                content=result["file_data"],
-                media_type=result["file_type"],
-                headers={"Content-Disposition": f"attachment; filename={result['filename']}"}
-            )
+    if not result:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if result["storage_backend"] == "minio" and result["storage_key"]:
+        try:
+            content = _storage.download(result["storage_key"])
+        except Exception:
+            raise HTTPException(status_code=503, detail="File storage unavailable")
+    elif result["file_data"]:
+        content = bytes(result["file_data"])
+    else:
+        raise HTTPException(status_code=404, detail="File data not available")
+
+    return Response(
+        content=content,
+        media_type=result["file_type"] or "application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{result["filename"]}"'},
+    )
 
 @router.delete("/{id}/documents/{doc_id}")
 def delete_document(id: int, doc_id: int):
     with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM cvc.partner_documents WHERE id = %s AND partner_id = %s", 
-                       (doc_id, id))
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                "DELETE FROM cvc.partner_documents WHERE id = %s AND partner_id = %s "
+                "RETURNING storage_backend, storage_key",
+                (doc_id, id),
+            )
+            deleted = cur.fetchone()
             conn.commit()
-            return {"deleted": True}
+    if deleted and deleted["storage_backend"] == "minio" and deleted["storage_key"]:
+        _storage.delete(deleted["storage_key"])
+    return {"deleted": True}
 
 _CONTRACT_SERVICES = [
     "Private Dealflow Sessions", "Trend Report", "Custom Trend Report",
@@ -947,14 +994,30 @@ def upload_contract(id: int, file: UploadFile = File(...)):
     from datetime import date as _date
     usage_year = _date.today().year
 
+    # Attempt MinIO upload; fall back to bytea on failure
+    storage_backend = "db"
+    storage_key = None
+    file_data_val = content
+    try:
+        storage_key = _storage.upload(
+            f"partners/{id}/contracts/{fname}",
+            content,
+            ftype,
+        )
+        storage_backend = "minio"
+        file_data_val = None
+    except Exception:
+        pass  # MinIO unavailable — fall back to bytea
+
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
                 INSERT INTO cvc.partner_contracts
-                    (partner_id, filename, file_type, file_data, summary, contract_status, created_at)
-                VALUES (%s, %s, %s, %s, %s, 'Active', NOW())
+                    (partner_id, filename, file_type, file_data, summary, contract_status,
+                     storage_backend, storage_key, created_at)
+                VALUES (%s, %s, %s, %s, %s, 'Active', %s, %s, NOW())
                 RETURNING id
-            """, (id, fname, ftype, content, (raw_text or "")[:3000]))
+            """, (id, fname, ftype, file_data_val, (raw_text or "")[:3000], storage_backend, storage_key))
             conn.commit()
             contract_id = cur.fetchone()["id"]
 
@@ -978,17 +1041,27 @@ def re_extract_contract(id: int):
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
-                SELECT id, file_data, summary FROM cvc.partner_contracts
+                SELECT id, file_data, storage_backend, storage_key FROM cvc.partner_contracts
                 WHERE partner_id = %s
                 ORDER BY COALESCE(created_at, NOW()) DESC
                 LIMIT 1
             """, (id,))
             row = cur.fetchone()
 
-    if not row or not row["file_data"]:
+    if not row:
+        raise HTTPException(status_code=404, detail="No contract on file for this partner")
+
+    if row["storage_backend"] == "minio" and row["storage_key"]:
+        try:
+            pdf_bytes = _storage.download(row["storage_key"])
+        except Exception:
+            raise HTTPException(status_code=503, detail="File storage unavailable")
+    elif row["file_data"]:
+        pdf_bytes = bytes(row["file_data"])
+    else:
         raise HTTPException(status_code=404, detail="No contract file on file for this partner")
 
-    raw_text = _extract_pdf_text(bytes(row["file_data"]))
+    raw_text = _extract_pdf_text(pdf_bytes)
     if not raw_text:
         raise HTTPException(status_code=422, detail="Could not extract text from contract PDF")
 
@@ -1007,14 +1080,18 @@ def re_extract_contract(id: int):
 @router.delete("/{id}/contract/{contract_id}")
 def delete_contract(id: int, contract_id: int):
     with get_connection() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
-                "DELETE FROM cvc.partner_contracts WHERE id = %s AND partner_id = %s",
+                "DELETE FROM cvc.partner_contracts WHERE id = %s AND partner_id = %s "
+                "RETURNING storage_backend, storage_key",
                 (contract_id, id),
             )
-            if cur.rowcount == 0:
+            deleted = cur.fetchone()
+            if not deleted:
                 raise HTTPException(status_code=404, detail="Contract not found")
             conn.commit()
+    if deleted["storage_backend"] == "minio" and deleted["storage_key"]:
+        _storage.delete(deleted["storage_key"])
     return {"deleted": True}
 
 
@@ -1024,19 +1101,31 @@ def download_contract(id: int):
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
-                SELECT filename, file_type, file_data FROM cvc.partner_contracts
+                SELECT filename, file_type, file_data, storage_backend, storage_key
+                FROM cvc.partner_contracts
                 WHERE partner_id = %s
                 ORDER BY COALESCE(created_at, NOW()) DESC
                 LIMIT 1
             """, (id,))
             result = cur.fetchone()
-            if not result or not result["file_data"]:
-                raise HTTPException(status_code=404, detail="Contract file not found")
-            return Response(
-                content=bytes(result["file_data"]),
-                media_type=result["file_type"] or "application/octet-stream",
-                headers={"Content-Disposition": f'attachment; filename="{result["filename"]}"'},
-            )
+    if not result:
+        raise HTTPException(status_code=404, detail="Contract file not found")
+
+    if result["storage_backend"] == "minio" and result["storage_key"]:
+        try:
+            content = _storage.download(result["storage_key"])
+        except Exception:
+            raise HTTPException(status_code=503, detail="File storage unavailable")
+    elif result["file_data"]:
+        content = bytes(result["file_data"])
+    else:
+        raise HTTPException(status_code=404, detail="Contract file not found")
+
+    return Response(
+        content=content,
+        media_type=result["file_type"] or "application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{result["filename"]}"'},
+    )
 
 @router.get("/{id}/services")
 def get_services(id: int, year: int = None):
