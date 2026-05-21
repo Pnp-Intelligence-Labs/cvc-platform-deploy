@@ -26,7 +26,7 @@ export PGPASSWORD="${DB_PASSWORD:-platform_local}"
 run_sql() {
     local file="$1"
     psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
-         -v ON_ERROR_STOP=0 -q -f "$file" 2>/dev/null || true
+         -v ON_ERROR_STOP=1 -f "$file"
 }
 
 echo "Running migrations against $DB_NAME@$DB_HOST:$DB_PORT..."

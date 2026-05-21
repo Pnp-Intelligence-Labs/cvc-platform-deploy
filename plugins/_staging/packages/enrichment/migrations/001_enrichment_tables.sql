@@ -4,7 +4,7 @@
 -- for deployments that install the plugin before running all core migrations.
 
 -- build_tasks — task queue for enrichment workers
-CREATE TABLE IF NOT EXISTS cvc.build_tasks (
+CREATE TABLE IF NOT EXISTS build_tasks (
     id          SERIAL PRIMARY KEY,
     task_type   TEXT NOT NULL,
     payload     JSONB NOT NULL DEFAULT '{}',
@@ -18,13 +18,13 @@ CREATE TABLE IF NOT EXISTS cvc.build_tasks (
     error_msg   TEXT,
     result      JSONB
 );
-CREATE INDEX IF NOT EXISTS idx_build_tasks_status   ON cvc.build_tasks (status, priority DESC, created_at);
-CREATE INDEX IF NOT EXISTS idx_build_tasks_type     ON cvc.build_tasks (task_type, status);
+CREATE INDEX IF NOT EXISTS idx_build_tasks_status   ON build_tasks (status, priority DESC, created_at);
+CREATE INDEX IF NOT EXISTS idx_build_tasks_type     ON build_tasks (task_type, status);
 
 -- company_activity_log — field-level audit trail for companies
-CREATE TABLE IF NOT EXISTS cvc.company_activity_log (
+CREATE TABLE IF NOT EXISTS company_activity_log (
     id            BIGSERIAL PRIMARY KEY,
-    company_id    INT NOT NULL REFERENCES cvc.companies(id) ON DELETE CASCADE,
+    company_id    INT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
     changed_by    TEXT NOT NULL DEFAULT 'system',
     changed_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     field_name    TEXT NOT NULL,
@@ -32,12 +32,12 @@ CREATE TABLE IF NOT EXISTS cvc.company_activity_log (
     new_value     TEXT,
     change_source TEXT NOT NULL DEFAULT 'manual'
 );
-CREATE INDEX IF NOT EXISTS idx_company_activity_log_company ON cvc.company_activity_log (company_id, changed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_company_activity_log_company ON company_activity_log (company_id, changed_at DESC);
 
 -- intel_suggestions — LLM-sourced field update suggestions pending review
-CREATE TABLE IF NOT EXISTS cvc.intel_suggestions (
+CREATE TABLE IF NOT EXISTS intel_suggestions (
     id               SERIAL PRIMARY KEY,
-    company_id       INTEGER NOT NULL REFERENCES cvc.companies(id) ON DELETE CASCADE,
+    company_id       INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
     intel_id         INTEGER,
     suggestion_type  TEXT NOT NULL CHECK (suggestion_type IN (
                          'new_funding_round', 'field_update', 'new_investor'
@@ -54,11 +54,11 @@ CREATE TABLE IF NOT EXISTS cvc.intel_suggestions (
     reviewed_at      TIMESTAMPTZ,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE INDEX IF NOT EXISTS idx_intel_suggestions_company ON cvc.intel_suggestions (company_id, status);
-CREATE INDEX IF NOT EXISTS idx_intel_suggestions_pending ON cvc.intel_suggestions (status) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_intel_suggestions_company ON intel_suggestions (company_id, status);
+CREATE INDEX IF NOT EXISTS idx_intel_suggestions_pending ON intel_suggestions (status) WHERE status = 'pending';
 
 -- enrichment_snapshots — daily field-coverage snapshots
-CREATE TABLE IF NOT EXISTS cvc.enrichment_snapshots (
+CREATE TABLE IF NOT EXISTS enrichment_snapshots (
     id                   SERIAL PRIMARY KEY,
     snapshot_date        DATE NOT NULL UNIQUE,
     total_companies      INT NOT NULL DEFAULT 0,
@@ -86,8 +86,8 @@ CREATE TABLE IF NOT EXISTS cvc.enrichment_snapshots (
 );
 
 -- Idempotent additions for enrichment-related columns on companies
-ALTER TABLE cvc.companies ADD COLUMN IF NOT EXISTS enrichment_status   TEXT DEFAULT 'pending';
-ALTER TABLE cvc.companies ADD COLUMN IF NOT EXISTS enrichment_source   TEXT;
-ALTER TABLE cvc.companies ADD COLUMN IF NOT EXISTS last_enriched_at    TIMESTAMPTZ;
-ALTER TABLE cvc.funding_rounds ADD COLUMN IF NOT EXISTS approximate    BOOLEAN NOT NULL DEFAULT FALSE;
-ALTER TABLE cvc.funding_rounds ADD COLUMN IF NOT EXISTS notes          TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS enrichment_status   TEXT DEFAULT 'pending';
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS enrichment_source   TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS last_enriched_at    TIMESTAMPTZ;
+ALTER TABLE funding_rounds ADD COLUMN IF NOT EXISTS approximate    BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE funding_rounds ADD COLUMN IF NOT EXISTS notes          TEXT;

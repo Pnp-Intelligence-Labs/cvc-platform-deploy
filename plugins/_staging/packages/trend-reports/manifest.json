@@ -15,12 +15,12 @@
   },
   "nav_enabled": false,
   "requires_tables": [
-    "cvc.trend_reports",
-    "cvc.report_sections",
-    "cvc.report_sources",
-    "cvc.companies",
-    "cvc.funding_rounds",
-    "cvc.briefing_insights"
+    "trend_reports",
+    "report_sections",
+    "report_sources",
+    "companies",
+    "funding_rounds",
+    "briefing_insights"
   ],
   "requires_env": [
     "OPENROUTER_API_KEY",

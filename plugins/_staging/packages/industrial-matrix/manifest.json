@@ -15,8 +15,8 @@
   },
   "nav_enabled": false,
   "requires_tables": [
-    "cvc.companies",
-    "cvc.funding_rounds"
+    "companies",
+    "funding_rounds"
   ],
   "config_schema": {}
 }

@@ -62,7 +62,7 @@ def get_llm_usage(user: UserInfo = Depends(_require_admin)):
                              THEN cost ELSE 0 END)  AS month_cost,
                     COUNT(CASE WHEN called_at >= date_trunc('month', now() AT TIME ZONE 'UTC')
                                THEN 1 END)          AS month_calls
-                FROM cvc.llm_usage_log
+                FROM llm_usage_log
             """)
             totals = cur.fetchone()
 
@@ -72,7 +72,7 @@ def get_llm_usage(user: UserInfo = Depends(_require_admin)):
                     COUNT(*)       AS calls,
                     SUM(cost)      AS total_cost,
                     MAX(called_at) AS last_called
-                FROM cvc.llm_usage_log
+                FROM llm_usage_log
                 WHERE called_at >= now() - INTERVAL '30 days'
                 GROUP BY activity
                 ORDER BY total_cost DESC
@@ -89,7 +89,7 @@ def get_llm_usage(user: UserInfo = Depends(_require_admin)):
 
             cur.execute("""
                 SELECT activity, model, prompt_tokens, completion_tokens, cost, called_at
-                FROM cvc.llm_usage_log
+                FROM llm_usage_log
                 ORDER BY called_at DESC
                 LIMIT 20
             """)
@@ -129,7 +129,7 @@ def list_sources(user: UserInfo = Depends(_require_admin)):
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute("""
             SELECT id, name, url, source_type, category, active, notes, added_by, created_at
-            FROM cvc.briefing_sources
+            FROM briefing_sources
             ORDER BY active DESC, source_type, name
         """)
         return [dict(r) for r in cur.fetchall()]
@@ -139,7 +139,7 @@ def list_sources(user: UserInfo = Depends(_require_admin)):
 def add_source(body: SourceIn, user: UserInfo = Depends(_require_admin)):
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute("""
-            INSERT INTO cvc.briefing_sources (name, url, source_type, category, notes)
+            INSERT INTO briefing_sources (name, url, source_type, category, notes)
             VALUES (%s, %s, %s, %s, %s)
             RETURNING id, name, url, source_type, category, active, notes, added_by, created_at
         """, (body.name, body.url, body.source_type, body.category, body.notes))
@@ -152,7 +152,7 @@ def add_source(body: SourceIn, user: UserInfo = Depends(_require_admin)):
 def toggle_source(source_id: int, user: UserInfo = Depends(_require_admin)):
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute("""
-            UPDATE cvc.briefing_sources
+            UPDATE briefing_sources
             SET active = NOT active, updated_at = now()
             WHERE id = %s
             RETURNING id, active
@@ -167,7 +167,7 @@ def toggle_source(source_id: int, user: UserInfo = Depends(_require_admin)):
 @router.delete("/sources/{source_id}")
 def delete_source(source_id: int, user: UserInfo = Depends(_require_admin)):
     with get_connection() as conn, conn.cursor() as cur:
-        cur.execute("DELETE FROM cvc.briefing_sources WHERE id = %s RETURNING id", (source_id,))
+        cur.execute("DELETE FROM briefing_sources WHERE id = %s RETURNING id", (source_id,))
         row = cur.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Source not found")
@@ -279,7 +279,7 @@ def list_cron_jobs(user: UserInfo = Depends(_require_admin)):
         cur.execute("""
             SELECT id, name, schedule, description, command, machine,
                    category, active, log_path, updated_at
-            FROM cvc.cron_jobs
+            FROM cron_jobs
             ORDER BY machine, category, name
         """)
         return [dict(r) for r in cur.fetchall()]
@@ -294,7 +294,7 @@ def update_cron_job(job_id: int, body: CronJobUpdate, user: UserInfo = Depends(_
     vals = list(updates.values()) + [job_id]
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute(
-            f"UPDATE cvc.cron_jobs SET {sets}, updated_at = now() WHERE id = %s RETURNING id",
+            f"UPDATE cron_jobs SET {sets}, updated_at = now() WHERE id = %s RETURNING id",
             vals,
         )
         if not cur.fetchone():

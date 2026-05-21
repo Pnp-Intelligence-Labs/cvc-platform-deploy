@@ -2,7 +2,7 @@
 -- Tables are created by core migrations. This migration ensures they exist
 -- for teams that deployed before the core migrations added them.
 
-CREATE TABLE IF NOT EXISTS cvc.briefing_sources (
+CREATE TABLE IF NOT EXISTS briefing_sources (
     id          SERIAL PRIMARY KEY,
     name        TEXT NOT NULL,
     url         TEXT,
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS cvc.briefing_sources (
     updated_at  TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS cvc.llm_usage_log (
+CREATE TABLE IF NOT EXISTS llm_usage_log (
     id                SERIAL PRIMARY KEY,
     activity          TEXT,
     model             TEXT,
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS cvc.llm_usage_log (
     called_at         TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS cvc.cron_jobs (
+CREATE TABLE IF NOT EXISTS cron_jobs (
     id          SERIAL PRIMARY KEY,
     name        TEXT NOT NULL,
     schedule    TEXT,
@@ -39,4 +39,4 @@ CREATE TABLE IF NOT EXISTS cvc.cron_jobs (
 );
 
 -- Idempotent column additions
-ALTER TABLE cvc.briefing_sources ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE briefing_sources ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();

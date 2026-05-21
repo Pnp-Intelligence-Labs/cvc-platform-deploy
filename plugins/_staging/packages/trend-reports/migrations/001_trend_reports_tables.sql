@@ -3,7 +3,7 @@
 -- Safe to run after core migrations — all statements use IF NOT EXISTS.
 
 -- Core report tables (core migration 122)
-CREATE TABLE IF NOT EXISTS cvc.trend_reports (
+CREATE TABLE IF NOT EXISTS trend_reports (
     id              SERIAL PRIMARY KEY,
     title           TEXT NOT NULL,
     sector          TEXT,
@@ -18,9 +18,9 @@ CREATE TABLE IF NOT EXISTS cvc.trend_reports (
     published_html  TEXT
 );
 
-CREATE TABLE IF NOT EXISTS cvc.report_sections (
+CREATE TABLE IF NOT EXISTS report_sections (
     id               SERIAL PRIMARY KEY,
-    report_id        INT NOT NULL REFERENCES cvc.trend_reports(id) ON DELETE CASCADE,
+    report_id        INT NOT NULL REFERENCES trend_reports(id) ON DELETE CASCADE,
     position         INT NOT NULL DEFAULT 0,
     title            TEXT NOT NULL,
     instructions     TEXT,
@@ -33,10 +33,10 @@ CREATE TABLE IF NOT EXISTS cvc.report_sections (
     error_msg        TEXT
 );
 
-CREATE TABLE IF NOT EXISTS cvc.report_sources (
+CREATE TABLE IF NOT EXISTS report_sources (
     id           SERIAL PRIMARY KEY,
-    report_id    INT NOT NULL REFERENCES cvc.trend_reports(id) ON DELETE CASCADE,
-    section_id   INT REFERENCES cvc.report_sections(id) ON DELETE SET NULL,
+    report_id    INT NOT NULL REFERENCES trend_reports(id) ON DELETE CASCADE,
+    section_id   INT REFERENCES report_sections(id) ON DELETE SET NULL,
     source_type  TEXT NOT NULL,
     label        TEXT,
     filename     TEXT,
@@ -48,14 +48,14 @@ CREATE TABLE IF NOT EXISTS cvc.report_sources (
     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_report_sections_report_id ON cvc.report_sections(report_id);
-CREATE INDEX IF NOT EXISTS idx_report_sources_report_id  ON cvc.report_sources(report_id);
-CREATE INDEX IF NOT EXISTS idx_report_sources_section_id ON cvc.report_sources(section_id);
+CREATE INDEX IF NOT EXISTS idx_report_sections_report_id ON report_sections(report_id);
+CREATE INDEX IF NOT EXISTS idx_report_sources_report_id  ON report_sources(report_id);
+CREATE INDEX IF NOT EXISTS idx_report_sources_section_id ON report_sources(section_id);
 
 -- Annotations table (core migration 125)
-CREATE TABLE IF NOT EXISTS cvc.report_annotations (
+CREATE TABLE IF NOT EXISTS report_annotations (
     id               SERIAL PRIMARY KEY,
-    report_id        INT NOT NULL REFERENCES cvc.trend_reports(id) ON DELETE CASCADE,
+    report_id        INT NOT NULL REFERENCES trend_reports(id) ON DELETE CASCADE,
     scope            TEXT NOT NULL DEFAULT 'inline',
     selected_text    TEXT,
     comment          TEXT NOT NULL,
@@ -65,22 +65,22 @@ CREATE TABLE IF NOT EXISTS cvc.report_annotations (
     created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     addressed_at     TIMESTAMPTZ
 );
-CREATE INDEX IF NOT EXISTS idx_report_annotations_report ON cvc.report_annotations(report_id, status);
+CREATE INDEX IF NOT EXISTS idx_report_annotations_report ON report_annotations(report_id, status);
 
 -- Column extensions (core migrations 123–127)
-ALTER TABLE cvc.report_sections   ADD COLUMN IF NOT EXISTS section_type TEXT NOT NULL DEFAULT 'prose';
-ALTER TABLE cvc.report_sections   ADD COLUMN IF NOT EXISTS audience     TEXT DEFAULT NULL;
-ALTER TABLE cvc.report_sections   ADD COLUMN IF NOT EXISTS tone         TEXT DEFAULT NULL;
-ALTER TABLE cvc.report_sources    ADD COLUMN IF NOT EXISTS chart_type   TEXT;
-ALTER TABLE cvc.report_sources    ADD COLUMN IF NOT EXISTS x_key        TEXT;
-ALTER TABLE cvc.report_sources    ADD COLUMN IF NOT EXISTS y_key        TEXT;
-ALTER TABLE cvc.trend_reports     ADD COLUMN IF NOT EXISTS output_format TEXT NOT NULL DEFAULT 'report';
-ALTER TABLE cvc.trend_reports     ADD COLUMN IF NOT EXISTS citation_style TEXT NOT NULL DEFAULT 'superscript';
-ALTER TABLE cvc.trend_reports     ADD COLUMN IF NOT EXISTS audience     TEXT DEFAULT 'practitioner';
-ALTER TABLE cvc.trend_reports     ADD COLUMN IF NOT EXISTS tone         TEXT DEFAULT 'analytical';
+ALTER TABLE report_sections   ADD COLUMN IF NOT EXISTS section_type TEXT NOT NULL DEFAULT 'prose';
+ALTER TABLE report_sections   ADD COLUMN IF NOT EXISTS audience     TEXT DEFAULT NULL;
+ALTER TABLE report_sections   ADD COLUMN IF NOT EXISTS tone         TEXT DEFAULT NULL;
+ALTER TABLE report_sources    ADD COLUMN IF NOT EXISTS chart_type   TEXT;
+ALTER TABLE report_sources    ADD COLUMN IF NOT EXISTS x_key        TEXT;
+ALTER TABLE report_sources    ADD COLUMN IF NOT EXISTS y_key        TEXT;
+ALTER TABLE trend_reports     ADD COLUMN IF NOT EXISTS output_format TEXT NOT NULL DEFAULT 'report';
+ALTER TABLE trend_reports     ADD COLUMN IF NOT EXISTS citation_style TEXT NOT NULL DEFAULT 'superscript';
+ALTER TABLE trend_reports     ADD COLUMN IF NOT EXISTS audience     TEXT DEFAULT 'practitioner';
+ALTER TABLE trend_reports     ADD COLUMN IF NOT EXISTS tone         TEXT DEFAULT 'analytical';
 
 -- briefing_insights (core migration 053) — trend-reports reads this for signals
-CREATE TABLE IF NOT EXISTS cvc.briefing_insights (
+CREATE TABLE IF NOT EXISTS briefing_insights (
     id           SERIAL PRIMARY KEY,
     briefing_id  INT,
     title        TEXT NOT NULL,

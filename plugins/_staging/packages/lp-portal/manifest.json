@@ -15,9 +15,9 @@
   },
   "nav_enabled": false,
   "requires_tables": [
-    "cvc.fund_metrics",
-    "cvc.fund_nav_history",
-    "cvc.term_sheets"
+    "fund_metrics",
+    "fund_nav_history",
+    "term_sheets"
   ],
   "config_schema": {}
 }

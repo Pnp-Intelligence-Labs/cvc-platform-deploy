@@ -8,8 +8,8 @@
   },
   "nav": null,
   "requires_tables": [
-    "cvc.news_watch_companies",
-    "cvc.category_news"
+    "news_watch_companies",
+    "category_news"
   ],
   "config_schema": {}
 }

@@ -58,7 +58,7 @@ async def list_watch_companies(
                 params.extend([f"%{q}%", f"%{q}%"])
             where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
             cur.execute(
-                f"SELECT * FROM cvc.news_watch_companies {where} ORDER BY company_name",
+                f"SELECT * FROM news_watch_companies {where} ORDER BY company_name",
                 params,
             )
             return cur.fetchall()
@@ -70,7 +70,7 @@ async def add_watch_company(body: WatchCompanyCreate, user: UserInfo = Depends(r
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO cvc.news_watch_companies (company_name, category, ticker)
+                INSERT INTO news_watch_companies (company_name, category, ticker)
                 VALUES (%s, 'watch', %s)
                 ON CONFLICT DO NOTHING
                 RETURNING *
@@ -88,7 +88,7 @@ async def remove_watch_company(company_id: int, user: UserInfo = Depends(require
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "DELETE FROM cvc.news_watch_companies WHERE id = %s RETURNING id",
+                "DELETE FROM news_watch_companies WHERE id = %s RETURNING id",
                 (company_id,),
             )
             if not cur.fetchone():
@@ -103,7 +103,7 @@ async def toggle_watch_company(company_id: int, user: UserInfo = Depends(require
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "UPDATE cvc.news_watch_companies SET active = NOT active WHERE id = %s RETURNING *",
+                "UPDATE news_watch_companies SET active = NOT active WHERE id = %s RETURNING *",
                 (company_id,),
             )
             row = cur.fetchone()
@@ -136,12 +136,12 @@ async def list_news(
                 params.append(activity_type)
             where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
 
-            cur.execute(f"SELECT COUNT(*) as total FROM cvc.category_news {where}", list(params))
+            cur.execute(f"SELECT COUNT(*) as total FROM category_news {where}", list(params))
             total = cur.fetchone()["total"]
 
             params.extend([limit, offset])
             cur.execute(
-                f"SELECT * FROM cvc.category_news {where} ORDER BY published_at DESC LIMIT %s OFFSET %s",
+                f"SELECT * FROM category_news {where} ORDER BY published_at DESC LIMIT %s OFFSET %s",
                 params,
             )
             return {"articles": cur.fetchall(), "total": total}
@@ -154,7 +154,7 @@ async def news_stats(user: UserInfo = Depends(require_jwt)):
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT COALESCE(activity_type, 'general') as activity_type, COUNT(*) as count
-                FROM cvc.category_news
+                FROM category_news
                 GROUP BY activity_type
                 ORDER BY count DESC
             """)
@@ -162,7 +162,7 @@ async def news_stats(user: UserInfo = Depends(require_jwt)):
 
             cur.execute("""
                 SELECT company_name, COUNT(*) as article_count, MAX(published_at) as latest_article
-                FROM cvc.category_news
+                FROM category_news
                 GROUP BY company_name
                 ORDER BY article_count DESC
                 LIMIT 20
@@ -173,7 +173,7 @@ async def news_stats(user: UserInfo = Depends(require_jwt)):
                 SELECT COUNT(*) as total_articles,
                        COUNT(DISTINCT company_name) as total_companies,
                        MAX(published_at) as latest_article
-                FROM cvc.category_news
+                FROM category_news
             """)
             totals = cur.fetchone()
 
@@ -191,7 +191,7 @@ async def recent_news(
             cur.execute("""
                 SELECT id, link, company_name, title, published_at,
                        activity_type, formatted_date
-                FROM cvc.category_news
+                FROM category_news
                 ORDER BY published_at DESC
                 LIMIT %s
             """, (limit,))
@@ -200,8 +200,8 @@ async def recent_news(
             cur.execute("""
                 SELECT COUNT(*) as total_articles,
                        COUNT(DISTINCT company_name) as companies_tracked,
-                       (SELECT COUNT(*) FROM cvc.news_watch_companies WHERE active = TRUE) as watch_list_size
-                FROM cvc.category_news
+                       (SELECT COUNT(*) FROM news_watch_companies WHERE active = TRUE) as watch_list_size
+                FROM category_news
             """)
             stats = cur.fetchone()
 
@@ -229,7 +229,7 @@ async def sales_news(
                     cn.activity_type,
                     cn.formatted_date,
                     (
-                        SELECT stage FROM cvc.sales_targets
+                        SELECT stage FROM sales_targets
                         WHERE company_name = cn.company_name
                         ORDER BY
                             CASE stage
@@ -243,12 +243,12 @@ async def sales_news(
                     ) AS stage,
                     (
                         SELECT string_agg(DISTINCT assigned_to, ', ')
-                        FROM cvc.sales_targets
+                        FROM sales_targets
                         WHERE company_name = cn.company_name
                           AND assigned_to IS NOT NULL
                     ) AS assigned_to
-                FROM cvc.category_news cn
-                WHERE cn.company_name IN (SELECT DISTINCT company_name FROM cvc.sales_targets)
+                FROM category_news cn
+                WHERE cn.company_name IN (SELECT DISTINCT company_name FROM sales_targets)
                   AND cn.published_at >= NOW() - INTERVAL '1 day' * %(days)s
                   AND cn.hidden IS NOT TRUE
                   {type_clause}
@@ -259,8 +259,8 @@ async def sales_news(
 
             cur.execute("""
                 SELECT COUNT(DISTINCT company_name) as companies_with_news
-                FROM cvc.category_news
-                WHERE company_name IN (SELECT DISTINCT company_name FROM cvc.sales_targets)
+                FROM category_news
+                WHERE company_name IN (SELECT DISTINCT company_name FROM sales_targets)
                   AND published_at >= NOW() - INTERVAL '7 days'
             """)
             stats = cur.fetchone()
@@ -279,7 +279,7 @@ async def partner_news(
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT company_name FROM cvc.news_watch_companies
+                SELECT company_name FROM news_watch_companies
                 WHERE partner_id = %s AND active = TRUE
                 LIMIT 1
             """, (partner_id,))
@@ -304,7 +304,7 @@ async def partner_news(
             cur.execute(f"""
                 SELECT id, link, company_name, title, published_at,
                        activity_type, formatted_date
-                FROM cvc.category_news
+                FROM category_news
                 {where}
                 AND hidden IS NOT TRUE
                 ORDER BY published_at DESC
@@ -314,9 +314,9 @@ async def partner_news(
 
             cur.execute("""
                 SELECT COUNT(*) as total
-                FROM cvc.category_news
+                FROM category_news
                 WHERE partner_id = %s OR company_name = (
-                    SELECT company_name FROM cvc.news_watch_companies
+                    SELECT company_name FROM news_watch_companies
                     WHERE partner_id = %s AND active = TRUE LIMIT 1
                 )
             """, (partner_id, partner_id))
@@ -333,7 +333,7 @@ async def hide_article(article_id: int, user: UserInfo = Depends(require_jwt)):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "UPDATE cvc.category_news SET hidden = TRUE WHERE id = %s RETURNING id",
+                "UPDATE category_news SET hidden = TRUE WHERE id = %s RETURNING id",
                 (article_id,),
             )
             if not cur.fetchone():
@@ -349,8 +349,8 @@ async def deduplicate_news(user: UserInfo = Depends(require_jwt)):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                DELETE FROM cvc.category_news a
-                USING cvc.category_news b
+                DELETE FROM category_news a
+                USING category_news b
                 WHERE a.id > b.id
                   AND a.title = b.title
                   AND a.company_name = b.company_name

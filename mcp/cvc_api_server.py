@@ -6,13 +6,14 @@ Runs as a stdio subprocess spawned by Claude Code.
 """
 
 import json
+import os
 import subprocess
 import httpx
 from mcp.server.fastmcp import FastMCP
 
-DELL_USER = "nathan11"
-DELL_HOST = "100.83.104.117"
-DELL_LOGS = "/home/nathan11/logs"
+DELL_USER = os.environ.get("DELL_USER", "")
+DELL_HOST = os.environ.get("DELL_HOST", "")
+DELL_LOGS = os.environ.get("DELL_LOGS", "")
 
 # Map of friendly log names → actual filenames on Dell
 LOG_FILES = {
@@ -30,8 +31,17 @@ LOG_FILES = {
     "funding":    "cvc_enrichment.log",
 }
 
-API_BASE = "http://100.83.104.117:8001"
-AUTH = ("nate", "cvc2026")
+API_BASE = os.environ.get("DELL_API_BASE", "")
+AUTH = (
+    os.environ.get("DELL_API_USER", ""),
+    os.environ.get("DELL_API_PASSWORD", ""),
+)
+
+if not API_BASE or not all(AUTH):
+    raise RuntimeError(
+        "MCP server requires DELL_API_BASE, DELL_API_USER, DELL_API_PASSWORD "
+        "(and DELL_USER, DELL_HOST, DELL_LOGS for log tools) in the environment."
+    )
 
 mcp = FastMCP("CVC Intelligence")
 

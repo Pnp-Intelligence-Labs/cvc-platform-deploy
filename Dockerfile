@@ -1,8 +1,9 @@
 FROM python:3.11-slim
 
-# System deps: curl (healthchecks/debugging), libpq-dev (psycopg2 build)
+# System deps: curl (healthchecks/debugging), libpq-dev (psycopg2 build),
+# postgresql-client (psql, used by scripts/migrate.sh)
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl libpq-dev gcc \
+    && apt-get install -y --no-install-recommends curl libpq-dev gcc postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Non-root user

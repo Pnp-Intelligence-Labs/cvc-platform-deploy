@@ -15,13 +15,13 @@
   },
   "nav_enabled": false,
   "requires_tables": [
-    "cvc.companies",
-    "cvc.funding_rounds",
-    "cvc.build_tasks",
-    "cvc.company_lifecycle",
-    "cvc.intel_suggestions",
-    "cvc.company_activity_log",
-    "cvc.enrichment_snapshots"
+    "companies",
+    "funding_rounds",
+    "build_tasks",
+    "company_lifecycle",
+    "intel_suggestions",
+    "company_activity_log",
+    "enrichment_snapshots"
   ],
   "config_schema": {}
 }

@@ -215,7 +215,7 @@ def _run_quickadd_enrichment(company_id: int, url: str, context: str) -> None:
 
         with get_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT name FROM cvc.companies WHERE id = %s", (company_id,))
+                cur.execute("SELECT name FROM companies WHERE id = %s", (company_id,))
                 row = cur.fetchone()
         if not row:
             return
@@ -238,11 +238,11 @@ def _run_quickadd_enrichment(company_id: int, url: str, context: str) -> None:
         with get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    f"UPDATE cvc.companies SET {', '.join(set_parts)} WHERE id = %s",
+                    f"UPDATE companies SET {', '.join(set_parts)} WHERE id = %s",
                     params
                 )
                 cur.execute("""
-                    UPDATE cvc.companies
+                    UPDATE companies
                     SET search_text = to_tsvector(
                         coalesce(name,'') || ' ' ||
                         coalesce(one_liner,'') || ' ' ||
@@ -259,7 +259,7 @@ def _run_quickadd_enrichment(company_id: int, url: str, context: str) -> None:
             with get_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(
-                        "UPDATE cvc.companies SET enrichment_status = 'failed', updated_at = NOW() WHERE id = %s",
+                        "UPDATE companies SET enrichment_status = 'failed', updated_at = NOW() WHERE id = %s",
                         (company_id,)
                     )
         except Exception:
@@ -340,7 +340,7 @@ async def quickadd_company(
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, name, enrichment_status FROM cvc.companies WHERE website = %s LIMIT 1",
+                "SELECT id, name, enrichment_status FROM companies WHERE website = %s LIMIT 1",
                 (url,)
             )
             existing = cur.fetchone()
@@ -353,7 +353,7 @@ async def quickadd_company(
         with get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "UPDATE cvc.companies SET enrichment_status = 'enriching', updated_at = NOW() WHERE id = %s",
+                    "UPDATE companies SET enrichment_status = 'enriching', updated_at = NOW() WHERE id = %s",
                     (company_id,)
                 )
     else:
@@ -368,7 +368,7 @@ async def quickadd_company(
             with conn.cursor() as cur:
                 # Second dedup by name in case URL differs
                 cur.execute(
-                    "SELECT id FROM cvc.companies WHERE lower(name) = lower(%s) LIMIT 1",
+                    "SELECT id FROM companies WHERE lower(name) = lower(%s) LIMIT 1",
                     (name,)
                 )
                 row = cur.fetchone()
@@ -376,12 +376,12 @@ async def quickadd_company(
                     company_id = row["id"]
                     existed    = True
                     cur.execute(
-                        "UPDATE cvc.companies SET website = %s, enrichment_status = 'enriching', updated_at = NOW() WHERE id = %s",
+                        "UPDATE companies SET website = %s, enrichment_status = 'enriching', updated_at = NOW() WHERE id = %s",
                         (url, company_id)
                     )
                 else:
                     cur.execute("""
-                        INSERT INTO cvc.companies
+                        INSERT INTO companies
                             (name, website, enrichment_status, enrichment_source, created_at, updated_at)
                         VALUES (%s, %s, 'enriching', 'quickadd', NOW(), NOW())
                         RETURNING id
@@ -411,7 +411,7 @@ async def add_company_to_queue(data: AddCompanyRequest, user=Depends(require_aut
         with conn.cursor() as cur:
             if data.company_id:
                 # Attach to a specific existing company
-                cur.execute("SELECT id, name FROM cvc.companies WHERE id = %s", (data.company_id,))
+                cur.execute("SELECT id, name FROM companies WHERE id = %s", (data.company_id,))
                 row = cur.fetchone()
                 if not row:
                     raise HTTPException(status_code=404, detail="Company not found")
@@ -420,15 +420,15 @@ async def add_company_to_queue(data: AddCompanyRequest, user=Depends(require_aut
                 existed = True
                 if data.website:
                     cur.execute(
-                        "UPDATE cvc.companies SET website = %s, updated_at = NOW() WHERE id = %s",
+                        "UPDATE companies SET website = %s, updated_at = NOW() WHERE id = %s",
                         (data.website, company_id)
                     )
                 else:
-                    cur.execute("UPDATE cvc.companies SET updated_at = NOW() WHERE id = %s", (company_id,))
+                    cur.execute("UPDATE companies SET updated_at = NOW() WHERE id = %s", (company_id,))
             else:
                 # Fall back to name match, then insert
                 cur.execute(
-                    "SELECT id FROM cvc.companies WHERE lower(name) = lower(%s) LIMIT 1",
+                    "SELECT id FROM companies WHERE lower(name) = lower(%s) LIMIT 1",
                     (name,)
                 )
                 row = cur.fetchone()
@@ -437,14 +437,14 @@ async def add_company_to_queue(data: AddCompanyRequest, user=Depends(require_aut
                     existed = True
                     if data.website:
                         cur.execute(
-                            "UPDATE cvc.companies SET website = %s, updated_at = NOW() WHERE id = %s",
+                            "UPDATE companies SET website = %s, updated_at = NOW() WHERE id = %s",
                             (data.website, company_id)
                         )
                     else:
-                        cur.execute("UPDATE cvc.companies SET updated_at = NOW() WHERE id = %s", (company_id,))
+                        cur.execute("UPDATE companies SET updated_at = NOW() WHERE id = %s", (company_id,))
                 else:
                     cur.execute("""
-                        INSERT INTO cvc.companies (name, website, enrichment_status, created_at, updated_at)
+                        INSERT INTO companies (name, website, enrichment_status, created_at, updated_at)
                         VALUES (%s, %s, 'pending', NOW(), NOW())
                         RETURNING id
                     """, (name, data.website or None))
@@ -459,7 +459,7 @@ async def add_company_to_queue(data: AddCompanyRequest, user=Depends(require_aut
                     f"PYTHONPATH=core venv/bin/python3 workers/enrichment/enrich_4d.py --id={company_id} --no-gate"
                 )
                 cur.execute("""
-                    INSERT INTO cvc.build_tasks
+                    INSERT INTO build_tasks
                         (spec, priority, risk_level, requires_approval, status, created_by, assigned_to, task_type, notes, status_changed_at)
                     VALUES (%s, 'medium', 'low', FALSE, 'pending', %s, 'enrichment-worker', 'enrichment', %s, NOW())
                     RETURNING task_id
@@ -474,7 +474,7 @@ async def add_company_to_queue(data: AddCompanyRequest, user=Depends(require_aut
                     f"PYTHONPATH=core venv/bin/python3 workers/enrichment/enrich_industrial.py --company \"{name}\""
                 )
                 cur.execute("""
-                    INSERT INTO cvc.build_tasks
+                    INSERT INTO build_tasks
                         (spec, priority, risk_level, requires_approval, status, created_by, assigned_to, task_type, notes, status_changed_at)
                     VALUES (%s, 'medium', 'low', FALSE, 'pending', %s, 'enrichment-worker', 'enrichment', %s, NOW())
                     RETURNING task_id
@@ -489,7 +489,7 @@ async def add_company_to_queue(data: AddCompanyRequest, user=Depends(require_aut
                     f"PYTHONPATH=core venv/bin/python3 workers/enrichment/enrich_funding_rounds.py --company-id={company_id} --batch"
                 )
                 cur.execute("""
-                    INSERT INTO cvc.build_tasks
+                    INSERT INTO build_tasks
                         (spec, priority, risk_level, requires_approval, status, created_by, assigned_to, task_type, notes, status_changed_at)
                     VALUES (%s, 'medium', 'low', FALSE, 'pending', %s, 'enrichment-worker', 'enrichment', %s, NOW())
                     RETURNING task_id
@@ -504,7 +504,7 @@ async def add_company_to_queue(data: AddCompanyRequest, user=Depends(require_aut
                     f"PYTHONPATH=core venv/bin/python3 workers/enrichment/enrich_cases.py --id={company_id} --no-gate"
                 )
                 cur.execute("""
-                    INSERT INTO cvc.build_tasks
+                    INSERT INTO build_tasks
                         (spec, priority, risk_level, requires_approval, status, created_by, assigned_to, task_type, notes, status_changed_at)
                     VALUES (%s, 'medium', 'low', FALSE, 'pending', %s, 'enrichment-worker', 'enrichment', %s, NOW())
                     RETURNING task_id
@@ -519,7 +519,7 @@ async def add_company_to_queue(data: AddCompanyRequest, user=Depends(require_aut
                     f"PYTHONPATH=core venv/bin/python3 workers/enrichment/founder_research.py --company-id={company_id}"
                 )
                 cur.execute("""
-                    INSERT INTO cvc.build_tasks
+                    INSERT INTO build_tasks
                         (spec, priority, risk_level, requires_approval, status, created_by, assigned_to, task_type, notes, status_changed_at)
                     VALUES (%s, 'medium', 'low', FALSE, 'pending', %s, 'enrichment-worker', 'enrichment', %s, NOW())
                     RETURNING task_id
@@ -530,7 +530,7 @@ async def add_company_to_queue(data: AddCompanyRequest, user=Depends(require_aut
             if data.run_dd:
                 # Set lifecycle status — pipeline is triggered separately via /dd/{id}/trigger
                 cur.execute("""
-                    INSERT INTO cvc.company_lifecycle
+                    INSERT INTO company_lifecycle
                         (company_id, status, status_changed_at, changed_by, reason)
                     VALUES (%s, 'due_diligence', NOW(), %s, 'DD queued from Enrichment Queue')
                     ON CONFLICT (company_id) DO UPDATE SET
@@ -577,8 +577,8 @@ async def get_enrichment_requests(user=Depends(require_auth)):
                     (regexp_match(bt.spec, 'company_id=(\d+)'))[1]::int AS company_id,
                     c.name  AS company_name,
                     c.sector
-                FROM cvc.build_tasks bt
-                LEFT JOIN cvc.companies c
+                FROM build_tasks bt
+                LEFT JOIN companies c
                     ON c.id = (regexp_match(bt.spec, 'company_id=(\d+)'))[1]::int
                 WHERE (bt.spec ILIKE '%industrial enrichment%'
                    OR bt.spec ILIKE '%DD pipeline%')
@@ -595,7 +595,7 @@ async def get_enrichment_requests(user=Depends(require_auth)):
                     name        AS company_name,
                     sector,
                     updated_at  AS created_at
-                FROM cvc.companies
+                FROM companies
                 WHERE enrichment_status = 'pending'
                 ORDER BY updated_at DESC NULLS LAST
                 LIMIT 200
@@ -638,7 +638,7 @@ async def delete_request_task(task_id: int, user=Depends(require_auth)):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                UPDATE cvc.build_tasks
+                UPDATE build_tasks
                 SET status = 'superseded', status_changed_at = NOW()
                 WHERE task_id = %s
             """, (task_id,))
@@ -653,7 +653,7 @@ async def delete_request_4d(company_id: int, user=Depends(require_auth)):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                UPDATE cvc.companies
+                UPDATE companies
                 SET enrichment_status = NULL, updated_at = NOW()
                 WHERE id = %s AND enrichment_status = 'pending'
             """, (company_id,))
@@ -678,7 +678,7 @@ async def edit_request_task(task_id: int, data: RequestEditPayload, user=Depends
                 raise HTTPException(status_code=400, detail="Nothing to update")
             params.append(task_id)
             cur.execute(
-                f"UPDATE cvc.build_tasks SET {', '.join(updates)} WHERE task_id = %s AND task_type IN ('dd', 'enrichment')",
+                f"UPDATE build_tasks SET {', '.join(updates)} WHERE task_id = %s AND task_type IN ('dd', 'enrichment')",
                 params,
             )
             if cur.rowcount == 0:
@@ -690,7 +690,7 @@ def _get_company_name(company_id: int) -> str:
     """Resolve company_id → name, raise 404 if missing."""
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT name FROM cvc.companies WHERE id = %s", (company_id,))
+            cur.execute("SELECT name FROM companies WHERE id = %s", (company_id,))
             row = cur.fetchone()
             if not row:
                 raise HTTPException(status_code=404, detail="Company not found")
@@ -887,7 +887,7 @@ async def delete_dd_run(company_id: int, user=Depends(require_auth)):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                UPDATE cvc.company_lifecycle
+                UPDATE company_lifecycle
                 SET status = 'discovered', status_changed_at = NOW(), changed_by = %s,
                     reason = 'DD run deleted via profile page'
                 WHERE company_id = %s AND status = 'due_diligence'
@@ -944,7 +944,7 @@ async def get_enrichment_queue(
                 cur.execute("""
                     SELECT id, name, description, sector, stage,
                            predicted_subsector, enrichment_confidence, enrichment_status
-                    FROM cvc.companies
+                    FROM companies
                     WHERE enrichment_status = %s
                     ORDER BY enrichment_confidence DESC NULLS LAST, name
                     LIMIT %s
@@ -953,7 +953,7 @@ async def get_enrichment_queue(
                 cur.execute("""
                     SELECT id, name, description, sector, stage,
                            predicted_subsector, enrichment_confidence, enrichment_status
-                    FROM cvc.companies
+                    FROM companies
                     WHERE enrichment_status IN ('manual_review', 'needs_research')
                     ORDER BY enrichment_confidence DESC NULLS LAST, name
                     LIMIT %s
@@ -983,7 +983,7 @@ async def approve_prediction(
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT predicted_subsector FROM cvc.companies WHERE id = %s",
+                "SELECT predicted_subsector FROM companies WHERE id = %s",
                 (company_id,)
             )
             row = cur.fetchone()
@@ -995,7 +995,7 @@ async def approve_prediction(
                 raise HTTPException(status_code=400, detail="No prediction to approve")
 
             cur.execute("""
-                UPDATE cvc.companies
+                UPDATE companies
                 SET subsector = predicted_subsector,
                     enrichment_status = 'approved',
                     enrichment_source = 'manual_approval'
@@ -1042,7 +1042,7 @@ async def manual_update(
             params.append('manual_edit')
             params.append(company_id)
 
-            query = f"UPDATE cvc.companies SET {', '.join(updates)} WHERE id = %s"
+            query = f"UPDATE companies SET {', '.join(updates)} WHERE id = %s"
             cur.execute(query, params)
 
             if cur.rowcount == 0:
@@ -1066,7 +1066,7 @@ async def get_enrichment_realstats(user=Depends(require_auth)):
                     COUNT(*) FILTER (WHERE enrichment_status IN ('pending', 'enriching') OR enrichment_status IS NULL) as pending,
                     COUNT(*) FILTER (WHERE enrichment_status = 'failed') as failed,
                     COUNT(*) as total
-                FROM cvc.companies
+                FROM companies
             """)
             row = cur.fetchone()
             return {
@@ -1088,7 +1088,7 @@ async def get_enrichment_list(
     dd_review_ids:   set[int] = set()
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT company_id, name FROM cvc.company_lifecycle cl JOIN cvc.companies c ON c.id = cl.company_id")
+            cur.execute("SELECT company_id, name FROM company_lifecycle cl JOIN companies c ON c.id = cl.company_id")
             for lrow in cur.fetchall():
                 cid, cname = lrow["company_id"], lrow["name"]
                 workdir = DD_WORKDIR / cname
@@ -1107,7 +1107,7 @@ async def get_enrichment_list(
                        c.enrichment_confidence, c.updated_at,
                        (c.func_4d IS NOT NULL)                                               AS has_4d,
                        (c.score_irs IS NOT NULL OR c.industrial_readiness_score IS NOT NULL) AS has_industrial
-                FROM cvc.companies c
+                FROM companies c
                 WHERE (
                     CASE WHEN %s = 'pending'
                          THEN c.enrichment_status IN ('pending', 'enriching') OR c.enrichment_status IS NULL
@@ -1158,7 +1158,7 @@ async def edit_pending_company(company_id: int, data: PendingCompanyEdit, user=D
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                f"UPDATE cvc.companies SET {', '.join(fields)}, updated_at = NOW() WHERE id = %s AND enrichment_status = 'pending'",
+                f"UPDATE companies SET {', '.join(fields)}, updated_at = NOW() WHERE id = %s AND enrichment_status = 'pending'",
                 vals
             )
             if cur.rowcount == 0:
@@ -1172,14 +1172,14 @@ async def remove_pending_company(company_id: int, user=Depends(require_auth)):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                UPDATE cvc.companies
+                UPDATE companies
                 SET enrichment_status = NULL, updated_at = NOW()
                 WHERE id = %s AND enrichment_status = 'pending'
             """, (company_id,))
             if cur.rowcount == 0:
                 raise HTTPException(status_code=404, detail="Company not found or not in pending state")
             # Also remove from deal pipeline so it doesn't linger there
-            cur.execute("DELETE FROM cvc.company_lifecycle WHERE company_id = %s", (company_id,))
+            cur.execute("DELETE FROM company_lifecycle WHERE company_id = %s", (company_id,))
     return {"removed": True, "company_id": company_id}
 
 
@@ -1189,7 +1189,7 @@ async def retry_enrichment(company_id: int, user=Depends(require_auth)):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                UPDATE cvc.companies
+                UPDATE companies
                 SET enrichment_status = 'pending', updated_at = NOW()
                 WHERE id = %s AND enrichment_status = 'failed'
             """, (company_id,))
@@ -1207,7 +1207,7 @@ async def upload_dd_files(
     """Upload dataroom files for a company's DD workdir."""
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT name FROM cvc.companies WHERE id = %s", (company_id,))
+            cur.execute("SELECT name FROM companies WHERE id = %s", (company_id,))
             row = cur.fetchone()
             if not row:
                 raise HTTPException(status_code=404, detail="Company not found")
@@ -1232,7 +1232,7 @@ async def list_dd_files(company_id: int, user=Depends(require_auth)):
     """List files currently staged in a company's DD workdir."""
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT name FROM cvc.companies WHERE id = %s", (company_id,))
+            cur.execute("SELECT name FROM companies WHERE id = %s", (company_id,))
             row = cur.fetchone()
             if not row:
                 raise HTTPException(status_code=404, detail="Company not found")
@@ -1380,7 +1380,7 @@ async def trigger_dd_action(
 
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT name FROM cvc.companies WHERE id = %s", (company_id,))
+            cur.execute("SELECT name FROM companies WHERE id = %s", (company_id,))
             row = cur.fetchone()
             if not row:
                 raise HTTPException(status_code=404, detail="Company not found")
@@ -1388,7 +1388,7 @@ async def trigger_dd_action(
 
             if mode == "full":
                 cur.execute("""
-                    INSERT INTO cvc.company_lifecycle
+                    INSERT INTO company_lifecycle
                         (company_id, status, status_changed_at, changed_by, reason)
                     VALUES (%s, 'due_diligence', NOW(), %s, 'DD triggered manually')
                     ON CONFLICT (company_id) DO UPDATE SET
@@ -1408,7 +1408,7 @@ async def trigger_dd_action(
                     f"--company \"{company_name}\""
                 )
                 cur.execute("""
-                    INSERT INTO cvc.build_tasks
+                    INSERT INTO build_tasks
                         (spec, priority, risk_level, requires_approval, status,
                          created_by, assigned_to, task_type, status_changed_at)
                     VALUES (%s, 'medium', 'low', FALSE, 'pending',
@@ -1450,8 +1450,8 @@ async def list_suggestions(
                 SELECT s.id, s.company_id, c.name AS company_name, c.sector,
                        s.suggestion_type, s.suggested_data, s.confidence,
                        s.reasoning, s.status, s.created_at
-                FROM cvc.intel_suggestions s
-                JOIN cvc.companies c ON c.id = s.company_id
+                FROM intel_suggestions s
+                JOIN companies c ON c.id = s.company_id
                 WHERE s.suggestion_type = ANY(%s) AND s.status = %s
                 ORDER BY s.confidence DESC, c.name
             """, (types, status))
@@ -1489,7 +1489,7 @@ async def approve_suggestion(
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT s.company_id, s.suggested_data, s.suggestion_type
-                FROM cvc.intel_suggestions s
+                FROM intel_suggestions s
                 WHERE s.id = %s AND s.status = 'pending'
             """, (suggestion_id,))
             row = cur.fetchone()
@@ -1514,7 +1514,7 @@ async def approve_suggestion(
                 source_url = d.get("source_url")
 
                 cur.execute("""
-                    SELECT id, source, notes FROM cvc.funding_rounds
+                    SELECT id, source, notes FROM funding_rounds
                     WHERE company_id = %s AND round_type = %s
                     LIMIT 1
                 """, (company_id, d.get("round_type")))
@@ -1525,13 +1525,13 @@ async def approve_suggestion(
                         note = f"Source: {source_url}"
                         new_notes = (existing["notes"] + "\n" + note) if existing["notes"] else note
                         cur.execute("""
-                            UPDATE cvc.funding_rounds
+                            UPDATE funding_rounds
                             SET source = COALESCE(source, %s), notes = %s
                             WHERE id = %s
                         """, (source_url, new_notes, existing["id"]))
                 else:
                     cur.execute("""
-                        INSERT INTO cvc.funding_rounds
+                        INSERT INTO funding_rounds
                             (company_id, round_type, amount_usd, announced_date,
                              investors, valuation_usd, approximate, source)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -1549,7 +1549,7 @@ async def approve_suggestion(
             elif row["suggestion_type"] == "case_study":
                 import json as _json
                 cur.execute("""
-                    UPDATE cvc.companies
+                    UPDATE companies
                     SET case_studies = COALESCE(case_studies, '[]'::jsonb) || %s::jsonb
                     WHERE id = %s
                 """, (_json.dumps([{
@@ -1560,7 +1560,7 @@ async def approve_suggestion(
                 }]), company_id))
 
             cur.execute("""
-                UPDATE cvc.intel_suggestions
+                UPDATE intel_suggestions
                 SET status = 'accepted', reviewed_at = NOW(), reviewed_by = %s
                 WHERE id = %s
             """, (username, suggestion_id))
@@ -1575,7 +1575,7 @@ async def reject_suggestion(suggestion_id: int, user=Depends(require_auth)):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                UPDATE cvc.intel_suggestions
+                UPDATE intel_suggestions
                 SET status = 'rejected', reviewed_at = NOW()
                 WHERE id = %s AND status = 'pending'
             """, (suggestion_id,))
@@ -1612,7 +1612,7 @@ async def get_enrichment_stats(user=Depends(require_auth)):
                         WHERE sector = ANY(%s)
                           AND industrial_readiness_score IS NOT NULL
                     ) as industrial_scored
-                FROM cvc.companies
+                FROM companies
             """, (industrial_sectors, industrial_sectors))
             row = cur.fetchone()
             return EnrichmentStats(
@@ -1658,7 +1658,7 @@ def get_master_activity_log(
         with conn.cursor() as cur:
             cur.execute(f"""
                 SELECT COUNT(*) AS total
-                FROM cvc.company_activity_log al
+                FROM company_activity_log al
                 {where}
             """, params)
             total = cur.fetchone()["total"]
@@ -1667,8 +1667,8 @@ def get_master_activity_log(
                 SELECT al.id, al.changed_by, al.changed_at, al.field_name,
                        al.old_value, al.new_value, al.change_source,
                        c.id AS company_id, c.name AS company_name, c.sector
-                FROM cvc.company_activity_log al
-                JOIN cvc.companies c ON c.id = al.company_id
+                FROM company_activity_log al
+                JOIN companies c ON c.id = al.company_id
                 {where}
                 ORDER BY al.changed_at DESC
                 LIMIT %s OFFSET %s
@@ -1706,7 +1706,7 @@ SELECT
     COUNT(CASE WHEN case_studies IS NOT NULL AND jsonb_array_length(case_studies) > 0 THEN 1 END) AS has_case_studies,
     COUNT(CASE WHEN founders IS NOT NULL AND founders::text NOT IN ('null', '""', '[]', '{}', '') THEN 1 END) AS has_founders,
     COUNT(CASE WHEN linkedin_url IS NOT NULL AND linkedin_url <> '' THEN 1 END) AS has_linkedin
-FROM cvc.companies
+FROM companies
 """
 
 
@@ -1732,7 +1732,7 @@ def get_coverage_history(days: int = Query(90, ge=7, le=365), user=Depends(requi
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT * FROM cvc.enrichment_snapshots
+                SELECT * FROM enrichment_snapshots
                 WHERE snapshot_date >= CURRENT_DATE - %s::int
                 ORDER BY snapshot_date ASC
             """, (days,))
@@ -1768,7 +1768,7 @@ def get_enrichment_step_status(company_id: int, user=Depends(require_auth)):
                         WHEN case_studies IS NOT NULL AND jsonb_array_length(case_studies) > 0 THEN TRUE
                         ELSE FALSE
                     END AS has_case_studies
-                FROM cvc.companies WHERE id = %s
+                FROM companies WHERE id = %s
             """, (company_id,))
             row = cur.fetchone()
             if not row:
@@ -1788,7 +1788,7 @@ def get_enrichment_step_status(company_id: int, user=Depends(require_auth)):
 
             if not founder_done:
                 cur.execute(
-                    """SELECT 1 FROM cvc.company_intel
+                    """SELECT 1 FROM company_intel
                        WHERE company_id = %s
                          AND uploaded_by = 'founder_research_worker'
                          AND length(coalesce(raw_text,'')) > 300
@@ -1798,13 +1798,13 @@ def get_enrichment_step_status(company_id: int, user=Depends(require_auth)):
                 founder_done = cur.fetchone() is not None
 
             cur.execute(
-                "SELECT COUNT(*) AS n FROM cvc.funding_rounds WHERE company_id = %s",
+                "SELECT COUNT(*) AS n FROM funding_rounds WHERE company_id = %s",
                 (company_id,)
             )
             fr_count = cur.fetchone()["n"]
 
             cur.execute("""
-                SELECT COUNT(*) AS n FROM cvc.intel_suggestions
+                SELECT COUNT(*) AS n FROM intel_suggestions
                 WHERE company_id = %s AND suggestion_type = 'new_funding_round' AND status = 'pending'
             """, (company_id,))
             fs_count = cur.fetchone()["n"]
@@ -1812,7 +1812,7 @@ def get_enrichment_step_status(company_id: int, user=Depends(require_auth)):
 
             if not case_studies_done:
                 cur.execute("""
-                    SELECT COUNT(*) AS n FROM cvc.intel_suggestions
+                    SELECT COUNT(*) AS n FROM intel_suggestions
                     WHERE company_id = %s AND suggestion_type = 'case_study'
                       AND status IN ('pending', 'accepted')
                 """, (company_id,))
@@ -1820,7 +1820,7 @@ def get_enrichment_step_status(company_id: int, user=Depends(require_auth)):
 
             if not case_studies_done:
                 cur.execute(
-                    "SELECT revenue_arr_usd FROM cvc.companies WHERE id = %s",
+                    "SELECT revenue_arr_usd FROM companies WHERE id = %s",
                     (company_id,)
                 )
                 rev_row = cur.fetchone()

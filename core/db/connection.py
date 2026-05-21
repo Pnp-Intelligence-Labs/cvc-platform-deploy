@@ -5,6 +5,7 @@ All credentials come from environment variables or a local .env file.
 """
 
 import os
+import re
 import psycopg2
 import psycopg2.extras
 import psycopg2.pool
@@ -26,6 +27,17 @@ _DEFAULTS = {
     "dbname": "platform_db",
     "user":   "platform",
 }
+
+_SCHEMA_RE = re.compile(r"^[a-z_][a-z0-9_]*$")
+
+
+def _app_schema() -> str:
+    schema = os.getenv("APP_SCHEMA", "cvc")
+    if not _SCHEMA_RE.match(schema):
+        raise RuntimeError(
+            f"APP_SCHEMA={schema!r} is invalid. Must match [a-z_][a-z0-9_]*."
+        )
+    return schema
 
 _pool: psycopg2.pool.ThreadedConnectionPool | None = None
 _pool_lock = Lock()
@@ -90,9 +102,11 @@ def get_connection(cursor_factory=psycopg2.extras.RealDictCursor):
     """
     pool = _get_pool()
     conn = pool.getconn()
+    schema = _app_schema()
     try:
         with conn.cursor() as _c:
             _c.execute("SET app.audit_source = 'app'")
+            _c.execute(f"SET search_path TO {schema}, public")
         yield conn
         conn.commit()
     except Exception:

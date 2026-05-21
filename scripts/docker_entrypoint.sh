@@ -42,7 +42,7 @@ done
 echo "[entrypoint] Database is ready."
 
 echo "[entrypoint] Running migrations ..."
-python -m core.db.migrate
+bash /app/scripts/migrate.sh
 
 echo "[entrypoint] Starting API server ..."
 exec python -m uvicorn api.main:app \

@@ -51,7 +51,7 @@ def _intro_data_quality(cur, where: str, params: list) -> dict:
             COUNT(*)                                             AS total,
             COUNT(*) FILTER (WHERE outcome IS NOT NULL)         AS has_outcome,
             COUNT(*) FILTER (WHERE match_reviewed = true)       AS match_reviewed
-        FROM cvc.partner_intros pi
+        FROM partner_intros pi
         {where}
     """, params)
     row = dict(cur.fetchone())
@@ -74,8 +74,8 @@ def _company_data_quality(cur, company_where: str, params: list) -> dict:
             COUNT(*)                                                        AS total,
             COUNT(*) FILTER (WHERE enrichment_status = 'complete')         AS enriched,
             COUNT(DISTINCT cal.company_id)                                  AS human_edited
-        FROM cvc.companies c
-        LEFT JOIN cvc.company_activity_log cal ON cal.company_id = c.id
+        FROM companies c
+        LEFT JOIN company_activity_log cal ON cal.company_id = c.id
         {company_where}
     """, params)
     row = dict(cur.fetchone())
@@ -117,7 +117,7 @@ def sector_overview(
                    COUNT(*) AS company_count,
                    COUNT(*) FILTER (WHERE is_portfolio = true) AS portfolio_count,
                    ROUND(AVG(score_composite)::numeric, 1) AS avg_score
-            FROM cvc.companies
+            FROM companies
             {where}
             GROUP BY sector
             ORDER BY company_count DESC
@@ -128,7 +128,7 @@ def sector_overview(
     return {
         "data": data,
         "meta": {
-            "source_tables": ["cvc.companies"],
+            "source_tables": ["companies"],
             "key_fields": {
                 "company_count":   "COUNT(*) — all rows matching filters",
                 "avg_score":       "AVG(score_composite) — algorithmic score updated nightly",
@@ -178,8 +178,8 @@ def funding_trends(
                    COUNT(DISTINCT fr.company_id) AS companies_funded,
                    ROUND(SUM(fr.amount_usd) / 1e6, 1) AS total_m,
                    ROUND(AVG(fr.amount_usd) / 1e6, 1) AS avg_round_m
-            FROM cvc.funding_rounds fr
-            JOIN cvc.companies c ON c.id = fr.company_id
+            FROM funding_rounds fr
+            JOIN companies c ON c.id = fr.company_id
             {fr_where}
             GROUP BY year
             ORDER BY year
@@ -192,8 +192,8 @@ def funding_trends(
         cur.execute(f"""
             SELECT COUNT(*) AS total_rounds,
                    COUNT(*) FILTER (WHERE fr.amount_usd > 0) AS rounds_with_amount
-            FROM cvc.funding_rounds fr
-            JOIN cvc.companies c ON c.id = fr.company_id
+            FROM funding_rounds fr
+            JOIN companies c ON c.id = fr.company_id
             WHERE EXTRACT(YEAR FROM fr.announced_date) BETWEEN %s AND %s
             {'AND c.sector = %s' if safe_sector else ''}
         """, [start_year, end_year] + ([safe_sector] if safe_sector else []))
@@ -202,7 +202,7 @@ def funding_trends(
     return {
         "data": data,
         "meta": {
-            "source_tables": ["cvc.funding_rounds", "cvc.companies"],
+            "source_tables": ["funding_rounds", "companies"],
             "key_fields": {
                 "total_m":          "SUM(amount_usd) / 1,000,000",
                 "companies_funded": "COUNT DISTINCT company_id — unique companies with a tracked round that year",
@@ -242,7 +242,7 @@ def stage_distribution(
                    COUNT(*) AS company_count,
                    COUNT(*) FILTER (WHERE is_portfolio = true) AS portfolio_count,
                    ROUND(AVG(score_composite)::numeric, 1) AS avg_score
-            FROM cvc.companies
+            FROM companies
             {where}
             GROUP BY stage
             ORDER BY
@@ -256,7 +256,7 @@ def stage_distribution(
         data = [dict(r) for r in cur.fetchall()]
 
         cur.execute(f"""
-            SELECT COUNT(*) FROM cvc.companies
+            SELECT COUNT(*) FROM companies
             WHERE stage IS NULL
             {'AND sector = %s' if safe_sector else ''}
         """, ([safe_sector] if safe_sector else []))
@@ -267,7 +267,7 @@ def stage_distribution(
     return {
         "data": data,
         "meta": {
-            "source_tables": ["cvc.companies"],
+            "source_tables": ["companies"],
             "key_fields": {
                 "stage":           "companies.stage — funding stage label",
                 "company_count":   "COUNT(*) — companies with a known stage",
@@ -307,7 +307,7 @@ def score_distribution(
                    (FLOOR(score_composite / 20) * 20 + 20)::int AS band_end,
                    COUNT(*) AS company_count,
                    COUNT(*) FILTER (WHERE is_portfolio = true) AS portfolio_count
-            FROM cvc.companies
+            FROM companies
             {where}
             GROUP BY band_start, band_end
             ORDER BY band_start
@@ -317,7 +317,7 @@ def score_distribution(
             r["label"] = f"{r['band_start']}–{r['band_end']}"
 
         cur.execute(f"""
-            SELECT COUNT(*) FROM cvc.companies
+            SELECT COUNT(*) FROM companies
             WHERE score_composite IS NULL
             {'AND sector = %s' if safe_sector else ''}
         """, ([safe_sector] if safe_sector else []))
@@ -328,7 +328,7 @@ def score_distribution(
     return {
         "data": data,
         "meta": {
-            "source_tables": ["cvc.companies"],
+            "source_tables": ["companies"],
             "key_fields": {
                 "score_composite": "Composite score 0–100 computed nightly from four sub-scores (IRS, SRI, TDF, Commercial).",
                 "band":            "Companies bucketed into 20-point ranges (0–20, 20–40, etc.)",
@@ -362,7 +362,7 @@ def engagement_over_time(
             filters.append("c.sector = %s")
             params.append(safe_sector)
 
-        join  = "JOIN cvc.companies c ON c.id = pi.company_id" if safe_sector else ""
+        join  = "JOIN companies c ON c.id = pi.company_id" if safe_sector else ""
         where = "WHERE " + " AND ".join(filters)
 
         cur.execute(f"""
@@ -371,7 +371,7 @@ def engagement_over_time(
                 COUNT(*)                               AS intro_events,
                 COUNT(DISTINCT pi.company_id)          AS unique_companies,
                 COUNT(DISTINCT pi.partner_id)          AS corporate_orgs
-            FROM cvc.partner_intros pi
+            FROM partner_intros pi
             {join}
             {where}
             GROUP BY year
@@ -383,7 +383,7 @@ def engagement_over_time(
     return {
         "data": data,
         "meta": {
-            "source_tables": ["cvc.partner_intros"],
+            "source_tables": ["partner_intros"],
             "key_fields": {
                 "intro_events":     "COUNT(*) — all introduction events logged for that year",
                 "unique_companies": "COUNT DISTINCT company_id — unique startups introduced",
@@ -414,8 +414,8 @@ def industry_activity(
                 COUNT(*)                      AS intro_events,
                 COUNT(DISTINCT pi.company_id) AS unique_companies,
                 COUNT(DISTINCT pi.partner_id) AS org_count
-            FROM cvc.partner_intros pi
-            JOIN cvc.partners p ON p.id = pi.partner_id
+            FROM partner_intros pi
+            JOIN partners p ON p.id = pi.partner_id
             WHERE p.industry IS NOT NULL
             GROUP BY p.industry
             ORDER BY intro_events DESC
@@ -427,7 +427,7 @@ def industry_activity(
     return {
         "data": data,
         "meta": {
-            "source_tables": ["cvc.partner_intros", "cvc.partners"],
+            "source_tables": ["partner_intros", "partners"],
             "key_fields": {
                 "industry":         "partners.industry — corporate sector classification",
                 "intro_events":     "COUNT(*) — total intro events from orgs in this industry",
@@ -464,8 +464,8 @@ def sector_demand(
                 COUNT(*)                      AS intro_events,
                 COUNT(DISTINCT pi.company_id) AS unique_companies,
                 COUNT(DISTINCT pi.partner_id) AS corporate_orgs
-            FROM cvc.partner_intros pi
-            JOIN cvc.companies c ON c.id = pi.company_id
+            FROM partner_intros pi
+            JOIN companies c ON c.id = pi.company_id
             {where}
             GROUP BY c.sector
             ORDER BY intro_events DESC
@@ -476,7 +476,7 @@ def sector_demand(
     return {
         "data": data,
         "meta": {
-            "source_tables": ["cvc.partner_intros", "cvc.companies"],
+            "source_tables": ["partner_intros", "companies"],
             "key_fields": {
                 "sector":           "companies.sector — startup's focus area",
                 "intro_events":     "COUNT(*) — total times a company in this sector was introduced",
@@ -512,14 +512,14 @@ def intro_outcomes(
             filters.append("c.sector = %s")
             params.append(safe_sector)
 
-        join  = "JOIN cvc.companies c ON c.id = pi.company_id" if filters else ""
+        join  = "JOIN companies c ON c.id = pi.company_id" if filters else ""
         where = ("WHERE " + " AND ".join(filters)) if filters else ""
 
         cur.execute(f"""
             SELECT
                 COALESCE(pi.outcome, 'no_outcome') AS outcome,
                 COUNT(*) AS count
-            FROM cvc.partner_intros pi
+            FROM partner_intros pi
             {join}
             {where}
             GROUP BY outcome
@@ -531,14 +531,14 @@ def intro_outcomes(
 
         quality_where = (
             "WHERE intro_date IS NOT NULL"
-            + (f" AND pi.company_id IN (SELECT id FROM cvc.companies WHERE sector = %s)" if safe_sector else "")
+            + (f" AND pi.company_id IN (SELECT id FROM companies WHERE sector = %s)" if safe_sector else "")
         )
         quality = _intro_data_quality(cur, quality_where, ([safe_sector] if safe_sector else []))
 
     return {
         "data": rows,
         "meta": {
-            "source_tables": ["cvc.partner_intros"],
+            "source_tables": ["partner_intros"],
             "key_fields": {
                 "outcome": "partner_intros.outcome — status label set by PSM or import",
                 "count":   "COUNT(*) — number of intro events at this outcome stage",

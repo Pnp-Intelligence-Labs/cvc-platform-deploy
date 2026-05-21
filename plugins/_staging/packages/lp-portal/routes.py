@@ -55,7 +55,7 @@ def get_lp_overview(user: UserInfo = Depends(_require_lp_access)):
             # Portfolio company count for default fund
             cur.execute("""
                 SELECT COUNT(*) as count
-                FROM cvc.term_sheets
+                FROM term_sheets
                 WHERE fund = %s
             """, (default_fund,))
             portfolio_companies = cur.fetchone()["count"]
@@ -63,8 +63,8 @@ def get_lp_overview(user: UserInfo = Depends(_require_lp_access)):
             # Portfolio company counts by sector
             cur.execute("""
                 SELECT c.sector, COUNT(*) as count
-                FROM cvc.term_sheets ts
-                JOIN cvc.companies c ON c.id = ts.company_id
+                FROM term_sheets ts
+                JOIN companies c ON c.id = ts.company_id
                 WHERE ts.fund = %s AND c.sector IS NOT NULL
                 GROUP BY c.sector
             """, (default_fund,))
@@ -75,7 +75,7 @@ def get_lp_overview(user: UserInfo = Depends(_require_lp_access)):
                 SELECT committed_capital, deployed_capital, nav, net_irr, tvpi, dpi,
                        fund_size_usd, management_fees_usd,
                        initial_investments_usd, followon_investments_usd, remaining_reserves_usd
-                FROM cvc.fund_metrics
+                FROM fund_metrics
                 ORDER BY id DESC LIMIT 1
             """)
             fm = cur.fetchone()
@@ -145,8 +145,8 @@ def get_annual_reports(user: UserInfo = Depends(_require_lp_access)):
                     ts.is_lead_investor, ts.co_investors, ts.lead_investor,
                     ts.pre_money_valuation_usd, ts.round_size_usd,
                     ts.is_written_off, ts.category_2
-                FROM cvc.term_sheets ts
-                JOIN cvc.companies c ON c.id = ts.company_id
+                FROM term_sheets ts
+                JOIN companies c ON c.id = ts.company_id
                 WHERE ts.fund = %s
                   AND ts.close_date IS NOT NULL
                 ORDER BY ts.close_date ASC
@@ -157,7 +157,7 @@ def get_annual_reports(user: UserInfo = Depends(_require_lp_access)):
             try:
                 cur.execute("""
                     SELECT company_id, investment_date, amount_usd, followon_type, notes
-                    FROM cvc.term_sheet_followons
+                    FROM term_sheet_followons
                     WHERE fund = %s
                     ORDER BY investment_date ASC
                 """, (default_fund,))
@@ -246,7 +246,7 @@ def get_nav_history(user: UserInfo = Depends(_require_lp_access)):
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT period_date, unrealized_fmv, invested_capital, tvpi
-                FROM cvc.fund_nav_history
+                FROM fund_nav_history
                 WHERE fund = %s
                 ORDER BY period_date ASC
             """, (default_fund,))

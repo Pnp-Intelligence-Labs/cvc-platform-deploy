@@ -44,6 +44,8 @@ from api.auth import require_auth
 from api.routes.auth import require_jwt, UserInfo
 from core.db.connection import get_connection
 
+_APP_SCHEMA = os.environ.get("APP_SCHEMA", "cvc")
+
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
@@ -204,7 +206,7 @@ def _get_report_or_404(report_id: int):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT * FROM cvc.trend_reports WHERE id = %s",
+                "SELECT * FROM trend_reports WHERE id = %s",
                 (report_id,)
             )
             row = cur.fetchone()
@@ -217,7 +219,7 @@ def _get_section_or_404(report_id: int, section_id: int):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT * FROM cvc.report_sections WHERE id = %s AND report_id = %s",
+                "SELECT * FROM report_sections WHERE id = %s AND report_id = %s",
                 (section_id, report_id)
             )
             row = cur.fetchone()
@@ -253,8 +255,8 @@ def list_reports(user: UserInfo = Depends(require_jwt)):
             cur.execute("""
                 SELECT r.*,
                        COUNT(s.id) AS section_count
-                FROM cvc.trend_reports r
-                LEFT JOIN cvc.report_sections s ON s.report_id = r.id
+                FROM trend_reports r
+                LEFT JOIN report_sections s ON s.report_id = r.id
                 GROUP BY r.id
                 ORDER BY r.created_at DESC
             """)
@@ -267,7 +269,7 @@ def create_report(req: CreateReportRequest, user: UserInfo = Depends(require_jwt
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO cvc.trend_reports (title, sector, theme, date_from, date_to, created_by, output_format, citation_style, audience, tone)
+                INSERT INTO trend_reports (title, sector, theme, date_from, date_to, created_by, output_format, citation_style, audience, tone)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING *
             """, (req.title, req.sector, req.theme, req.date_from, req.date_to, user.username,
@@ -288,7 +290,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                 {
                     "title": "Funding Rounds by Sector (Last 2 Years)",
                     "rationale": "Shows where capital has been flowing — useful for market momentum sections",
-                    "sql": "SELECT c.sector, COUNT(fr.id) AS round_count, SUM(fr.amount_usd) AS total_usd FROM cvc.funding_rounds fr JOIN cvc.companies c ON c.id = fr.company_id WHERE fr.announced_date >= NOW() - INTERVAL '2 years' GROUP BY c.sector ORDER BY total_usd DESC NULLS LAST",
+                    "sql": "SELECT c.sector, COUNT(fr.id) AS round_count, SUM(fr.amount_usd) AS total_usd FROM funding_rounds fr JOIN companies c ON c.id = fr.company_id WHERE fr.announced_date >= NOW() - INTERVAL '2 years' GROUP BY c.sector ORDER BY total_usd DESC NULLS LAST",
                     "chart_type": "bar",
                     "x_key": "sector",
                     "y_key": "total_usd",
@@ -297,7 +299,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                 {
                     "title": "Round Type Distribution",
                     "rationale": "Shows whether the market is early-stage heavy or scaling — good for investment thesis framing",
-                    "sql": "SELECT round_type, COUNT(*) AS count FROM cvc.funding_rounds WHERE announced_date >= NOW() - INTERVAL '2 years' GROUP BY round_type ORDER BY count DESC",
+                    "sql": "SELECT round_type, COUNT(*) AS count FROM funding_rounds WHERE announced_date >= NOW() - INTERVAL '2 years' GROUP BY round_type ORDER BY count DESC",
                     "chart_type": "pie",
                     "x_key": "round_type",
                     "y_key": "count",
@@ -306,7 +308,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                 {
                     "title": "Funding Activity by Quarter",
                     "rationale": "Trend line showing acceleration or slowdown — useful for macro framing",
-                    "sql": "SELECT TO_CHAR(DATE_TRUNC('quarter', announced_date), 'YYYY-Q') AS quarter, COUNT(*) AS rounds, SUM(amount_usd) AS total_usd FROM cvc.funding_rounds WHERE announced_date IS NOT NULL GROUP BY quarter ORDER BY quarter",
+                    "sql": "SELECT TO_CHAR(DATE_TRUNC('quarter', announced_date), 'YYYY-Q') AS quarter, COUNT(*) AS rounds, SUM(amount_usd) AS total_usd FROM funding_rounds WHERE announced_date IS NOT NULL GROUP BY quarter ORDER BY quarter",
                     "chart_type": "line",
                     "x_key": "quarter",
                     "y_key": "total_usd",
@@ -315,7 +317,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                 {
                     "title": "Top 20 Funded Companies",
                     "rationale": "Identifies the best-capitalized players in your coverage universe",
-                    "sql": "SELECT name, sector, funding_total_usd, stage FROM cvc.companies WHERE funding_total_usd IS NOT NULL ORDER BY funding_total_usd DESC LIMIT 20",
+                    "sql": "SELECT name, sector, funding_total_usd, stage FROM companies WHERE funding_total_usd IS NOT NULL ORDER BY funding_total_usd DESC LIMIT 20",
                     "chart_type": "bar",
                     "x_key": "name",
                     "y_key": "funding_total_usd",
@@ -329,7 +331,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                 {
                     "title": "Portfolio Companies by Sector",
                     "rationale": "Shows portfolio concentration — good for portfolio construction sections",
-                    "sql": "SELECT sector, COUNT(*) AS count FROM cvc.companies WHERE is_portfolio = TRUE GROUP BY sector ORDER BY count DESC",
+                    "sql": "SELECT sector, COUNT(*) AS count FROM companies WHERE is_portfolio = TRUE GROUP BY sector ORDER BY count DESC",
                     "chart_type": "bar",
                     "x_key": "sector",
                     "y_key": "count",
@@ -338,7 +340,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                 {
                     "title": "Pipeline by Stage",
                     "rationale": "Shows funnel shape from sourcing to investment — useful for sourcing coverage analysis",
-                    "sql": "SELECT stage, COUNT(*) AS count FROM cvc.companies WHERE is_portfolio = FALSE GROUP BY stage ORDER BY count DESC",
+                    "sql": "SELECT stage, COUNT(*) AS count FROM companies WHERE is_portfolio = FALSE GROUP BY stage ORDER BY count DESC",
                     "chart_type": "bar",
                     "x_key": "stage",
                     "y_key": "count",
@@ -347,7 +349,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                 {
                     "title": "Composite Score Distribution",
                     "rationale": "Shows the quality spread of the pipeline — useful for investment readiness sections",
-                    "sql": "SELECT CASE WHEN score_composite >= 8 THEN '8-10 (High)' WHEN score_composite >= 6 THEN '6-8 (Above Avg)' WHEN score_composite >= 4 THEN '4-6 (Average)' ELSE '0-4 (Low)' END AS score_band, COUNT(*) AS count FROM cvc.companies WHERE score_composite IS NOT NULL GROUP BY score_band ORDER BY score_band",
+                    "sql": "SELECT CASE WHEN score_composite >= 8 THEN '8-10 (High)' WHEN score_composite >= 6 THEN '6-8 (Above Avg)' WHEN score_composite >= 4 THEN '4-6 (Average)' ELSE '0-4 (Low)' END AS score_band, COUNT(*) AS count FROM companies WHERE score_composite IS NOT NULL GROUP BY score_band ORDER BY score_band",
                     "chart_type": "bar",
                     "x_key": "score_band",
                     "y_key": "count",
@@ -356,7 +358,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                 {
                     "title": "Top Scoring Companies by Sector",
                     "rationale": "Identifies the highest-quality companies per vertical for competitive analysis",
-                    "sql": "SELECT name, sector, score_composite, stage FROM cvc.companies WHERE score_composite IS NOT NULL ORDER BY score_composite DESC LIMIT 30",
+                    "sql": "SELECT name, sector, score_composite, stage FROM companies WHERE score_composite IS NOT NULL ORDER BY score_composite DESC LIMIT 30",
                     "chart_type": "bar",
                     "x_key": "name",
                     "y_key": "score_composite",
@@ -370,7 +372,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                 {
                     "title": "Signal Volume by Sector",
                     "rationale": "Shows which sectors are generating the most market noise — useful for trend identification",
-                    "sql": "SELECT sector, COUNT(*) AS signal_count FROM cvc.raw_signals WHERE sector IS NOT NULL GROUP BY sector ORDER BY signal_count DESC",
+                    "sql": "SELECT sector, COUNT(*) AS signal_count FROM raw_signals WHERE sector IS NOT NULL GROUP BY sector ORDER BY signal_count DESC",
                     "chart_type": "bar",
                     "x_key": "sector",
                     "y_key": "signal_count",
@@ -379,7 +381,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                 {
                     "title": "Signal Types Distribution",
                     "rationale": "Shows the nature of market activity — partnership vs product vs regulatory",
-                    "sql": "SELECT signal_type, COUNT(*) AS count FROM cvc.raw_signals WHERE signal_type IS NOT NULL GROUP BY signal_type ORDER BY count DESC LIMIT 15",
+                    "sql": "SELECT signal_type, COUNT(*) AS count FROM raw_signals WHERE signal_type IS NOT NULL GROUP BY signal_type ORDER BY count DESC LIMIT 15",
                     "chart_type": "pie",
                     "x_key": "signal_type",
                     "y_key": "count",
@@ -388,7 +390,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                 {
                     "title": "Signal Activity by Quarter",
                     "rationale": "Trend line for market intelligence activity over time",
-                    "sql": "SELECT quarter, COUNT(*) AS count FROM cvc.raw_signals WHERE quarter IS NOT NULL GROUP BY quarter ORDER BY quarter",
+                    "sql": "SELECT quarter, COUNT(*) AS count FROM raw_signals WHERE quarter IS NOT NULL GROUP BY quarter ORDER BY quarter",
                     "chart_type": "line",
                     "x_key": "quarter",
                     "y_key": "count",
@@ -397,7 +399,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                 {
                     "title": "High-Confidence Briefing Insights by Sector",
                     "rationale": "Surfaces the most reliable intelligence signals for a thesis-grounding section",
-                    "sql": "SELECT sector, COUNT(*) AS count FROM cvc.briefing_insights WHERE confidence = 'HIGH' AND sector IS NOT NULL GROUP BY sector ORDER BY count DESC",
+                    "sql": "SELECT sector, COUNT(*) AS count FROM briefing_insights WHERE confidence = 'HIGH' AND sector IS NOT NULL GROUP BY sector ORDER BY count DESC",
                     "chart_type": "bar",
                     "x_key": "sector",
                     "y_key": "count",
@@ -411,7 +413,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                 {
                     "title": "Companies by Founded Year",
                     "rationale": "Shows the vintage distribution of the startup ecosystem — is it mature or early?",
-                    "sql": "SELECT founded, COUNT(*) AS count FROM cvc.companies WHERE founded IS NOT NULL AND founded >= 2010 GROUP BY founded ORDER BY founded",
+                    "sql": "SELECT founded, COUNT(*) AS count FROM companies WHERE founded IS NOT NULL AND founded >= 2010 GROUP BY founded ORDER BY founded",
                     "chart_type": "bar",
                     "x_key": "founded",
                     "y_key": "count",
@@ -420,7 +422,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                 {
                     "title": "Geographic Distribution (Top 15 Countries)",
                     "rationale": "Shows where the innovation is concentrated — useful for global market framing",
-                    "sql": "SELECT hq_country, COUNT(*) AS count FROM cvc.companies WHERE hq_country IS NOT NULL GROUP BY hq_country ORDER BY count DESC LIMIT 15",
+                    "sql": "SELECT hq_country, COUNT(*) AS count FROM companies WHERE hq_country IS NOT NULL GROUP BY hq_country ORDER BY count DESC LIMIT 15",
                     "chart_type": "bar",
                     "x_key": "hq_country",
                     "y_key": "count",
@@ -429,7 +431,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                 {
                     "title": "Partner Introductions by Outcome",
                     "rationale": "Shows commercial traction of partner network — useful for partner integration sections",
-                    "sql": "SELECT outcome, COUNT(*) AS count FROM cvc.partner_intros WHERE outcome IS NOT NULL GROUP BY outcome ORDER BY count DESC",
+                    "sql": "SELECT outcome, COUNT(*) AS count FROM partner_intros WHERE outcome IS NOT NULL GROUP BY outcome ORDER BY count DESC",
                     "chart_type": "pie",
                     "x_key": "outcome",
                     "y_key": "count",
@@ -438,7 +440,7 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
                 {
                     "title": "Employee Count Distribution",
                     "rationale": "Shows team size maturity — are these pre-revenue startups or scaling businesses?",
-                    "sql": "SELECT CASE WHEN employee_count < 10 THEN '<10' WHEN employee_count < 50 THEN '10-49' WHEN employee_count < 200 THEN '50-199' WHEN employee_count < 500 THEN '200-499' ELSE '500+' END AS size_band, COUNT(*) AS count FROM cvc.companies WHERE employee_count IS NOT NULL GROUP BY size_band ORDER BY size_band",
+                    "sql": "SELECT CASE WHEN employee_count < 10 THEN '<10' WHEN employee_count < 50 THEN '10-49' WHEN employee_count < 200 THEN '50-199' WHEN employee_count < 500 THEN '200-499' ELSE '500+' END AS size_band, COUNT(*) AS count FROM companies WHERE employee_count IS NOT NULL GROUP BY size_band ORDER BY size_band",
                     "chart_type": "bar",
                     "x_key": "size_band",
                     "y_key": "count",
@@ -453,20 +455,20 @@ def get_catalog(user: UserInfo = Depends(require_jwt)):
 def get_report(report_id: int, user: UserInfo = Depends(require_jwt)):
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM cvc.trend_reports WHERE id = %s", (report_id,))
+            cur.execute("SELECT * FROM trend_reports WHERE id = %s", (report_id,))
             r = cur.fetchone()
             if not r:
                 raise HTTPException(status_code=404, detail="Report not found")
             report = _serialize(dict(r))
 
             cur.execute("""
-                SELECT * FROM cvc.report_sections
+                SELECT * FROM report_sections
                 WHERE report_id = %s ORDER BY position, id
             """, (report_id,))
             sections = [_serialize(dict(row)) for row in cur.fetchall()]
 
             cur.execute("""
-                SELECT * FROM cvc.report_sources
+                SELECT * FROM report_sources
                 WHERE report_id = %s ORDER BY created_at
             """, (report_id,))
             sources = [_serialize(dict(row)) for row in cur.fetchall()]
@@ -487,7 +489,7 @@ def patch_report(report_id: int, req: PatchReportRequest, user: UserInfo = Depen
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                f"UPDATE cvc.trend_reports SET {set_clause}, updated_at = NOW() WHERE id = %s RETURNING *",
+                f"UPDATE trend_reports SET {set_clause}, updated_at = NOW() WHERE id = %s RETURNING *",
                 values
             )
             row = _serialize(dict(cur.fetchone()))
@@ -500,7 +502,7 @@ def delete_report(report_id: int, user: UserInfo = Depends(require_jwt)):
     _get_report_or_404(report_id)
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM cvc.trend_reports WHERE id = %s", (report_id,))
+            cur.execute("DELETE FROM trend_reports WHERE id = %s", (report_id,))
         conn.commit()
     return {"ok": True}
 
@@ -513,7 +515,7 @@ def list_sections(report_id: int, user: UserInfo = Depends(require_jwt)):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT * FROM cvc.report_sections
+                SELECT * FROM report_sections
                 WHERE report_id = %s ORDER BY position, id
             """, (report_id,))
             return [_serialize(dict(row)) for row in cur.fetchall()]
@@ -525,11 +527,11 @@ def create_section(report_id: int, req: CreateSectionRequest, user: UserInfo = D
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT COALESCE(MAX(position), -1) + 1 AS next_pos FROM cvc.report_sections WHERE report_id = %s
+                SELECT COALESCE(MAX(position), -1) + 1 AS next_pos FROM report_sections WHERE report_id = %s
             """, (report_id,))
             next_pos = cur.fetchone()['next_pos']
             cur.execute("""
-                INSERT INTO cvc.report_sections (report_id, position, title, instructions, data_sources, section_type, audience, tone)
+                INSERT INTO report_sections (report_id, position, title, instructions, data_sources, section_type, audience, tone)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING *
             """, (report_id, next_pos, req.title, req.instructions, json.dumps(req.data_sources),
@@ -564,7 +566,7 @@ def patch_section(report_id: int, section_id: int, req: PatchSectionRequest,
         # Push to version history on manual edit
         with get_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT version_history, generated_at, confidence_score FROM cvc.report_sections WHERE id = %s", (section_id,))
+                cur.execute("SELECT version_history, generated_at, confidence_score FROM report_sections WHERE id = %s", (section_id,))
                 existing = dict(cur.fetchone())
             conn.commit()
         history = existing.get('version_history') or []
@@ -584,7 +586,7 @@ def patch_section(report_id: int, section_id: int, req: PatchSectionRequest,
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                f"UPDATE cvc.report_sections SET {set_clause} WHERE id = %s RETURNING *",
+                f"UPDATE report_sections SET {set_clause} WHERE id = %s RETURNING *",
                 values
             )
             row = _serialize(dict(cur.fetchone()))
@@ -597,7 +599,7 @@ def delete_section(report_id: int, section_id: int, user: UserInfo = Depends(req
     _get_section_or_404(report_id, section_id)
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM cvc.report_sections WHERE id = %s", (section_id,))
+            cur.execute("DELETE FROM report_sections WHERE id = %s", (section_id,))
         conn.commit()
     return {"ok": True}
 
@@ -691,13 +693,13 @@ def bulk_create_sections(report_id: int, req: BulkCreateSectionsRequest,
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT COALESCE(MAX(position), -1) AS max_pos FROM cvc.report_sections WHERE report_id = %s",
+                "SELECT COALESCE(MAX(position), -1) AS max_pos FROM report_sections WHERE report_id = %s",
                 (report_id,)
             )
             start_pos = cur.fetchone()['max_pos'] + 1
             for i, s in enumerate(req.sections):
                 cur.execute("""
-                    INSERT INTO cvc.report_sections (report_id, position, title, instructions, data_sources, section_type)
+                    INSERT INTO report_sections (report_id, position, title, instructions, data_sources, section_type)
                     VALUES (%s, %s, %s, %s, '[]', %s)
                     RETURNING *
                 """, (report_id, start_pos + i, s.get('title', f'Section {i+1}'), s.get('instructions'), s.get('section_type', 'prose')))
@@ -800,12 +802,12 @@ def discover_sources(report_id: int, section_id: int, user: UserInfo = Depends(r
             with conn.cursor() as cur:
                 if sector:
                     companies_sql = (
-                        "SELECT name, stage, score_composite, one_liner FROM cvc.companies "
+                        "SELECT name, stage, score_composite, one_liner FROM companies "
                         f"WHERE sector = '{sector}' AND score_composite IS NOT NULL "
                         "ORDER BY score_composite DESC LIMIT 20"
                     )
                     cur.execute(
-                        "SELECT name, stage, score_composite, one_liner FROM cvc.companies "
+                        "SELECT name, stage, score_composite, one_liner FROM companies "
                         "WHERE sector = %s AND score_composite IS NOT NULL "
                         "ORDER BY score_composite DESC LIMIT 20",
                         (sector,)
@@ -822,11 +824,11 @@ def discover_sources(report_id: int, section_id: int, user: UserInfo = Depends(r
                         })
 
                     insights_sql = (
-                        "SELECT insight, expert, confidence, source_title FROM cvc.briefing_insights "
+                        "SELECT insight, expert, confidence, source_title FROM briefing_insights "
                         f"WHERE sector = '{sector}' ORDER BY created_at DESC LIMIT 10"
                     )
                     cur.execute(
-                        "SELECT insight, expert, confidence, source_title FROM cvc.briefing_insights "
+                        "SELECT insight, expert, confidence, source_title FROM briefing_insights "
                         "WHERE sector = %s ORDER BY created_at DESC LIMIT 10",
                         (sector,)
                     )
@@ -843,11 +845,11 @@ def discover_sources(report_id: int, section_id: int, user: UserInfo = Depends(r
                 else:
                     # No sector — use generic company query
                     companies_sql = (
-                        "SELECT name, sector, stage, score_composite FROM cvc.companies "
+                        "SELECT name, sector, stage, score_composite FROM companies "
                         "WHERE score_composite IS NOT NULL ORDER BY score_composite DESC LIMIT 20"
                     )
                     cur.execute(
-                        "SELECT name, sector, stage, score_composite FROM cvc.companies "
+                        "SELECT name, sector, stage, score_composite FROM companies "
                         "WHERE score_composite IS NOT NULL ORDER BY score_composite DESC LIMIT 20"
                     )
                     companies = [dict(r) for r in cur.fetchall()]
@@ -882,7 +884,7 @@ def generate_section(report_id: int, section_id: int, background_tasks: Backgrou
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "UPDATE cvc.report_sections SET status = 'generating', error_msg = NULL WHERE id = %s",
+                "UPDATE report_sections SET status = 'generating', error_msg = NULL WHERE id = %s",
                 (section_id,)
             )
         conn.commit()
@@ -904,7 +906,7 @@ def _generate_section_bg(report_id: int, section_id: int):
             with get_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(
-                        "UPDATE cvc.report_sections SET status = 'error', error_msg = %s WHERE id = %s",
+                        "UPDATE report_sections SET status = 'error', error_msg = %s WHERE id = %s",
                         (str(e)[:500], section_id)
                     )
                 conn.commit()
@@ -920,7 +922,7 @@ def list_sources(report_id: int, user: UserInfo = Depends(require_jwt)):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT * FROM cvc.report_sources WHERE report_id = %s ORDER BY created_at",
+                "SELECT * FROM report_sources WHERE report_id = %s ORDER BY created_at",
                 (report_id,)
             )
             return [_serialize(dict(row)) for row in cur.fetchall()]
@@ -956,7 +958,7 @@ def create_source(report_id: int, req: CreateSourceRequest, user: UserInfo = Dep
                 with get_connection() as _conn:
                     with _conn.cursor() as _cur:
                         _cur.execute("""
-                            INSERT INTO cvc.content_items
+                            INSERT INTO content_items
                                 (content_type, title, url, source, raw_text, enrichment_status, content_hash)
                             VALUES ('article', %s, %s, %s, %s, 'raw', %s)
                             ON CONFLICT (content_hash) DO NOTHING
@@ -987,7 +989,7 @@ def create_source(report_id: int, req: CreateSourceRequest, user: UserInfo = Dep
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO cvc.report_sources
+                INSERT INTO report_sources
                     (report_id, section_id, source_type, label, content_text, query_sql, query_result, article_url,
                      chart_type, x_key, y_key)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -1049,7 +1051,7 @@ async def upload_source(
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO cvc.report_sources
+                INSERT INTO report_sources
                     (report_id, section_id, source_type, label, filename, file_path, content_text)
                 VALUES (%s, %s, 'pdf', %s, %s, %s, %s)
                 RETURNING *
@@ -1064,7 +1066,7 @@ def patch_source(report_id: int, source_id: int, req: PatchSourceRequest,
                  user: UserInfo = Depends(require_jwt)):
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT id FROM cvc.report_sources WHERE id = %s AND report_id = %s",
+            cur.execute("SELECT id FROM report_sources WHERE id = %s AND report_id = %s",
                         (source_id, report_id))
             if not cur.fetchone():
                 raise HTTPException(status_code=404, detail="Source not found")
@@ -1076,12 +1078,12 @@ def patch_source(report_id: int, source_id: int, req: PatchSourceRequest,
             if updates:
                 set_clause = ", ".join(f"{k} = %s" for k in updates)
                 cur.execute(
-                    f"UPDATE cvc.report_sources SET {set_clause} WHERE id = %s RETURNING *",
+                    f"UPDATE report_sources SET {set_clause} WHERE id = %s RETURNING *",
                     list(updates.values()) + [source_id]
                 )
                 row = _serialize(dict(cur.fetchone()))
             else:
-                cur.execute("SELECT * FROM cvc.report_sources WHERE id = %s", (source_id,))
+                cur.execute("SELECT * FROM report_sources WHERE id = %s", (source_id,))
                 row = _serialize(dict(cur.fetchone()))
         conn.commit()
     return row
@@ -1091,7 +1093,7 @@ def patch_source(report_id: int, source_id: int, req: PatchSourceRequest,
 def delete_source(report_id: int, source_id: int, user: UserInfo = Depends(require_jwt)):
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT file_path FROM cvc.report_sources WHERE id = %s AND report_id = %s",
+            cur.execute("SELECT file_path FROM report_sources WHERE id = %s AND report_id = %s",
                         (source_id, report_id))
             row = cur.fetchone()
             if not row:
@@ -1101,7 +1103,7 @@ def delete_source(report_id: int, source_id: int, user: UserInfo = Depends(requi
                     os.remove(row['file_path'])
                 except FileNotFoundError:
                     pass
-            cur.execute("DELETE FROM cvc.report_sources WHERE id = %s", (source_id,))
+            cur.execute("DELETE FROM report_sources WHERE id = %s", (source_id,))
         conn.commit()
     return {"ok": True}
 
@@ -1202,14 +1204,14 @@ Extract the outline now."""
         with conn.cursor() as cur:
             # Get current max position
             cur.execute(
-                "SELECT COALESCE(MAX(position), -1) AS max_pos FROM cvc.report_sections WHERE report_id = %s",
+                "SELECT COALESCE(MAX(position), -1) AS max_pos FROM report_sections WHERE report_id = %s",
                 (report_id,)
             )
             start_pos = cur.fetchone()['max_pos'] + 1
 
             for i, s in enumerate(sections_data):
                 cur.execute("""
-                    INSERT INTO cvc.report_sections (report_id, position, title, instructions, data_sources, section_type)
+                    INSERT INTO report_sections (report_id, position, title, instructions, data_sources, section_type)
                     VALUES (%s, %s, %s, %s, '[]', %s)
                     RETURNING *
                 """, (report_id, start_pos + i, s.get('title', f'Section {i+1}'), s.get('instructions'), s.get('section_type', 'prose')))
@@ -1218,7 +1220,7 @@ Extract the outline now."""
             # Only set brief if the report doesn't already have one
             if brief_text and not report.get('report_brief'):
                 cur.execute(
-                    "UPDATE cvc.trend_reports SET report_brief = %s, updated_at = NOW() WHERE id = %s",
+                    "UPDATE trend_reports SET report_brief = %s, updated_at = NOW() WHERE id = %s",
                     (brief_text, report_id)
                 )
         conn.commit()
@@ -1301,7 +1303,7 @@ def publish_report(report_id: int, background_tasks: BackgroundTasks,
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "UPDATE cvc.trend_reports SET status = 'generating', updated_at = NOW() WHERE id = %s",
+                "UPDATE trend_reports SET status = 'generating', updated_at = NOW() WHERE id = %s",
                 (report_id,)
             )
         conn.commit()
@@ -1320,7 +1322,7 @@ def _publish_report_bg(report_id: int):
             with get_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(
-                        "UPDATE cvc.trend_reports SET status = 'error', updated_at = NOW() WHERE id = %s",
+                        "UPDATE trend_reports SET status = 'error', updated_at = NOW() WHERE id = %s",
                         (report_id,)
                     )
                 conn.commit()
@@ -1349,7 +1351,7 @@ def reformat_report(report_id: int, user: UserInfo = Depends(require_jwt)):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT published_html, citation_style, status FROM cvc.trend_reports WHERE id = %s",
+                "SELECT published_html, citation_style, status FROM trend_reports WHERE id = %s",
                 (report_id,)
             )
             row = _serialize(dict(cur.fetchone()))
@@ -1369,7 +1371,7 @@ def rewrite_report(report_id: int, background_tasks: BackgroundTasks,
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "UPDATE cvc.trend_reports SET status = 'generating', updated_at = NOW() WHERE id = %s",
+                "UPDATE trend_reports SET status = 'generating', updated_at = NOW() WHERE id = %s",
                 (report_id,)
             )
         conn.commit()
@@ -1389,7 +1391,7 @@ def _rewrite_report_bg(report_id: int):
             with get_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(
-                        "UPDATE cvc.trend_reports SET status = 'error', updated_at = NOW() WHERE id = %s",
+                        "UPDATE trend_reports SET status = 'error', updated_at = NOW() WHERE id = %s",
                         (report_id,)
                     )
                 conn.commit()
@@ -1411,13 +1413,13 @@ def download_docx(report_id: int, user: UserInfo = Depends(require_jwt)):
 
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM cvc.trend_reports WHERE id = %s", (report_id,))
+            cur.execute("SELECT * FROM trend_reports WHERE id = %s", (report_id,))
             report = cur.fetchone()
             if not report:
                 raise HTTPException(status_code=404, detail="Report not found")
             report = dict(report)
             cur.execute("""
-                SELECT * FROM cvc.report_sections
+                SELECT * FROM report_sections
                 WHERE report_id = %s AND content IS NOT NULL
                 ORDER BY position, id
             """, (report_id,))
@@ -1502,10 +1504,10 @@ def download_docx(report_id: int, user: UserInfo = Depends(require_jwt)):
 
 # ── Data Explorer ─────────────────────────────────────────────────────────────
 
-_SCHEMA_DIGEST = """Available tables in the platform database (PostgreSQL, schema: cvc):
+_SCHEMA_DIGEST = f"""Available tables in the platform database (PostgreSQL, schema: {_APP_SCHEMA}):
 
 IMPORTANT RULES FOR QUERY GENERATION:
-1. stage data in cvc.companies is inconsistently cased ('Seed','seed','series_a','Series A' are all present).
+1. stage data in companies is inconsistently cased ('Seed','seed','series_a','Series A' are all present).
    Always normalize stage with a CASE expression. Use this pattern:
    CASE
      WHEN LOWER(stage) IN ('pre-seed','pre_seed') THEN 'Pre-Seed'
@@ -1522,40 +1524,40 @@ IMPORTANT RULES FOR QUERY GENERATION:
    A bar chart of stage distribution should GROUP BY stage_normalized, x_key="stage_normalized", y_key="count".
 3. Always alias COUNT(*) AS count, SUM(...) AS total, AVG(...) AS avg_score etc. x_key/y_key must exactly match an alias.
 
-cvc.companies — 1,700+ tracked startups
+companies — 1,700+ tracked startups
   name (text), sector (text — team-configured, see config/team.json for valid sector values),
   stage (text — RAW, inconsistent casing, always normalize — see rule 1 above),
   score_composite (float 0-10), score_irs (float), score_commercial (float), score_tdf (float),
   is_portfolio (bool), founded (int — year founded e.g. 2019), country (text), hq_city (text),
   total_raised_usd (bigint), employee_count (int)
-  Example stage query: SELECT CASE WHEN LOWER(stage) IN ('seed') THEN 'Seed' WHEN LOWER(stage) IN ('series a','series_a') THEN 'Series A' ELSE 'Other' END AS stage_normalized, COUNT(*) AS count FROM cvc.companies GROUP BY stage_normalized ORDER BY count DESC LIMIT 20
+  Example stage query: SELECT CASE WHEN LOWER(stage) IN ('seed') THEN 'Seed' WHEN LOWER(stage) IN ('series a','series_a') THEN 'Series A' ELSE 'Other' END AS stage_normalized, COUNT(*) AS count FROM companies GROUP BY stage_normalized ORDER BY count DESC LIMIT 20
 
-cvc.funding_rounds — funding history per company
-  company_id (FK → cvc.companies.id), round_type (text), amount_usd (bigint), announced_date (date)
-  Example: SELECT c.sector, SUM(fr.amount_usd) AS total FROM cvc.companies c JOIN cvc.funding_rounds fr ON fr.company_id = c.id GROUP BY c.sector ORDER BY total DESC LIMIT 10
+funding_rounds — funding history per company
+  company_id (FK → companies.id), round_type (text), amount_usd (bigint), announced_date (date)
+  Example: SELECT c.sector, SUM(fr.amount_usd) AS total FROM companies c JOIN funding_rounds fr ON fr.company_id = c.id GROUP BY c.sector ORDER BY total DESC LIMIT 10
 
-cvc.briefing_insights — enriched intelligence from podcasts and articles (x_key: week_start or sector, y_key: count)
+briefing_insights — enriched intelligence from podcasts and articles (x_key: week_start or sector, y_key: count)
   id (int), week_start (date), source_type (text: 'podcast','article'), source_title (text),
   insight (text), expert (text), confidence (text: 'HIGH','MEDIUM','LOW'), sector (text), created_at (timestamptz)
-  Example: SELECT TO_CHAR(week_start, 'YYYY-MM') AS month, COUNT(*) AS count FROM cvc.briefing_insights GROUP BY month ORDER BY month LIMIT 24
+  Example: SELECT TO_CHAR(week_start, 'YYYY-MM') AS month, COUNT(*) AS count FROM briefing_insights GROUP BY month ORDER BY month LIMIT 24
 
-cvc.weekly_signals — weekly market signal summaries (one row per week)
+weekly_signals — weekly market signal summaries (one row per week)
   week_start (date), week_end (date), total_items (int), podcast_count (int), news_count (int), article_count (int),
   sentiment_positive (int), sentiment_neutral (int), sentiment_negative (int),
   top_tags (jsonb), top_companies (jsonb), top_technologies (jsonb), created_at (timestamptz)
-  Example: SELECT TO_CHAR(week_start, 'YYYY-MM') AS month, SUM(total_items) AS count FROM cvc.weekly_signals GROUP BY month ORDER BY month LIMIT 24
+  Example: SELECT TO_CHAR(week_start, 'YYYY-MM') AS month, SUM(total_items) AS count FROM weekly_signals GROUP BY month ORDER BY month LIMIT 24
 
-cvc.partner_intros — introductions between startups and corporate partners
-  company_id (FK → cvc.companies.id), partner_id (FK → cvc.partners.id),
+partner_intros — introductions between startups and corporate partners
+  company_id (FK → companies.id), partner_id (FK → partners.id),
   startup_name (text), partner_name (text), intro_date (date), outcome (text), status_1 (text), status_2 (text)
-  Join to companies: JOIN cvc.companies c ON c.id = pi.company_id (NOT on name columns)
-  Example: SELECT pi.partner_name, COUNT(*) AS count FROM cvc.partner_intros pi JOIN cvc.companies c ON c.id = pi.company_id GROUP BY pi.partner_name ORDER BY count DESC LIMIT 15
+  Join to companies: JOIN companies c ON c.id = pi.company_id (NOT on name columns)
+  Example: SELECT pi.partner_name, COUNT(*) AS count FROM partner_intros pi JOIN companies c ON c.id = pi.company_id GROUP BY pi.partner_name ORDER BY count DESC LIMIT 15
 
-cvc.content_items — raw intelligence items (podcasts, articles, signals)
+content_items — raw intelligence items (podcasts, articles, signals)
   title (text), content_type (text: 'podcast','article','signal'), url (text),
   published_at (timestamptz), sentiment (text), briefing_flag (text),
   tags (jsonb — array of strings), summary (text), created_at (timestamptz)
-  Example: SELECT content_type, COUNT(*) AS count FROM cvc.content_items GROUP BY content_type ORDER BY count DESC LIMIT 10
+  Example: SELECT content_type, COUNT(*) AS count FROM content_items GROUP BY content_type ORDER BY count DESC LIMIT 10
   Note: no sector column — use tags JSONB to filter by topic, e.g. WHERE tags::text ILIKE '%your-topic%'
 """
 
@@ -1584,7 +1586,7 @@ def explore_report(report_id: int, req: ExploreRequest, user: UserInfo = Depends
         with get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT title, instructions FROM cvc.report_sections WHERE report_id = %s ORDER BY position, id",
+                    "SELECT title, instructions FROM report_sections WHERE report_id = %s ORDER BY position, id",
                     (report_id,)
                 )
                 secs = cur.fetchall()
@@ -1686,7 +1688,7 @@ def list_annotations(report_id: int, user: UserInfo = Depends(require_jwt)):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT * FROM cvc.report_annotations
+                SELECT * FROM report_annotations
                 WHERE report_id = %s ORDER BY created_at
             """, (report_id,))
             return [_serialize(dict(row)) for row in cur.fetchall()]
@@ -1699,7 +1701,7 @@ def create_annotation(report_id: int, req: CreateAnnotationRequest,
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO cvc.report_annotations
+                INSERT INTO report_annotations
                     (report_id, scope, selected_text, comment, status, created_by)
                 VALUES (%s, %s, %s, %s, 'open', %s)
                 RETURNING *
@@ -1740,7 +1742,7 @@ def patch_annotation(report_id: int, ann_id: int, req: PatchAnnotationRequest,
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                f"UPDATE cvc.report_annotations SET {', '.join(set_parts)} WHERE id = %s AND report_id = {report_id} RETURNING *",
+                f"UPDATE report_annotations SET {', '.join(set_parts)} WHERE id = %s AND report_id = {report_id} RETURNING *",
                 values
             )
             row = cur.fetchone()
@@ -1757,7 +1759,7 @@ def delete_annotation(report_id: int, ann_id: int, user: UserInfo = Depends(requ
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "DELETE FROM cvc.report_annotations WHERE id = %s AND report_id = %s",
+                "DELETE FROM report_annotations WHERE id = %s AND report_id = %s",
                 (ann_id, report_id)
             )
         conn.commit()
@@ -1777,7 +1779,7 @@ def address_annotation(report_id: int, ann_id: int, user: UserInfo = Depends(req
     _get_report_or_404(report_id)
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM cvc.report_annotations WHERE id = %s AND report_id = %s",
+            cur.execute("SELECT * FROM report_annotations WHERE id = %s AND report_id = %s",
                         (ann_id, report_id))
             ann = cur.fetchone()
     if not ann:
@@ -1828,7 +1830,7 @@ def address_annotation(report_id: int, ann_id: int, user: UserInfo = Depends(req
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "UPDATE cvc.report_annotations SET proposed_rewrite = %s WHERE id = %s RETURNING *",
+                "UPDATE report_annotations SET proposed_rewrite = %s WHERE id = %s RETURNING *",
                 (proposed, ann_id)
             )
             row = _serialize(dict(cur.fetchone()))

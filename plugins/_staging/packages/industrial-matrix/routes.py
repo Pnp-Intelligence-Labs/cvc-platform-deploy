@@ -140,8 +140,8 @@ def get_industrial_matrix(sector: str = None):
                     c.hq_city, c.country,
                     c.intel_sources,
                     COALESCE(SUM(fr.amount_usd), 0) AS total_funding
-                FROM cvc.companies c
-                LEFT JOIN cvc.funding_rounds fr ON fr.company_id = c.id
+                FROM companies c
+                LEFT JOIN funding_rounds fr ON fr.company_id = c.id
                 WHERE c.sector = ANY(%s)
                   AND c.industrial_readiness_score IS NOT NULL
                   {extra_filter}
@@ -212,7 +212,7 @@ def update_scores(company_id: int, data: ScoreUpdate):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                f"UPDATE cvc.companies SET {', '.join(fields)} WHERE id = %s RETURNING id",
+                f"UPDATE companies SET {', '.join(fields)} WHERE id = %s RETURNING id",
                 values,
             )
             if not cur.fetchone():

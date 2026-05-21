@@ -8,9 +8,9 @@
   },
   "nav": null,
   "requires_tables": [
-    "cvc.briefing_sources",
-    "cvc.llm_usage_log",
-    "cvc.cron_jobs"
+    "briefing_sources",
+    "llm_usage_log",
+    "cron_jobs"
   ],
   "config_schema": {}
 }
