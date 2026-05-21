@@ -69,6 +69,7 @@ class TargetUpdate(BaseModel):
     contract_term_months: Optional[int]   = None
     proposed_deliverables: Optional[List[str]] = None
     stage_gate_data:      Optional[dict]  = None
+    stage:                Optional[str]   = None
 
 
 class AdvanceBody(BaseModel):
@@ -267,6 +268,11 @@ def update_target(target_id: int, body: TargetUpdate, user: UserInfo = Depends(r
     if body.contract_value       is not None: updates["contract_value"]       = body.contract_value
     if body.contract_term_months is not None: updates["contract_term_months"] = body.contract_term_months
     if body.proposed_deliverables is not None: updates["proposed_deliverables"] = body.proposed_deliverables
+    if body.stage is not None:
+        if body.stage not in _ALL_STAGES:
+            raise HTTPException(400, f"Invalid stage '{body.stage}'")
+        updates["stage"] = body.stage
+        updates["stage_changed_at"] = "NOW()"
 
     # stage_gate_data: merge with existing rather than replace
     if body.stage_gate_data is not None:

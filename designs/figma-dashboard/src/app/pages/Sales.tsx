@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router';
 import {
   Target, Plus, X, ChevronRight, Check, AlertCircle, ExternalLink,
@@ -6,11 +6,16 @@ import {
   Send, TrendingUp, CheckCircle2, XCircle, Clock, Edit3, Save,
   Trash2, Search,
 } from 'lucide-react';
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 import { cls } from '../components/tokens';
 import { CVCNavbar } from '../components/CVCNavbar';
 import { AUTH_HEADER as AUTH } from '../api/client';
 import { useTeamMembers } from '../hooks/useTeamMembers';
 import { useConfig } from '../hooks/useConfig';
+
+const DND_ITEM = 'KANBAN_CARD';
+interface DragItem { id: number; stage: string; }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -235,13 +240,24 @@ function KanbanCard({ t, selected, onClick, coOwner }: { t: SalesTarget; selecte
   const days  = daysInStage(t.stage_changed_at);
   const stale = isStale(t);
 
+  const [{ isDragging }, drag] = useDrag({
+    type: DND_ITEM,
+    item: { id: t.id, stage: t.stage } satisfies DragItem,
+    collect: (monitor) => ({ isDragging: monitor.isDragging() }),
+  });
+
   return (
     <button
+      ref={drag as unknown as React.Ref<HTMLButtonElement>}
       onClick={onClick}
-      className={`w-full text-left bg-white border rounded-lg p-3 mb-2 cursor-pointer transition-all ${
+      className={`w-full text-left bg-white border rounded-lg p-3 mb-2 transition-all duration-200 ${
+        isDragging
+          ? 'opacity-25 scale-[0.97] cursor-grabbing shadow-none'
+          : 'cursor-grab active:cursor-grabbing hover:shadow-cvc-hover'
+      } ${
         selected
           ? 'border-[#1E293B] shadow-cvc-hover ring-1 ring-[#1E293B]/10'
-          : 'border-slate-200 hover:shadow-cvc-hover hover:border-slate-300'
+          : 'border-slate-200 hover:border-slate-300'
       } ${stale ? 'border-l-2 border-l-amber-400' : ''}`}
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -283,7 +299,7 @@ function KanbanCard({ t, selected, onClick, coOwner }: { t: SalesTarget; selecte
 // ── Kanban Column ─────────────────────────────────────────────────────────────
 
 function KanbanColumn({
-  title, stage, targets, selected, onSelect, headerColor, coOwnerMap,
+  title, stage, targets, selected, onSelect, headerColor, coOwnerMap, onDrop,
 }: {
   title: string;
   stage: string;
@@ -292,13 +308,30 @@ function KanbanColumn({
   onSelect: (t: SalesTarget) => void;
   headerColor?: string;
   coOwnerMap: Map<number, string>;
+  onDrop: (id: number, fromStage: string) => void;
 }) {
+  const [{ isOver, canDrop }, drop] = useDrop<DragItem, void, { isOver: boolean; canDrop: boolean }>({
+    accept: DND_ITEM,
+    drop: (item) => onDrop(item.id, item.stage),
+    canDrop: (item) => item.stage !== stage,
+    collect: (monitor) => ({ isOver: monitor.isOver(), canDrop: monitor.canDrop() }),
+  });
+
+  const active = isOver && canDrop;
+
   return (
-    <div className="flex flex-col bg-[#F8FAFC] rounded-xl border border-slate-200 overflow-hidden">
+    <div
+      ref={drop as unknown as React.Ref<HTMLDivElement>}
+      className={`flex flex-col rounded-xl border overflow-hidden transition-all duration-200 ${
+        active
+          ? 'border-blue-400 shadow-[0_0_0_3px_rgba(96,165,250,0.25)] bg-blue-50/30'
+          : 'bg-[#F8FAFC] border-slate-200'
+      }`}
+    >
       {/* Column header */}
-      <div className={`px-3 py-2.5 border-b border-slate-200 flex items-center gap-2 ${headerColor ?? ''}`}>
+      <div className={`px-3 py-2.5 border-b border-slate-200 flex items-center gap-2 transition-colors duration-200 ${headerColor ?? ''} ${active ? 'bg-blue-50/60' : ''}`}>
         <span className="text-xs font-bold text-[#334155] uppercase tracking-wide">{title}</span>
-        <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-600">
+        <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors duration-200 ${active ? 'bg-blue-200 text-blue-700' : 'bg-slate-200 text-slate-600'}`}>
           {targets.length}
         </span>
       </div>
@@ -306,7 +339,11 @@ function KanbanColumn({
       {/* Scrollable cards */}
       <div className="flex-1 overflow-y-auto p-2" style={{ maxHeight: 'calc(100vh - 310px)' }}>
         {targets.length === 0 && (
-          <p className="text-[11px] text-slate-400 text-center py-6">No targets</p>
+          <div className={`flex items-center justify-center py-6 transition-all duration-200 ${active ? 'py-10' : ''}`}>
+            <p className={`text-[11px] text-center transition-colors duration-200 ${active ? 'text-blue-400 font-medium' : 'text-slate-400'}`}>
+              {active ? '↓ Drop here' : 'No targets'}
+            </p>
+          </div>
         )}
         {targets.map(t => (
           <KanbanCard
@@ -317,6 +354,11 @@ function KanbanColumn({
             coOwner={coOwnerMap.get(t.id)}
           />
         ))}
+        {active && targets.length > 0 && (
+          <div className="mt-1 h-14 border-2 border-dashed border-blue-300 rounded-lg flex items-center justify-center bg-blue-50/40 transition-all duration-200">
+            <span className="text-[11px] text-blue-400 font-medium">↓ Drop here</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -324,14 +366,69 @@ function KanbanColumn({
 
 // ── Closed Column (won + lost sub-sections) ───────────────────────────────────
 
+function ClosedSubSection({
+  stage, accentClass, borderClass, bgClass, label, icon, targets, selected, onSelect, coOwnerMap, onDrop,
+}: {
+  stage: string;
+  accentClass: string;
+  borderClass: string;
+  bgClass: string;
+  label: string;
+  icon: React.ReactNode;
+  targets: SalesTarget[];
+  selected: SalesTarget | null;
+  onSelect: (t: SalesTarget) => void;
+  coOwnerMap: Map<number, string>;
+  onDrop: (id: number, fromStage: string) => void;
+}) {
+  const [{ isOver, canDrop }, drop] = useDrop<DragItem, void, { isOver: boolean; canDrop: boolean }>({
+    accept: DND_ITEM,
+    drop: (item) => onDrop(item.id, item.stage),
+    canDrop: (item) => item.stage !== stage,
+    collect: (monitor) => ({ isOver: monitor.isOver(), canDrop: monitor.canDrop() }),
+  });
+
+  const active = isOver && canDrop;
+
+  return (
+    <div
+      ref={drop as unknown as React.Ref<HTMLDivElement>}
+      className={`rounded-lg border transition-all duration-200 p-1.5 ${active ? `${borderClass} ${bgClass} border-dashed` : 'border-transparent'}`}
+    >
+      <div className="flex items-center gap-1.5 mb-1.5 px-0.5">
+        {icon}
+        <span className={`text-[10px] font-bold uppercase tracking-wide ${accentClass}`}>{label}</span>
+        <span className={`ml-auto text-[10px] transition-colors duration-200 ${active ? accentClass : 'text-slate-400'}`}>{targets.length}</span>
+      </div>
+      {targets.length === 0 && (
+        <div className={`flex items-center justify-center py-2 transition-all duration-200 ${active ? 'py-5' : ''}`}>
+          <p className={`text-[11px] text-center transition-colors duration-200 ${active ? `${accentClass} font-medium` : 'text-slate-400'}`}>
+            {active ? '↓ Drop here' : `No ${label.toLowerCase()} deals`}
+          </p>
+        </div>
+      )}
+      {targets.map(t => (
+        <KanbanCard key={t.id} t={t} selected={selected?.id === t.id} onClick={() => onSelect(t)} coOwner={coOwnerMap.get(t.id)} />
+      ))}
+      {active && targets.length > 0 && (
+        <div className={`mt-1 h-12 border-2 border-dashed ${borderClass} rounded-lg flex items-center justify-center ${bgClass} transition-all duration-200`}>
+          <span className={`text-[11px] ${accentClass} font-medium`}>↓ Drop here</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ClosedColumn({
-  won, lost, selected, onSelect, coOwnerMap,
+  won, lost, selected, onSelect, coOwnerMap, onDropWon, onDropLost,
 }: {
   won: SalesTarget[];
   lost: SalesTarget[];
   selected: SalesTarget | null;
   onSelect: (t: SalesTarget) => void;
   coOwnerMap: Map<number, string>;
+  onDropWon: (id: number, fromStage: string) => void;
+  onDropLost: (id: number, fromStage: string) => void;
 }) {
   return (
     <div className="flex flex-col bg-[#F8FAFC] rounded-xl border border-slate-200 overflow-hidden">
@@ -344,35 +441,32 @@ function ClosedColumn({
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-3" style={{ maxHeight: 'calc(100vh - 310px)' }}>
-        {/* Won sub-section */}
-        <div>
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-            <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">Won</span>
-            <span className="ml-auto text-[10px] text-slate-400">{won.length}</span>
-          </div>
-          {won.length === 0 && (
-            <p className="text-[11px] text-slate-400 text-center py-2">No won deals</p>
-          )}
-          {won.map(t => (
-            <KanbanCard key={t.id} t={t} selected={selected?.id === t.id} onClick={() => onSelect(t)} coOwner={coOwnerMap.get(t.id)} />
-          ))}
-        </div>
-
-        {/* Lost sub-section */}
-        <div>
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <XCircle className="w-3 h-3 text-red-400" />
-            <span className="text-[10px] font-bold uppercase tracking-wide text-red-500">Lost</span>
-            <span className="ml-auto text-[10px] text-slate-400">{lost.length}</span>
-          </div>
-          {lost.length === 0 && (
-            <p className="text-[11px] text-slate-400 text-center py-2">No lost deals</p>
-          )}
-          {lost.map(t => (
-            <KanbanCard key={t.id} t={t} selected={selected?.id === t.id} onClick={() => onSelect(t)} coOwner={coOwnerMap.get(t.id)} />
-          ))}
-        </div>
+        <ClosedSubSection
+          stage="closed_won"
+          accentClass="text-emerald-600"
+          borderClass="border-emerald-400"
+          bgClass="bg-emerald-50/40"
+          label="Won"
+          icon={<CheckCircle2 className="w-3 h-3 text-emerald-500" />}
+          targets={won}
+          selected={selected}
+          onSelect={onSelect}
+          coOwnerMap={coOwnerMap}
+          onDrop={onDropWon}
+        />
+        <ClosedSubSection
+          stage="closed_lost"
+          accentClass="text-red-500"
+          borderClass="border-red-400"
+          bgClass="bg-red-50/40"
+          label="Lost"
+          icon={<XCircle className="w-3 h-3 text-red-400" />}
+          targets={lost}
+          selected={selected}
+          onSelect={onSelect}
+          coOwnerMap={coOwnerMap}
+          onDrop={onDropLost}
+        />
       </div>
     </div>
   );
@@ -1590,6 +1684,25 @@ export default function SalesPage() {
     setTargets(ts => [t, ...ts]);
   }
 
+  async function moveCard(id: number, fromStage: string, toStage: string) {
+    if (fromStage === toStage) return;
+    const now = new Date().toISOString();
+    setTargets(ts => ts.map(t => t.id === id ? { ...t, stage: toStage, stage_changed_at: now } : t));
+    if (selected?.id === id) setSelected(s => s ? { ...s, stage: toStage, stage_changed_at: now } : null);
+    const res = await fetch(`/sales/targets/${id}`, {
+      method: 'PATCH',
+      headers: { ...AUTH, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage: toStage }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setTargets(ts => ts.map(t => t.id === id ? updated : t));
+      if (selected?.id === id) setSelected(updated);
+    } else {
+      load();
+    }
+  }
+
   // Co-owner map: target id → co-owner username (from linked_target_id)
   const coOwnerMap = new Map<number, string>();
   targets.forEach(t => {
@@ -1695,12 +1808,14 @@ export default function SalesPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#1E293B] border-r-transparent" />
             </div>
           ) : (
-            <div className="grid grid-cols-4 gap-4">
-              <KanbanColumn title="Targets" stage="target" targets={byStage('target')} selected={selected} onSelect={setSelected} coOwnerMap={coOwnerMap} />
-              <KanbanColumn title="Nurturing" stage="nurturing" targets={byStage('nurturing')} selected={selected} onSelect={setSelected} coOwnerMap={coOwnerMap} />
-              <KanbanColumn title="Proposal" stage="proposal" targets={byStage('proposal')} selected={selected} onSelect={setSelected} coOwnerMap={coOwnerMap} />
-              <ClosedColumn won={byStage('closed_won')} lost={byStage('closed_lost')} selected={selected} onSelect={setSelected} coOwnerMap={coOwnerMap} />
-            </div>
+            <DndProvider backend={HTML5Backend}>
+              <div className="grid grid-cols-4 gap-4">
+                <KanbanColumn title="Targets" stage="target" targets={byStage('target')} selected={selected} onSelect={setSelected} coOwnerMap={coOwnerMap} onDrop={(id, from) => moveCard(id, from, 'target')} />
+                <KanbanColumn title="Nurturing" stage="nurturing" targets={byStage('nurturing')} selected={selected} onSelect={setSelected} coOwnerMap={coOwnerMap} onDrop={(id, from) => moveCard(id, from, 'nurturing')} />
+                <KanbanColumn title="Proposal" stage="proposal" targets={byStage('proposal')} selected={selected} onSelect={setSelected} coOwnerMap={coOwnerMap} onDrop={(id, from) => moveCard(id, from, 'proposal')} />
+                <ClosedColumn won={byStage('closed_won')} lost={byStage('closed_lost')} selected={selected} onSelect={setSelected} coOwnerMap={coOwnerMap} onDropWon={(id, from) => moveCard(id, from, 'closed_won')} onDropLost={(id, from) => moveCard(id, from, 'closed_lost')} />
+              </div>
+            </DndProvider>
           )
         )}
 
