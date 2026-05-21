@@ -123,18 +123,26 @@ def search_companies(
                 order_params = []
 
             cur.execute(f"""
-                SELECT id, name, one_liner, description, website,
-                       hq_city, country, sector, subsector, stage, employee_count,
-                       founded, total_raised_usd, investors, verticals, tags,
-                       is_hardware, is_software, score_composite, score_commercial,
-                       score_technical, score_market_timing, score_partner_fit,
-                       score_capital_eff, enrichment_status, scored_at,
-                       env_4d, func_4d, stack_4d, biz_model_4d,
-                       (SELECT COUNT(*) FROM cvc.partner_intros pi WHERE pi.company_id = id) AS intro_count,
-                       (SELECT COALESCE(ARRAY_AGG(DISTINCT pi.partner_name ORDER BY pi.partner_name), ARRAY[]::text[]) FROM cvc.partner_intros pi WHERE pi.company_id = id) AS intro_partners,
-                       (SELECT MAX(pi.intro_date) FROM cvc.partner_intros pi WHERE pi.company_id = id) AS last_intro_date,
-                       is_portfolio, case_study, competitive_advantage
-                FROM cvc.companies
+                SELECT c.id, c.name, c.one_liner, c.description, c.website,
+                       c.hq_city, c.country, c.sector, c.subsector, c.stage, c.employee_count,
+                       c.founded, c.total_raised_usd, c.investors, c.verticals, c.tags,
+                       c.is_hardware, c.is_software, c.score_composite, c.score_commercial,
+                       c.score_technical, c.score_market_timing, c.score_partner_fit,
+                       c.score_capital_eff, c.enrichment_status, c.scored_at,
+                       c.env_4d, c.func_4d, c.stack_4d, c.biz_model_4d,
+                       COALESCE(pi_agg.intro_count, 0) AS intro_count,
+                       COALESCE(pi_agg.intro_partners, ARRAY[]::text[]) AS intro_partners,
+                       pi_agg.last_intro_date,
+                       c.is_portfolio, c.case_study, c.competitive_advantage
+                FROM cvc.companies c
+                LEFT JOIN (
+                    SELECT company_id,
+                           COUNT(*) AS intro_count,
+                           ARRAY_AGG(DISTINCT partner_name ORDER BY partner_name) AS intro_partners,
+                           MAX(intro_date) AS last_intro_date
+                    FROM cvc.partner_intros
+                    GROUP BY company_id
+                ) pi_agg ON pi_agg.company_id = c.id
                 WHERE {where_clause}
                 ORDER BY {order}
                 LIMIT %s OFFSET %s

@@ -4,6 +4,18 @@ services:
   db:
     image: postgres:16-alpine
     container_name: platform-db
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c work_mem=16MB
+      -c maintenance_work_mem=128MB
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c wal_buffers=8MB
+      -c checkpoint_completion_target=0.9
+      -c max_wal_size=2GB
+      -c log_min_duration_statement=500
     environment:
       POSTGRES_DB: platform_db
       POSTGRES_USER: platform

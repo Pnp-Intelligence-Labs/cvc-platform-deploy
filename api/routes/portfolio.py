@@ -286,12 +286,20 @@ def list_portfolio(
                 SELECT c.id, c.name, c.one_liner, c.description, c.sector, c.stage,
                        c.hq_city, c.country, c.website, c.founded, c.employee_count,
                        c.total_raised_usd, c.investors, c.tags,
-                       (SELECT COUNT(*) FROM cvc.partner_intros pi WHERE pi.company_id = c.id) AS intro_count,
-                       (SELECT COALESCE(ARRAY_AGG(DISTINCT pi.partner_name ORDER BY pi.partner_name), ARRAY[]::text[]) FROM cvc.partner_intros pi WHERE pi.company_id = c.id) AS intro_partners,
-                       (SELECT MAX(pi.intro_date) FROM cvc.partner_intros pi WHERE pi.company_id = c.id) AS last_intro_date,
+                       COALESCE(pi_agg.intro_count, 0) AS intro_count,
+                       COALESCE(pi_agg.intro_partners, ARRAY[]::text[]) AS intro_partners,
+                       pi_agg.last_intro_date,
                        c.latest_investment_date,
                        c.case_study, c.competitive_advantage, c.score_composite, c.fund
                 FROM cvc.companies c
+                LEFT JOIN (
+                    SELECT company_id,
+                           COUNT(*) AS intro_count,
+                           ARRAY_AGG(DISTINCT partner_name ORDER BY partner_name) AS intro_partners,
+                           MAX(intro_date) AS last_intro_date
+                    FROM cvc.partner_intros
+                    GROUP BY company_id
+                ) pi_agg ON pi_agg.company_id = c.id
                 {where}
                 ORDER BY intro_count DESC, score_composite DESC NULLS LAST, c.name
                 """,
@@ -371,11 +379,19 @@ def portfolio_stats(user=Depends(require_auth)):
             cur.execute("""
                 SELECT c.id, c.name, c.sector, c.stage, c.hq_city, c.country, c.website,
                        c.total_raised_usd, c.one_liner,
-                       (SELECT COUNT(*) FROM cvc.partner_intros pi WHERE pi.company_id = c.id) AS intro_count,
-                       (SELECT COALESCE(ARRAY_AGG(DISTINCT pi.partner_name ORDER BY pi.partner_name), ARRAY[]::text[]) FROM cvc.partner_intros pi WHERE pi.company_id = c.id) AS intro_partners,
-                       (SELECT MAX(pi.intro_date) FROM cvc.partner_intros pi WHERE pi.company_id = c.id) AS last_intro_date,
+                       COALESCE(pi_agg.intro_count, 0) AS intro_count,
+                       COALESCE(pi_agg.intro_partners, ARRAY[]::text[]) AS intro_partners,
+                       pi_agg.last_intro_date,
                        c.latest_investment_date, c.score_composite
                 FROM cvc.companies c
+                LEFT JOIN (
+                    SELECT company_id,
+                           COUNT(*) AS intro_count,
+                           ARRAY_AGG(DISTINCT partner_name ORDER BY partner_name) AS intro_partners,
+                           MAX(intro_date) AS last_intro_date
+                    FROM cvc.partner_intros
+                    GROUP BY company_id
+                ) pi_agg ON pi_agg.company_id = c.id
                 WHERE c.is_portfolio = TRUE
                 ORDER BY intro_count DESC, score_composite DESC NULLS LAST
                 LIMIT 10
@@ -386,14 +402,21 @@ def portfolio_stats(user=Depends(require_auth)):
             cur.execute("""
                 SELECT c.id, c.name, c.sector, c.stage, c.hq_city, c.country, c.website,
                        c.total_raised_usd, c.one_liner,
-                       (SELECT COUNT(*) FROM cvc.partner_intros pi WHERE pi.company_id = c.id) AS intro_count,
-                       (SELECT COALESCE(ARRAY_AGG(DISTINCT pi.partner_name ORDER BY pi.partner_name), ARRAY[]::text[]) FROM cvc.partner_intros pi WHERE pi.company_id = c.id) AS intro_partners,
-                       (SELECT MAX(pi.intro_date) FROM cvc.partner_intros pi WHERE pi.company_id = c.id) AS last_intro_date,
+                       pi_agg.intro_count,
+                       pi_agg.intro_partners,
+                       pi_agg.last_intro_date,
                        c.latest_investment_date, c.score_composite
                 FROM cvc.companies c
+                INNER JOIN (
+                    SELECT company_id,
+                           COUNT(*) AS intro_count,
+                           ARRAY_AGG(DISTINCT partner_name ORDER BY partner_name) AS intro_partners,
+                           MAX(intro_date) AS last_intro_date
+                    FROM cvc.partner_intros
+                    GROUP BY company_id
+                ) pi_agg ON pi_agg.company_id = c.id
                 WHERE c.is_portfolio = TRUE
-                  AND (SELECT COUNT(*) FROM cvc.partner_intros pi WHERE pi.company_id = c.id) > 0
-                ORDER BY last_intro_date DESC NULLS LAST
+                ORDER BY pi_agg.last_intro_date DESC NULLS LAST
                 LIMIT 8
             """)
             recent_rows = cur.fetchall()

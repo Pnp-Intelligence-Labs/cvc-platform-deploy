@@ -7,8 +7,10 @@ All credentials come from environment variables or a local .env file.
 import os
 import psycopg2
 import psycopg2.extras
+import psycopg2.pool
 from contextlib import contextmanager
 from pathlib import Path
+from threading import Lock
 
 try:
     from dotenv import load_dotenv
@@ -24,6 +26,9 @@ _DEFAULTS = {
     "dbname": "platform_db",
     "user":   "platform",
 }
+
+_pool: psycopg2.pool.ThreadedConnectionPool | None = None
+_pool_lock = Lock()
 
 
 def _required_env(name: str) -> str:
@@ -43,21 +48,33 @@ def _config() -> dict:
     }
 
 
+def _get_pool() -> psycopg2.pool.ThreadedConnectionPool:
+    global _pool
+    if _pool is None:
+        with _pool_lock:
+            if _pool is None:
+                _pool = psycopg2.pool.ThreadedConnectionPool(
+                    minconn=2,
+                    maxconn=20,
+                    cursor_factory=psycopg2.extras.RealDictCursor,
+                    **_config(),
+                )
+    return _pool
+
+
 def is_job_enabled(job_name: str) -> bool:
     """
     Check cvc.cron_jobs.active for the given job name.
     Returns True if enabled or if the job isn't in the table (fail-open).
     """
     try:
-        cfg = _config()
-        conn = psycopg2.connect(**cfg, cursor_factory=psycopg2.extras.RealDictCursor)
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT active FROM cvc.cron_jobs WHERE name = %s LIMIT 1",
-                (job_name,)
-            )
-            row = cur.fetchone()
-        conn.close()
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT active FROM cvc.cron_jobs WHERE name = %s LIMIT 1",
+                    (job_name,)
+                )
+                row = cur.fetchone()
         if row is None:
             return True
         return bool(row["active"])
@@ -68,11 +85,11 @@ def is_job_enabled(job_name: str) -> bool:
 @contextmanager
 def get_connection(cursor_factory=psycopg2.extras.RealDictCursor):
     """
-    Context manager that yields an open psycopg2 connection.
-    Commits on clean exit, rolls back on exception.
+    Context manager that yields a pooled psycopg2 connection.
+    Commits on clean exit, rolls back on exception, returns connection to pool on exit.
     """
-    cfg = _config()
-    conn = psycopg2.connect(**cfg, cursor_factory=cursor_factory)
+    pool = _get_pool()
+    conn = pool.getconn()
     try:
         with conn.cursor() as _c:
             _c.execute("SET app.audit_source = 'app'")
@@ -82,4 +99,4 @@ def get_connection(cursor_factory=psycopg2.extras.RealDictCursor):
         conn.rollback()
         raise
     finally:
-        conn.close()
+        pool.putconn(conn)
