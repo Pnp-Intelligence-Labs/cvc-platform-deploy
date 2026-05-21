@@ -81,8 +81,12 @@ else
     # Generate a random JWT secret
     JWT_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
 
-    # Inject into .env
-    sed -i "s|^JWT_SECRET=.*|JWT_SECRET=${JWT_SECRET}|" "$REPO/.env"
+    # Inject into .env (GNU sed vs BSD/macOS sed)
+    if sed --version 2>/dev/null | grep -q GNU; then
+        sed -i "s|^JWT_SECRET=.*|JWT_SECRET=${JWT_SECRET}|" "$REPO/.env"
+    else
+        sed -i '' "s|^JWT_SECRET=.*|JWT_SECRET=${JWT_SECRET}|" "$REPO/.env"
+    fi
 
     ok ".env created with random JWT_SECRET"
 fi

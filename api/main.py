@@ -23,6 +23,7 @@ from api.routes.sales import router as sales_router
 from api.routes.meeting_notes import router as meeting_notes_router
 from api.routes.auth import router as auth_router
 from api.routes.config import router as config_router
+from api.routes.recommendations import router as recommendations_router
 from api.auth import require_auth
 from api.plugin_loader import load_plugins, get_loaded_plugins
 
@@ -94,6 +95,8 @@ app.include_router(requests_router, prefix="/requests", tags=["requests"],
 app.include_router(sales_router, prefix="/sales", tags=["sales"],
                    dependencies=[Depends(require_auth)])
 app.include_router(meeting_notes_router, prefix="/notes", tags=["notes"],
+                   dependencies=[Depends(require_auth)])
+app.include_router(recommendations_router, prefix="/recommendations", tags=["recommendations"],
                    dependencies=[Depends(require_auth)])
 
 # Auth routes — public

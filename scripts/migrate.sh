@@ -34,7 +34,12 @@ echo "Running migrations against $DB_NAME@$DB_HOST:$DB_PORT..."
 # ── 1. Core migrations ────────────────────────────────────────────────────────
 echo ""
 echo "Core migrations:"
-for f in $(ls "$CORE_MIGRATIONS"/*.sql | sort); do
+shopt -s nullglob
+core_files=("$CORE_MIGRATIONS"/*.sql)
+shopt -u nullglob
+IFS=$'\n' sorted=($(printf '%s\n' "${core_files[@]}" | sort))
+unset IFS
+for f in "${sorted[@]}"; do
     echo "  → $(basename "$f")"
     run_sql "$f"
 done
@@ -51,7 +56,12 @@ if [[ -d "$PLUGINS_DIR" ]]; then
             if [[ ${#files[@]} -gt 0 ]]; then
                 echo ""
                 echo "Plugin migrations: $slug"
-                for f in $(ls "$mig_dir"/*.sql | sort); do
+                shopt -s nullglob
+                plugin_files=("$mig_dir"/*.sql)
+                shopt -u nullglob
+                IFS=$'\n' sorted=($(printf '%s\n' "${plugin_files[@]}" | sort))
+                unset IFS
+                for f in "${sorted[@]}"; do
                     echo "  → $(basename "$f")"
                     run_sql "$f"
                 done
