@@ -184,7 +184,6 @@ def delete_company(company_id: int, user=Depends(require_auth)):
 
             # Cascade-delete related tables first
             for table in [
-                "cvc.company_robotics",
                 "cvc.funding_rounds",
                 "cvc.company_lifecycle",
                 "cvc.dd_evaluations",
@@ -606,16 +605,6 @@ def get_company(company_id: int, user=Depends(require_auth)):
                 ORDER BY s.confidence DESC, s.created_at DESC
             """, [company_id])
             result["pending_suggestions"] = [dict(r) for r in cur.fetchall()]
-
-            # Fetch robotics data if it exists
-            cur.execute("""
-                SELECT form_factor, application, deployment_stage,
-                       payload_kg, task_success_rate, uptime_pct
-                FROM cvc.company_robotics
-                WHERE company_id = %s
-            """, [company_id])
-            robotics_row = cur.fetchone()
-            result["robotics"] = dict(robotics_row) if robotics_row else None
 
             return result
 
