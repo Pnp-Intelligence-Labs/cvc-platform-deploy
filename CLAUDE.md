@@ -29,6 +29,23 @@ cd designs/figma-dashboard && npm run dev   # frontend dev server (port 5173)
 
 Login: `nate` / `cvc2026`
 
+## Whip Claw Deployment (100.74.101.77)
+
+Live test deployment on Whip Claw WSL2. Access at **http://100.74.101.77:8002/app** (admin / changeme).
+
+Repo lives at `/home/nathan/cvc-platform-deploy` in WSL2. SSH via `ssh User@100.74.101.77` lands on Windows shell — prefix all commands with `wsl`.
+
+```bash
+# Pull latest and restart API (run from Refinery):
+ssh User@100.74.101.77 'wsl -- bash -c "cd /home/nathan/cvc-platform-deploy && GIT_SSH_COMMAND=\"ssh -i ~/.ssh/id_ed25519\" git pull origin main"'
+# Then restart: pipe restart script via wsl tee and execute
+```
+
+DB password on Whip Claw: `platform_local` (matches run_local.sh hardcoded default).
+`sudo` requires password on Whip Claw — cannot run over SSH. Deliver scripts via `cat script | ssh User@100.74.101.77 "wsl tee /tmp/script.sh"`.
+
+`migrate.sh` fails loudly on existing DBs ("already exists" errors). Apply new migration files individually via psql rather than re-running the full script.
+
 ## Structure
 
 ```
