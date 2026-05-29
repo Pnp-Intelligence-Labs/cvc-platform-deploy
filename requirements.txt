@@ -26,3 +26,14 @@ minio==7.2.20
 
 # ML / recommendations
 numpy>=1.26.0
+
+# Google Drive integration
+google-auth>=2.40.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
+google-api-python-client>=2.179.0
+
+# DD plugin — file conversion
+markitdown>=0.1.0
+pandas>=2.0.0
+openpyxl>=3.1.0

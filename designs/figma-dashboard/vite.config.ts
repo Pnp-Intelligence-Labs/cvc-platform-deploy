@@ -75,6 +75,7 @@ export default defineConfig({
       '/sales':         'http://localhost:8002',
       '/notes':         'http://localhost:8002',
       '/health':        'http://localhost:8002',
+      '/drive':         'http://localhost:8002',
     },
   },
 })

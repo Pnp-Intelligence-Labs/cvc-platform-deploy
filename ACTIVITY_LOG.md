@@ -4,6 +4,36 @@ Running log of work done in this repo. Newest entries at the top. Per project ru
 
 Format: `YYYY-MM-DD — short title` followed by what changed and why.
 
+## 2026-05-26 — Fix ingest 500 on expired/invalid Drive token
+
+**What changed:**
+- `api/routes/drive.py`: `ingest_files` was missing try/except around `_service()`. If the Drive token expired and the refresh failed (e.g. revoked token or network error), the `google.auth.exceptions.RefreshError` propagated all the way to Starlette, returning an opaque plain-text 500. Added the same `try/except HTTPException: raise / except Exception as e: raise HTTPException(503, ...)` pattern already used in `browse_drive`.
+- `requirements.txt`: Added `google-auth`, `google-auth-oauthlib`, `google-auth-httplib2`, `google-api-python-client` (Drive OAuth deps) and `markitdown`, `pandas`, `openpyxl` (DD plugin file conversion deps). These were installed in the venv but not tracked in requirements, so `run_local.sh` fresh-venv setups would fail to convert files.
+- Installed `markitdown`, `pandas`, `openpyxl` into the existing venv.
+
+## 2026-05-26 — Drive OAuth & ingestion hardening
+
+**What changed:**
+- `api/routes/drive.py`: Fixed critical token-refresh bug (refreshed token was never written back to disk, causing eventual 503s). Made credential paths env-configurable via `GDRIVE_CREDS_PATH` / `GDRIVE_TOKEN_PATH`. Added `PLATFORM_BASE_URL` env var for redirect URI. Added web-based OAuth flow (`GET /drive/auth` + `GET /drive/callback` on a public router) so auth can be initiated from the UI on any machine — replaces needing to run `scripts/gdrive_auth.py` locally. Added `GET /drive/auth-status` endpoint so the UI can check connection state before attempting to browse.
+- `api/main.py`: Registered `drive_public_router` (auth + callback) without JWT requirement, since Google's OAuth redirect doesn't carry a JWT.
+- `designs/figma-dashboard/src/app/pages/DriveIngestPage.tsx`: Added Drive auth-status check on mount; shows a "Connect Google Drive" gate if not authenticated; handles `?drive_connected=1` and `?drive_error=…` URL params from OAuth redirect.
+- `.env`: Expanded `ALLOWED_ORIGINS` to include `127.0.0.1` variants; added `PLATFORM_BASE_URL`, `GDRIVE_CREDS_PATH`, `GDRIVE_TOKEN_PATH` docs.
+- Frontend rebuilt to `api/static/app/`.
+
+## 2026-05-26
+
+### Drive Ingestion — OAuth auth + deingest feature
+- `~/producer/gdrive_credentials.json` — saved web OAuth credentials for verricalos Google project
+- `scripts/gdrive_auth.py` — one-time OAuth flow script; saves token to `~/producer/gdrive_token.json`
+- `api/routes/drive.py` — added `GET /drive/ingested` (list ingested companies) and `DELETE /drive/ingested/{company}` (remove ingested data)
+- `designs/figma-dashboard/src/app/pages/DriveIngestPage.tsx` — added "Ingested" panel in right column showing all ingested companies with "Remove" deingest button; list auto-refreshes after each ingest
+- Frontend rebuilt to `api/static/app/`
+
+### Drive Ingestion UI — full-drive browser + ingest pipeline
+- `api/routes/drive.py` — new `GET /drive/browse` (returns full Drive tree up to 3 folders deep) and `POST /drive/ingest` (downloads selected files, runs convert + tag pipeline, returns manifest)
+- `designs/figma-dashboard/src/app/pages/DriveIngestPage.tsx` — new page at `/ingest`: collapsible Drive tree with checkboxes, select-all/clear per folder, ingest controls with company name, results panel with doc-type badges (high/medium/low tier), per-doc conversion status
+- Registered in `api/main.py` (`/drive` prefix, auth-gated), `routes.tsx`, and `CVCNavbar.tsx` ("Ingest" link next to Admin for admin users)
+
 ---
 
 ## 2026-05-21
@@ -147,3 +177,17 @@ Each new change appends an entry under today's date with:
 - Short title + commit SHA if applicable
 - 1–3 bullets on what changed and why (why > what)
 - Group entries under a `## YYYY-MM-DD` header (newest dates on top)
+
+## 2026-05-27 — Ingestion pipeline bug fixes
+
+**Files changed:** `plugins/_staging/workers/dd/ingestion/tagger.py`
+
+**Bugs found and fixed:**
+
+1. **Runtime error (system python):** `ingest.py` ran `ModuleNotFoundError: No module named 'google_auth_oauthlib'` when invoked with system `python3`. The packages are installed in `.venv`. Correct invocation is `.venv/bin/python -m ingestion.ingest` from the `plugins/_staging/workers/dd/` directory.
+
+2. **Tagger underscore normalization:** Filenames like `financial_model_v2.xlsx`, `cap_table_2025.xlsx`, `balance_sheet.txt`, `customer_contract_acme.pdf` all use underscores/hyphens as word separators. Signals use spaces (`"financial model"`, `"cap table"`, etc.). Fixed by normalizing `_` and `-` → space before matching in `tag_document()`.
+
+3. **Missing tagger signals:** `Financial Statements Q3.xlsx` (spaces, no underscores) still returned `unknown` because `"financial statement"` was not in the signal list — only sub-phrases like `"balance sheet"` were. Added `"financial statement"`, `"financial statements"` to `financial_statement` signals. Added `"customer contract"` to `customer_contract` signals.
+
+**Verified:** All 12 real-world filename test cases now classify correctly. `ingest_local` end-to-end run passes. `ingest.py --dry-run` passes.

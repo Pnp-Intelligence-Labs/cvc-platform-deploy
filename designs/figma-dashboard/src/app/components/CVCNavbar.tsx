@@ -506,16 +506,28 @@ const CVCNavbar: React.FC = () => {
               Feedback
             </button>
             {showAdmin && (
-              <Link
-                to="/admin"
-                className={`hidden sm:flex items-center px-3 py-1.5 rounded text-sm font-semibold transition-colors ${
-                  isActive('/admin')
-                    ? 'bg-cvc-gold text-[#151411]'
-                    : 'bg-white/10 text-white hover:bg-white/20'
-                }`}
-              >
-                Admin
-              </Link>
+              <>
+                <Link
+                  to="/admin"
+                  className={`hidden sm:flex items-center px-3 py-1.5 rounded text-sm font-semibold transition-colors ${
+                    isActive('/admin')
+                      ? 'bg-cvc-gold text-[#151411]'
+                      : 'bg-white/10 text-white hover:bg-white/20'
+                  }`}
+                >
+                  Admin
+                </Link>
+                <Link
+                  to="/ingest"
+                  className={`hidden sm:flex items-center px-3 py-1.5 rounded text-sm font-semibold transition-colors ${
+                    isActive('/ingest')
+                      ? 'bg-cvc-gold text-[#151411]'
+                      : 'bg-white/10 text-white hover:bg-white/20'
+                  }`}
+                >
+                  Ingest
+                </Link>
+              </>
             )}
             <button
               onClick={() => setShowHelp(true)}

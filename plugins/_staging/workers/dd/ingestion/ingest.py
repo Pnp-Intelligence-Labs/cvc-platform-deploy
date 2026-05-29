@@ -91,7 +91,9 @@ def run(company: str, drive_url: str, dry_run: bool = False):
         downloaded = []
         print("  [dry-run] skipping download")
 
-    print(f"  {len(downloaded)} files downloaded")
+    succeeded = sum(1 for d in downloaded if d.get("success"))
+    failed_dl = len(downloaded) - succeeded
+    print(f"  {succeeded}/{len(downloaded)} files downloaded" + (f" ({failed_dl} failed)" if failed_dl else ""))
 
     # ── Step 2: Convert ───────────────────────────────────────────────────────
     print("Step 2/4: Converting documents to text...")

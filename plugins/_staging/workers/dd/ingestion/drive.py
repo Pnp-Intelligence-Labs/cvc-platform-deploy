@@ -14,7 +14,7 @@ from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 
 from config.settings import GDRIVE_CREDS, GDRIVE_TOKEN, GDRIVE_DD_FOLDER
 
-SCOPES = ["https://www.googleapis.com/auth/drive"]
+SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 
 GOOGLE_DOC_EXPORT = {
     "application/vnd.google-apps.document":     ("application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".docx"),
@@ -45,6 +45,9 @@ def get_service():
 def extract_folder_id(url_or_id: str) -> str:
     """Parse a Google Drive folder URL into its ID."""
     if "drive.google.com" in url_or_id:
+        # My Drive root — use 'root' as the special Drive API folder ID
+        if "/my-drive" in url_or_id or url_or_id.rstrip("/").endswith("/drive"):
+            return "root"
         for marker in ("/folders/", "/file/d/"):
             if marker in url_or_id:
                 return url_or_id.split(marker)[1].split("?")[0].split("/")[0]
@@ -88,30 +91,35 @@ def download_file(service, file_id: str, mime_type: str, dest_path: Path) -> boo
     """
     Download a file to dest_path.
     Google Docs (Sheets, Slides, Docs) are exported to Office formats.
-    Returns True on success.
+    Returns True on success. Never leaves 0-byte stubs on failure.
     """
     dest_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Write to a temp path first — only rename to dest on success
+    tmp_path = dest_path.with_suffix(dest_path.suffix + ".tmp")
 
     try:
         if mime_type in GOOGLE_DOC_EXPORT:
             export_mime, ext = GOOGLE_DOC_EXPORT[mime_type]
-            # Rename dest to correct extension if needed
-            if not dest_path.suffix == ext:
+            if dest_path.suffix != ext:
                 dest_path = dest_path.with_suffix(ext)
+                tmp_path  = dest_path.with_suffix(ext + ".tmp")
             request = service.files().export_media(fileId=file_id, mimeType=export_mime)
         else:
             request = service.files().get_media(fileId=file_id)
 
-        with open(dest_path, "wb") as f:
+        with open(tmp_path, "wb") as f:
             downloader = MediaIoBaseDownload(f, request)
             done = False
             while not done:
                 _, done = downloader.next_chunk()
 
+        tmp_path.rename(dest_path)
         return True
 
     except Exception as e:
         print(f"  [drive] Download failed: {dest_path.name} — {e}")
+        tmp_path.unlink(missing_ok=True)
         return False
 
 

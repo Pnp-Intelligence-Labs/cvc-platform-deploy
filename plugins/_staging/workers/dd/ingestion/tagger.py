@@ -13,7 +13,8 @@ DOC_TYPE_SIGNALS: list[tuple[str, list[str]]] = [
                               "stock ledger", "stockholder", "option pool"]),
     ("financial_model",     ["financial model", "pro-forma", "pro forma", "projections", "forecast model",
                               "revenue model", "unit economics"]),
-    ("financial_statement", ["balance sheet", "income statement", "profit and loss", "p&l", "cash flow statement", "audited",
+    ("financial_statement", ["financial statement", "financial statements", "balance sheet", "income statement",
+                              "profit and loss", "p&l", "cash flow statement", "audited",
                               "statement of operations", "trial balance"]),
     # Investment-relevant legal docs — sent to financials + qualitative agents
     ("legal_terms",         ["stock purchase agreement", "voting agreement", "investors rights",
@@ -31,9 +32,9 @@ DOC_TYPE_SIGNALS: list[tuple[str, list[str]]] = [
                               "cp575", "ein notice", "secretary of state", "department of state",
                               "domestication", "docusign"]),
     ("customer_contract",   ["statement of work", "sow", "letter of intent", "loi", "master service agreement",
-                              "customer agreement", "pilot agreement", "purchase order", "master terms",
-                              "terms of service", "onboarding agreement", "grant funding agreement",
-                              "service agreement"]),
+                              "customer agreement", "customer contract", "pilot agreement", "purchase order",
+                              "master terms", "terms of service", "onboarding agreement",
+                              "grant funding agreement", "service agreement"]),
     ("patent_ip",           ["patent", "provisional patent", "intellectual property", "ip filing", "trade secret",
                               "patent claims", "prior art", "patent office", "uspto"]),
     ("investor_qa",         ["investor q&a", "investor qa", "faq", "questions and answers", "q&a"]),
@@ -50,7 +51,7 @@ def tag_document(filename: str, text: str) -> str:
     Checks filename first (3× weight), then content preview.
     Returns the best matching type, or 'unknown'.
     """
-    fname = filename.lower()
+    fname = filename.lower().replace("_", " ").replace("-", " ")
     content = text[:8000].lower() if text else ""
 
     scores: dict[str, int] = {doc_type: 0 for doc_type, _ in DOC_TYPE_SIGNALS}

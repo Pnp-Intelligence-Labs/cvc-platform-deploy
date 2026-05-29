@@ -32,9 +32,19 @@ ENV/
 
 # Credentials — never commit
 config/team_credentials.json
+client_secret.json
+**/client_secret.json
 
 # DD pipeline — dataroom files and pipeline outputs are confidential
 workers/dd/workdir/
+plugins/_staging/workers/dd/workdir/
+
+# Generated knowledge graph — large, rebuild with `graphify update .`
+graphify-out/
+
+# Claude Code / agent tooling — local only
+.agents/
+.claude/skills/
 
 # Installed plugins — managed outside git, installed via install_plugin.sh
 plugins/installed/*

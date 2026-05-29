@@ -24,6 +24,7 @@ from api.routes.meeting_notes import router as meeting_notes_router
 from api.routes.auth import router as auth_router
 from api.routes.config import router as config_router
 from api.routes.recommendations import router as recommendations_router
+from api.routes.drive import router as drive_router, public_router as drive_public_router
 from api.auth import require_auth
 from api.plugin_loader import load_plugins, get_loaded_plugins
 
@@ -98,6 +99,10 @@ app.include_router(meeting_notes_router, prefix="/notes", tags=["notes"],
                    dependencies=[Depends(require_auth)])
 app.include_router(recommendations_router, prefix="/recommendations", tags=["recommendations"],
                    dependencies=[Depends(require_auth)])
+app.include_router(drive_router, prefix="/drive", tags=["drive"],
+                   dependencies=[Depends(require_auth)])
+# OAuth auth + callback must be public — browser navigates here without JWT
+app.include_router(drive_public_router, prefix="/drive", tags=["drive"])
 
 # Auth routes — public
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
