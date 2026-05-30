@@ -8,7 +8,7 @@ from typing import Optional, List
 from pydantic import BaseModel
 from core.db.connection import get_connection
 from api.auth import require_auth
-import json, re, datetime as _dt
+import re, datetime as _dt
 from urllib.parse import urlparse as _urlparse
 
 

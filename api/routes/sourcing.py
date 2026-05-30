@@ -3,7 +3,7 @@ api/routes/sourcing.py — Startup sourcing endpoint with advanced filters.
 
 STAGE VALUES (exact): pre_seed, seed, series_a, series_b, series_c, series_d, undisclosed, n/a
 """
-from fastapi import APIRouter, Query, HTTPException, Depends
+from fastapi import APIRouter, Query, Depends
 from typing import Optional, List
 from pydantic import BaseModel
 

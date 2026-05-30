@@ -66,7 +66,8 @@ def get_profile(linkedin_url: str, use_cache: bool = True) -> dict:
     url = f"{PROXYCURL_URL}/v2/linkedin"
     headers = {"Authorization": f"Bearer {PROXYCURL_API_KEY}"}
     params = {"linkedin_profile_url": f"https://www.linkedin.com/in/{linkedin_id}/"}
-    
+
+    error_msg = "rate limited (HTTP 429)"  # default if every retry hits 429
     for attempt, delay in enumerate([0] + _RETRY_DELAYS):
         if delay:
             time.sleep(delay)
@@ -130,9 +131,18 @@ def search_profile(name: str, company: str = None, title: str = None) -> dict:
     url = f"{PROXYCURL_URL}/v2/linkedin/profile/resolve"
     headers = {"Authorization": f"Bearer {PROXYCURL_API_KEY}"}
     
-    params = {"first_name": name.split()[0]}
-    if len(name.split()) > 1:
-        params["last_name"] = name.split()[-1]
+    name_parts = name.split()
+    if not name_parts:
+        return {
+            "found": False,
+            "profile": None,
+            "error": "Name is required for search",
+            "search_params": {},
+            "cost_incurred": 0,
+        }
+    params = {"first_name": name_parts[0]}
+    if len(name_parts) > 1:
+        params["last_name"] = name_parts[-1]
     if company:
         params["company_domain"] = company  # Proxycurl prefers domain
     if title:

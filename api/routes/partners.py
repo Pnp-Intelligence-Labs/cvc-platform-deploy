@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Query, Depends
-from typing import List, Optional
+from typing import Optional
 from core.db.connection import get_connection
 from core.storage import storage as _storage
 from psycopg2.extras import RealDictCursor, Json
