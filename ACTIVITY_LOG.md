@@ -4,6 +4,30 @@ Running log of work done in this repo. Newest entries at the top. Per project ru
 
 Format: `YYYY-MM-DD — short title` followed by what changed and why.
 
+## 2026-05-29 — Remove unused imports (dead-code sweep)
+
+**What changed:** Removed 4 verified-unused imports (zero call sites, confirmed by grep). No rebuild needed — backend only.
+- `api/routes/admin.py`: dropped `List` from typing import and the `import asyncio` line.
+- `api/routes/partners.py`: dropped `List` from typing import.
+- `api/routes/portfolio.py`: dropped `json` from `import json, re, datetime as _dt`.
+- `api/routes/sourcing.py`: dropped `HTTPException` from the fastapi import.
+
+**Why:** Dead-code cleanup. No functional impact.
+
+**Verified:** `python3 -m py_compile` passes for all four.
+
+**Not done (needs frontend rebuild, left in place):** 3 dead React components — `QQQIntelPanel.tsx` (~348 LOC), `ScoreSuggestionCard.tsx` (~78 LOC), `figma/ImageWithFallback.tsx` (~27 LOC). Never imported; delete + rebuild `api/static/app/` when convenient.
+
+## 2026-05-29 — Fix two error-path bugs in proxycurl.py
+
+**What changed:**
+- `core/web/proxycurl.py` `get_profile()`: `error_msg` was only assigned in the non-429 / exception branches. If every retry returned HTTP 429 (rate limited), the `continue` skipped assignment, so the post-loop `f"Failed after retries: {error_msg}"` raised `NameError: name 'error_msg' is not defined` — masking the real rate-limit failure with a crash. Initialized `error_msg` to a sensible 429 default before the retry loop.
+- `core/web/proxycurl.py` `search_profile()`: `name.split()[0]` raised `IndexError` when `name` was empty or whitespace-only, and `name.split()` was called 3×. Split once into `name_parts`, guard the empty case with an early `found: False` return, reuse the list.
+
+**Why:** Both are error-path only (rate-limit exhaustion / bad input) — no change to the success path or normal functionality. Found during a platform-wide bug sweep.
+
+**Verified:** `python3 -m py_compile core/web/proxycurl.py` passes.
+
 ## 2026-05-26 — Fix ingest 500 on expired/invalid Drive token
 
 **What changed:**
@@ -191,3 +215,26 @@ Each new change appends an entry under today's date with:
 3. **Missing tagger signals:** `Financial Statements Q3.xlsx` (spaces, no underscores) still returned `unknown` because `"financial statement"` was not in the signal list — only sub-phrases like `"balance sheet"` were. Added `"financial statement"`, `"financial statements"` to `financial_statement` signals. Added `"customer contract"` to `customer_contract` signals.
 
 **Verified:** All 12 real-world filename test cases now classify correctly. `ingest_local` end-to-end run passes. `ingest.py --dry-run` passes.
+
+## 2026-05-29 — Fix PnPbert degraded mode
+- Verified PnPbert ranking engine (core/pnpbert/engine.py) before data load: logic/ordering/edge-cases/determinism all correct, BUT running TF-IDF fallback — semantic encoder missing.
+- Root cause: sentence-transformers not installed, absent from requirements.txt → silent fallback to exact-token matching. Relevant docs scored 0.0 (e.g. "payment rails" vs query "fintech payments").
+- Fix: added `sentence-transformers>=3.0.0` to requirements.txt; installed in .venv (pulls torch).
+- Re-verified: encoder now all-MiniLM-L6-v2. Semantically-relevant doc 0.0000 → 0.6918; fintech docs rank above agtech. Edge cases still safe.
+
+## 2026-05-29 — Per-user Drive-powered "My Terminal"
+- Goal: each individual authorizes their OWN Google Drive, ingests their own files into an isolated personal workspace, platform makes sense of them (doc type + summary + key points) + Q&A — separate from preexisting platform data.
+- Drive auth was single global token (~/producer/gdrive_token.json). Made it per-user.
+- Migration 135: cvc.user_drive_tokens (1 token/user) + cvc.drive_documents (per-user ingested docs, summary + key_points jsonb).
+- core/drive/userauth.py: per-user token store (DB), OAuth via server-side state nonce → user_id (reuses already-registered /drive/callback redirect), refresh+persist, build_service(user_id).
+- core/drive/browse.py + pipeline.py: shared Drive tree + download→convert→tag (wraps existing dd ingestion).
+- core/drive/sense.py: "make sense" = summary + key_points per doc, and corpus Q&A. Uses OpenRouter if OPENROUTER_API_KEY set, else offline extractive fallback (works out of the box).
+- api/routes/terminal.py: /terminal status, auth-url, browse, ingest, documents (list/get/delete), ask — all JWT-scoped to caller.
+- Refactored api/routes/drive.py to per-user: auth-url (replaces public /auth), callback-by-state, per-user workdir (workdir/user_<id>/<company>).
+- Frontend: TerminalPage.tsx (connect Drive, browse/select/ingest, My Documents w/ summaries, Ask box), route /terminal, "My Terminal" nav link (all roles); fixed DriveIngestPage connect to use /drive/auth-url.
+- Verified: imports clean, migration applied, frontend builds, TestClient smoke (status from DB, real Google consent URL, 401 guard, empty-corpus ask). Live OAuth consent + real ingest require a browser session (not run here).
+
+## 2026-05-29 — Fix Data Explorer broken in local dev (vite proxy)
+- Root cause: designs/figma-dashboard/vite.config.ts proxy whitelist missing `/config` and `/explore`. In `npm run dev` (port 5173) those fetches fell through to vite → returned SPA index.html instead of API JSON. Effect: `/config/plugins` failed so the "Data Explorer" nav link never rendered, and all 8 `/explore/*` report fetches JSON-parse-failed. = "did not run locally".
+- Backend was always fine: data-explorer plugin installed, mounts /explore, all 8 endpoints return 200, schema columns present (match_reviewed mig 090, outcome mig 098). Served via /app (built, same-origin) it worked; only the dev server broke.
+- Fix: added `/config` and `/explore` to vite proxy. Verified through 5173 proxy: /config/plugins returns data-explorer JSON, /explore/sector-overview HTTP 200 application/json with real rows.

@@ -25,6 +25,7 @@ from api.routes.auth import router as auth_router
 from api.routes.config import router as config_router
 from api.routes.recommendations import router as recommendations_router
 from api.routes.drive import router as drive_router, public_router as drive_public_router
+from api.routes.terminal import router as terminal_router
 from api.auth import require_auth
 from api.plugin_loader import load_plugins, get_loaded_plugins
 
@@ -103,6 +104,8 @@ app.include_router(drive_router, prefix="/drive", tags=["drive"],
                    dependencies=[Depends(require_auth)])
 # OAuth auth + callback must be public — browser navigates here without JWT
 app.include_router(drive_public_router, prefix="/drive", tags=["drive"])
+# Per-user "My Terminal" — Drive-powered personal workspace (routes self-protect via JWT)
+app.include_router(terminal_router, prefix="/terminal", tags=["terminal"])
 
 # Auth routes — public
 app.include_router(auth_router, prefix="/auth", tags=["auth"])

@@ -439,6 +439,7 @@ const CVCNavbar: React.FC = () => {
 
   const coreNavLinks = [
     { path: '/',           label: 'Home',       roles: null },  // null = all roles
+    { path: '/terminal',   label: 'My Terminal',roles: null },
     { path: '/ventures',   label: 'Ventures',   roles: null },
     { path: '/partners',   label: 'Partners',   roles: null },
     { path: '/sales',      label: 'Sales',      roles: null },

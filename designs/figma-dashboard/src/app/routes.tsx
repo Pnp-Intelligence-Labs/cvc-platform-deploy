@@ -17,6 +17,7 @@ import EnrichmentQueue from "./pages/EnrichmentQueue";
 import ReportsPage from "./pages/ReportsPage";
 import AdminBatchPage from "./pages/AdminBatchPage";
 import DriveIngestPage from "./pages/DriveIngestPage";
+import TerminalPage from "./pages/TerminalPage";
 
 function Guard({ component: Component }: { component: React.ComponentType }) {
   return <AuthGuard><Component /></AuthGuard>;
@@ -62,6 +63,7 @@ export const router = createBrowserRouter([
   { path: "/admin",                   Component: () => <Guard component={Admin} />,            errorElement: <AppError /> },
   { path: "/admin/batch",             Component: () => <Guard component={AdminBatchPage} />,   errorElement: <AppError /> },
   { path: "/ingest",                  Component: () => <Guard component={DriveIngestPage} />,   errorElement: <AppError /> },
+  { path: "/terminal",                Component: () => <Guard component={TerminalPage} />,      errorElement: <AppError /> },
 
   // Plugin pages — only reachable when the corresponding plugin is installed
   { path: "/explore",                 Component: () => <Guard component={DataExplorerPage} />, errorElement: <AppError /> },

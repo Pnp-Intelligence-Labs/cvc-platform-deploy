@@ -1,207 +1,107 @@
 """
-drive.py — Google Drive browse + ingest endpoints.
+drive.py — Google Drive browse + ingest endpoints (per-user).
+
+Each user connects their OWN Google Drive. Tokens are stored per user_id (see
+core/drive/userauth.py). Browse/ingest are scoped to the calling user.
 
 Protected routes (require JWT) are on `router`.
-Public routes (OAuth callback — Google redirects here without JWT) are on `public_router`.
+Public routes (the OAuth callback — Google redirects here without a JWT) are on
+`public_router`; the callback routes back to the right user via the `state`
+nonce created when the auth URL was minted.
 """
 
-import os
-import sys
-import secrets
-import time
+import shutil
+import urllib.parse
 from pathlib import Path
-from fastapi import APIRouter, HTTPException
+from datetime import datetime
+
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
+
+from api.routes.auth import require_jwt, UserInfo
+from core.drive import userauth
+from core.drive.browse import build_tree
+from core.drive.pipeline import ingest_file, _DD_PATH
 
 router = APIRouter()
 public_router = APIRouter()  # OAuth callback must be reachable without JWT
 
-_DD_PATH = Path(__file__).parent.parent.parent / "plugins" / "_staging" / "workers" / "dd"
-
-# Configurable via env — default to ~/producer/ for backward compat with producer setup
-_CREDS    = Path(os.environ.get("GDRIVE_CREDS_PATH",  str(Path.home() / "producer" / "gdrive_credentials.json")))
-_TOKEN    = Path(os.environ.get("GDRIVE_TOKEN_PATH",   str(Path.home() / "producer" / "gdrive_token.json")))
-_BASE_URL = os.environ.get("PLATFORM_BASE_URL", "http://localhost:8002").rstrip("/")
-_SCOPES   = ["https://www.googleapis.com/auth/drive"]
-
-# CSRF state store for OAuth (single-instance; 10-min TTL)
-_oauth_states: dict[str, float] = {}
-
-_EXPORT_MIME = {
-    "application/vnd.google-apps.document":     ("application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".docx"),
-    "application/vnd.google-apps.spreadsheet":  ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",      ".xlsx"),
-    "application/vnd.google-apps.presentation": ("application/vnd.openxmlformats-officedocument.presentationml.presentation", ".pptx"),
-}
+_WORKDIR = _DD_PATH / "workdir"
 
 
-def _service():
-    """Return an authenticated Drive service or raise 503."""
-    from google.oauth2.credentials import Credentials
-    from google.auth.transport.requests import Request
-    from googleapiclient.discovery import build
-
-    if not _TOKEN.exists():
+def _service(user_id: int):
+    """Return an authenticated Drive service for the user or raise 503."""
+    try:
+        return userauth.build_service(user_id)
+    except ValueError:
         raise HTTPException(
             status_code=503,
-            detail="Google Drive not authenticated. Use the 'Connect Drive' button to authenticate.",
+            detail="Google Drive not connected. Use the 'Connect Drive' button to authenticate.",
         )
 
-    creds = Credentials.from_authorized_user_file(str(_TOKEN), _SCOPES)
-    if not creds.valid:
-        if creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-            _TOKEN.write_text(creds.to_json())  # persist refreshed token back to disk
-        else:
-            raise HTTPException(
-                status_code=503,
-                detail="Drive token expired and cannot refresh. Use 'Connect Drive' to re-authenticate.",
-            )
 
-    return build("drive", "v3", credentials=creds)
-
-
-def _build_tree(svc, folder_id: str, depth: int = 0, max_depth: int = 3) -> dict:
-    """Recursively list a folder. Returns {folders: [...], files: [...]}."""
-    if depth > max_depth:
-        return {"folders": [], "files": [], "truncated": True}
-
-    folders, files = [], []
-    page_token = None
-
-    while True:
-        resp = svc.files().list(
-            q=f"'{folder_id}' in parents and trashed=false",
-            fields="nextPageToken, files(id, name, mimeType, size, modifiedTime)",
-            orderBy="name",
-            pageSize=200,
-            pageToken=page_token,
-        ).execute()
-
-        for item in resp.get("files", []):
-            if item["mimeType"] == "application/vnd.google-apps.folder":
-                folders.append({
-                    "id":       item["id"],
-                    "name":     item["name"],
-                    "children": _build_tree(svc, item["id"], depth + 1, max_depth),
-                })
-            else:
-                files.append({
-                    "id":           item["id"],
-                    "name":         item["name"],
-                    "mimeType":     item["mimeType"],
-                    "size":         item.get("size"),
-                    "modifiedTime": item.get("modifiedTime"),
-                })
-
-        page_token = resp.get("nextPageToken")
-        if not page_token:
-            break
-
-    return {"folders": folders, "files": files}
+def _user_workdir(user_id: int) -> Path:
+    return _WORKDIR / f"user_{user_id}"
 
 
 # ── OAuth ──────────────────────────────────────────────────────────────────────
 
 @router.get("/auth-status")
-async def auth_status():
-    """Return whether Drive is authenticated. Called by the UI on page load."""
-    if not _TOKEN.exists():
-        return {"authenticated": False, "reason": "no_token"}
+def auth_status(user: UserInfo = Depends(require_jwt)):
+    """Return whether this user's Drive is connected. Called by the UI on load."""
+    st = userauth.get_status(user.user_id)
+    if st.get("connected"):
+        return {"authenticated": True, "google_email": st.get("google_email")}
+    return {"authenticated": False, "reason": "not_connected"}
+
+
+@router.get("/auth-url")
+def auth_url(return_to: str = "ingest", user: UserInfo = Depends(require_jwt)):
+    """Return the Google consent URL for this user. The frontend navigates to it
+    (browser navigation can't carry the JWT, so we mint the URL here instead)."""
     try:
-        from google.oauth2.credentials import Credentials
-        creds = Credentials.from_authorized_user_file(str(_TOKEN), _SCOPES)
-        if creds.valid:
-            return {"authenticated": True}
-        if creds.expired and creds.refresh_token:
-            # Token can be refreshed on first real request — report as ok
-            return {"authenticated": True, "note": "will_refresh"}
-        return {"authenticated": False, "reason": "token_expired_no_refresh"}
-    except Exception as e:
-        return {"authenticated": False, "reason": str(e)}
-
-
-@public_router.get("/auth")
-async def start_drive_auth():
-    """
-    Start the Google OAuth flow. Redirects to Google consent screen.
-    Public so the browser can navigate here directly (no JWT header on navigation).
-    """
-    if not _CREDS.exists():
-        raise HTTPException(
-            status_code=503,
-            detail=f"OAuth credentials file not found at {_CREDS}. "
-                   "Place your Google Cloud client_secret.json there and set GDRIVE_CREDS_PATH.",
-        )
-    from google_auth_oauthlib.flow import Flow
-
-    state = secrets.token_urlsafe(32)
-    _oauth_states[state] = time.time()
-
-    # Purge states older than 10 minutes
-    now = time.time()
-    stale = [k for k, v in _oauth_states.items() if now - v > 600]
-    for k in stale:
-        _oauth_states.pop(k, None)
-
-    flow = Flow.from_client_secrets_file(
-        str(_CREDS),
-        scopes=_SCOPES,
-        redirect_uri=f"{_BASE_URL}/drive/callback",
-    )
-    auth_url, _ = flow.authorization_url(
-        access_type="offline",
-        include_granted_scopes="true",
-        prompt="consent",
-        state=state,
-    )
-    return RedirectResponse(url=auth_url)
+        return {"url": userauth.create_auth_url(user.user_id, return_to=return_to)}
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=503, detail=str(e))
 
 
 @public_router.get("/callback")
-async def drive_callback(code: str = None, state: str = None, error: str = None):
-    """
-    Google OAuth callback. Saves token and redirects back to the ingest page.
-    Must be public — Google redirects here without a JWT.
-    """
-    if error:
-        return RedirectResponse(url=f"/app/ingest?drive_error={error}")
+def drive_callback(code: str = None, state: str = None, error: str = None):
+    """Google OAuth callback. Saves the token for the user encoded in `state`,
+    then redirects back to the page they started from. Must be public."""
+    entry = userauth.consume_state(state)
+    return_to = (entry or {}).get("return_to", "ingest")
 
-    stored_at = _oauth_states.pop(state or "", None)
-    if stored_at is None or (time.time() - stored_at) > 600:
+    if error:
+        return RedirectResponse(url=f"/app/{return_to}?drive_error={error}")
+    if entry is None:
         raise HTTPException(status_code=400, detail="Invalid or expired OAuth state. Please try again.")
 
-    from google_auth_oauthlib.flow import Flow
+    try:
+        userauth.exchange_and_save(entry["user_id"], code)
+    except Exception as e:
+        return RedirectResponse(url=f"/app/{return_to}?drive_error={urllib.parse.quote(str(e))}")
 
-    flow = Flow.from_client_secrets_file(
-        str(_CREDS),
-        scopes=_SCOPES,
-        redirect_uri=f"{_BASE_URL}/drive/callback",
-        state=state,
-    )
-    flow.fetch_token(code=code)
+    return RedirectResponse(url=f"/app/{return_to}?drive_connected=1")
 
-    _TOKEN.parent.mkdir(parents=True, exist_ok=True)
-    _TOKEN.write_text(flow.credentials.to_json())
 
-    return RedirectResponse(url="/app/ingest?drive_connected=1")
+@router.post("/disconnect")
+def disconnect(user: UserInfo = Depends(require_jwt)):
+    userauth.disconnect(user.user_id)
+    return {"disconnected": True}
 
 
 # ── Drive browse & ingest ──────────────────────────────────────────────────────
 
 @router.get("/browse")
-async def browse_drive():
-    """Return the full Drive tree (up to 3 folders deep)."""
+def browse_drive(user: UserInfo = Depends(require_jwt)):
+    """Return the user's Drive tree (up to 3 folders deep)."""
+    svc = _service(user.user_id)
     try:
-        svc = _service()
-        return _build_tree(svc, "root")
-    except HTTPException:
-        raise
+        return build_tree(svc, "root")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Drive error: {e}")
-
-
-_WORKDIR = Path(__file__).parent.parent.parent / "plugins" / "_staging" / "workers" / "dd" / "workdir"
 
 
 class IngestRequest(BaseModel):
@@ -210,111 +110,64 @@ class IngestRequest(BaseModel):
 
 
 @router.get("/ingested")
-async def list_ingested():
-    """Return list of company names that have been ingested (have a workdir folder)."""
-    if not _WORKDIR.exists():
+def list_ingested(user: UserInfo = Depends(require_jwt)):
+    """Return company names this user has ingested (one workdir folder each)."""
+    base = _user_workdir(user.user_id)
+    if not base.exists():
         return []
-    return sorted(
-        d.name for d in _WORKDIR.iterdir()
-        if d.is_dir() and not d.name.startswith(".")
-    )
+    return sorted(d.name for d in base.iterdir() if d.is_dir() and not d.name.startswith("."))
 
 
 @router.delete("/ingested/{company}")
-async def deingest(company: str):
-    """Delete all ingested data for a company."""
-    import shutil
-    import urllib.parse
+def deingest(company: str, user: UserInfo = Depends(require_jwt)):
+    """Delete all ingested data for a company in this user's workspace."""
+    base = _user_workdir(user.user_id)
     safe = urllib.parse.unquote(company)
-    target = _WORKDIR / safe
+    target = base / safe
     if not target.exists():
         raise HTTPException(status_code=404, detail=f"No ingested data for '{safe}'")
-    if not str(target.resolve()).startswith(str(_WORKDIR.resolve())):
+    if not str(target.resolve()).startswith(str(base.resolve())):
         raise HTTPException(status_code=400, detail="Invalid company name")
     shutil.rmtree(target)
     return {"deleted": safe}
 
 
 @router.post("/ingest")
-async def ingest_files(req: IngestRequest):
+def ingest_files(req: IngestRequest, user: UserInfo = Depends(require_jwt)):
     """Download selected Drive files, convert to text, tag by document type."""
     if not req.company.strip():
         raise HTTPException(status_code=400, detail="Company name required")
     if not req.file_ids:
         raise HTTPException(status_code=400, detail="No files selected")
 
-    try:
-        svc = _service()
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=503, detail=f"Drive error: {e}")
+    svc = _service(user.user_id)
 
-    dd_path = str(_DD_PATH)
-    if dd_path not in sys.path:
-        sys.path.insert(0, dd_path)
+    safe = req.company.strip().replace(" ", "_").replace("/", "-")
+    dest_dir = _user_workdir(user.user_id) / safe
 
-    try:
-        from ingestion.drive import download_file
-        from ingestion.converter import convert_all
-        from ingestion.tagger import tag_all
-        from config.settings import WORKDIR
-    except ImportError as e:
-        raise HTTPException(status_code=503, detail=f"DD plugin not available: {e}")
-
-    from datetime import datetime
-
-    safe      = req.company.strip().replace(" ", "_").replace("/", "-")
-    raw_dir   = WORKDIR / safe / "raw"
-    conv_dir  = WORKDIR / safe / "converted"
-    raw_dir.mkdir(parents=True, exist_ok=True)
-
-    downloaded = []
+    documents = []
     for fid in req.file_ids:
         try:
-            meta = svc.files().get(fileId=fid, fields="id,name,mimeType,size").execute()
-            name, mime = meta["name"], meta["mimeType"]
-
-            if mime in _EXPORT_MIME:
-                _, ext = _EXPORT_MIME[mime]
-                dest = raw_dir / (Path(name).stem + ext)
-            else:
-                dest = raw_dir / name
-
-            ok = download_file(svc, fid, mime, dest)
-            downloaded.append({
-                "filename":   dest.name,
-                "rel_path":   dest.name,
-                "local_path": str(dest),
-                "mime_type":  mime,
-                "success":    ok,
-            })
+            doc = ingest_file(svc, fid, dest_dir)
         except Exception as e:
-            downloaded.append({
-                "filename":   f"file_{fid}",
-                "rel_path":   f"file_{fid}",
-                "local_path": "",
-                "mime_type":  "",
-                "success":    False,
-                "error":      str(e),
-            })
-
-    documents = tag_all(convert_all(downloaded, conv_dir))
+            doc = {"filename": f"file_{fid}", "doc_type": "unknown", "chars": 0,
+                   "conversion": "failed", "error": str(e)}
+        documents.append(doc)
 
     return {
         "company": req.company.strip(),
-        "date":    datetime.now().strftime("%Y-%m-%d"),
+        "date": datetime.now().strftime("%Y-%m-%d"),
         "summary": {
-            "total":     len(documents),
+            "total": len(documents),
             "converted": sum(1 for d in documents if d["conversion"] in ("ok", "truncated")),
-            "skipped":   sum(1 for d in documents if d["conversion"] == "skipped"),
-            "failed":    sum(1 for d in documents if d["conversion"] in ("failed", "download_failed")),
+            "skipped": sum(1 for d in documents if d["conversion"] == "skipped"),
+            "failed": sum(1 for d in documents if d["conversion"] in ("failed", "download_failed")),
         },
         "documents": [
             {
-                "filename":   d["filename"],
-                "doc_type":   d.get("doc_type", "unknown"),
-                "chars":      d.get("chars", 0),
+                "filename": d["filename"],
+                "doc_type": d.get("doc_type", "unknown"),
+                "chars": d.get("chars", 0),
                 "conversion": d.get("conversion", "unknown"),
             }
             for d in documents

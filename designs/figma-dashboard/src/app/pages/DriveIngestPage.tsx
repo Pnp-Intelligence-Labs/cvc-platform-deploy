@@ -340,13 +340,19 @@ export default function DriveIngestPage() {
                 Authenticate once to browse and ingest files from Drive.
               </p>
             </div>
-            <a
-              href="/drive/auth"
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch('/drive/auth-url?return_to=ingest', { headers: AUTH_HEADER });
+                  const data = await res.json();
+                  if (data.url) window.location.href = data.url;
+                } catch {}
+              }}
               className="flex items-center gap-2 px-4 py-2.5 bg-[#1e293b] text-[#f59e0b] text-sm font-semibold rounded hover:bg-[#334155] transition-colors"
             >
               <ExternalLink className="w-4 h-4" />
               Connect Google Drive
-            </a>
+            </button>
           </div>
         )}
 
