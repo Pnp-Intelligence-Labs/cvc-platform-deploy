@@ -160,6 +160,7 @@ export default function TerminalPage() {
   const [error, setError]       = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [ingesting, setIngesting] = useState(false);
+  const [ingestProgress, setIngestProgress] = useState<{ progress: number; total: number } | null>(null);
   const [docs, setDocs]         = useState<TermDoc[]>([]);
   const [detail, setDetail]     = useState<DocDetail | null>(null);
   const [connecting, setConnecting] = useState(false);
@@ -233,16 +234,34 @@ export default function TerminalPage() {
 
   async function runIngest() {
     if (selected.size === 0) return;
-    setIngesting(true); setError(null);
+    setIngesting(true); setError(null); setIngestProgress(null);
     try {
       const res = await fetch('/terminal/ingest', {
         method: 'POST', headers: { ...AUTH_HEADER, 'Content-Type': 'application/json' },
         body: JSON.stringify({ file_ids: [...selected] }),
       });
-      if (!res.ok) { const b = await res.json().catch(() => ({})); setError(b.detail ?? `Error ${res.status}`); }
-      else { setSelected(new Set()); fetchDocs(); }
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        setError(b.detail ?? `Error ${res.status}`);
+        setIngesting(false);
+        return;
+      }
+      const { job_id, total } = await res.json();
+      setIngestProgress({ progress: 0, total });
+      // Poll until done
+      while (true) {
+        await new Promise(r => setTimeout(r, 2000));
+        const sr = await fetch(`/terminal/ingest/${job_id}`, { headers: AUTH_HEADER });
+        if (!sr.ok) break;
+        const job = await sr.json();
+        setIngestProgress({ progress: job.progress, total: job.total });
+        if (job.status === 'done' || job.status === 'failed') break;
+      }
+      setSelected(new Set());
+      fetchDocs();
     } catch (e) { setError(`Network error: ${e}`); }
     setIngesting(false);
+    setIngestProgress(null);
   }
 
   async function openDoc(id: number) {
@@ -359,7 +378,9 @@ export default function TerminalPage() {
             <div className="px-4 py-3 border-t border-slate-100 bg-[#f8fafc]">
               <button onClick={runIngest} disabled={ingesting || selected.size === 0}
                 className="w-full flex items-center justify-center gap-2 text-xs bg-[#1e293b] text-[#f59e0b] rounded px-3 py-2.5 font-semibold disabled:opacity-40 hover:bg-[#334155] transition-colors">
-                {ingesting ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Ingesting & making sense...</> : <><CloudDownload className="w-3.5 h-3.5" /> Ingest {selected.size > 0 ? `${selected.size} file${selected.size !== 1 ? 's' : ''}` : 'selected'}</>}
+                {ingesting
+                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {ingestProgress ? `${ingestProgress.progress}/${ingestProgress.total} files...` : 'Starting...'}</>
+                  : <><CloudDownload className="w-3.5 h-3.5" /> Ingest {selected.size > 0 ? `${selected.size} file${selected.size !== 1 ? 's' : ''}` : 'selected'}</>}
               </button>
             </div>
           </div>

@@ -256,3 +256,8 @@ Each new change appends an entry under today's date with:
 - scripts/warmup_embeddings.py: precompute all company facet vectors (idempotent/incremental). Warmed 4101 vectors in 10s.
 - Result: /recommendations/startups 15.3s -> 0.02-0.03s warm (same scores, verified). Cache persists across restarts; per-worker mem self-warms from DB. Stale text self-heals (hash changes -> re-encode).
 - Ops: run scripts/warmup_embeddings.py after data import / bulk enrichment so first post-deploy request is fast.
+
+## 2026-05-30
+- fix: /terminal missing from Vite dev proxy (was causing 404 on all terminal API calls in dev)
+- feat: async Drive ingest — POST /terminal/ingest and POST /drive/ingest now return job_id immediately; GET /ingest/{job_id} for polling
+- feat: TerminalPage + DriveIngestPage show per-file progress counter while ingesting (no more blocking spinner)

@@ -61,3 +61,4 @@ tests/e2e/.auth/user.json
 tests/e2e/report/
 test-results/
 node_modules/
+.vercel

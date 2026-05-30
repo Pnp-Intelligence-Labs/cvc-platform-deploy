@@ -11,9 +11,10 @@ router (Google redirects there without a JWT) and routes back here by state.
 """
 
 import json
+import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel
 
 from api.routes.auth import require_jwt, UserInfo
@@ -26,6 +27,9 @@ from core.drive.sense import make_sense, answer_question
 router = APIRouter()
 
 _TERMINAL_ROOT = _DD_PATH / "workdir" / "terminal"
+
+# In-memory job state: job_id -> {status, progress, total, results}
+_jobs: dict[str, dict] = {}
 
 
 def _user_dir(user_id: int) -> Path:
@@ -77,9 +81,8 @@ class IngestRequest(BaseModel):
 
 
 @router.post("/ingest")
-def ingest(req: IngestRequest, user: UserInfo = Depends(require_jwt)):
-    """Download selected Drive files into this user's workspace, convert, tag,
-    and make sense of each. Persists one row per document."""
+def ingest(req: IngestRequest, background_tasks: BackgroundTasks, user: UserInfo = Depends(require_jwt)):
+    """Start a background ingest job. Returns job_id immediately; poll /ingest/{job_id} for status."""
     if not req.file_ids:
         raise HTTPException(status_code=400, detail="No files selected")
 
@@ -88,41 +91,51 @@ def ingest(req: IngestRequest, user: UserInfo = Depends(require_jwt)):
     except ValueError:
         raise HTTPException(status_code=503, detail="Google Drive not connected. Use 'Connect Drive'.")
 
+    job_id = str(uuid.uuid4())
     dest_dir = _user_dir(user.user_id)
-    results = []
+    _jobs[job_id] = {"status": "running", "progress": 0, "total": len(req.file_ids), "results": []}
+    background_tasks.add_task(_run_ingest, job_id, svc, req.file_ids, user.user_id, dest_dir)
+    return {"job_id": job_id, "total": len(req.file_ids)}
 
-    for fid in req.file_ids:
-        try:
-            doc = ingest_file(svc, fid, dest_dir)
-        except Exception as e:
-            results.append({"filename": f"file_{fid}", "doc_type": "unknown", "chars": 0,
-                            "conversion": "failed", "summary": f"Ingest error: {e}", "error": str(e)})
-            continue
 
-        sense = (make_sense(doc["filename"], doc["doc_type"], doc["text"])
-                 if doc["conversion"] in ("ok", "truncated")
-                 else {"summary": f"File {doc['conversion']} — no text extracted.", "key_points": []})
+@router.get("/ingest/{job_id}")
+def ingest_status(job_id: str, user: UserInfo = Depends(require_jwt)):
+    """Poll ingest job status. status: running | done | failed."""
+    job = _jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
 
-        row = _store_document(user.user_id, doc, sense)
-        results.append({
-            "id": row["id"],
-            "filename": doc["filename"],
-            "doc_type": doc["doc_type"],
-            "chars": doc["chars"],
-            "conversion": doc["conversion"],
-            "summary": sense["summary"],
-        })
 
-    return {
-        "ingested": len(results),
-        "summary": {
-            "total": len(results),
-            "converted": sum(1 for d in results if d["conversion"] in ("ok", "truncated")),
-            "skipped": sum(1 for d in results if d["conversion"] == "skipped"),
-            "failed": sum(1 for d in results if d["conversion"] in ("failed", "download_failed")),
-        },
-        "documents": results,
-    }
+def _run_ingest(job_id: str, svc, file_ids: list, user_id: int, dest_dir: Path):
+    """Background worker: download, convert, tag, persist each file."""
+    job = _jobs[job_id]
+    try:
+        for i, fid in enumerate(file_ids):
+            entry = {"filename": f"file_{fid}", "doc_type": "unknown",
+                     "chars": 0, "conversion": "failed", "summary": "Ingest failed."}
+            try:
+                doc = ingest_file(svc, fid, dest_dir)
+                sense = (make_sense(doc["filename"], doc["doc_type"], doc["text"])
+                         if doc["conversion"] in ("ok", "truncated")
+                         else {"summary": f"File {doc['conversion']} — no text extracted.", "key_points": []})
+                row = _store_document(user_id, doc, sense)
+                entry = {
+                    "id": row["id"] if row else None,
+                    "filename": doc["filename"],
+                    "doc_type": doc["doc_type"],
+                    "chars": doc["chars"],
+                    "conversion": doc["conversion"],
+                    "summary": sense["summary"],
+                }
+            except Exception as e:
+                entry["summary"] = f"Error: {e}"
+            job["results"].append(entry)
+            job["progress"] = i + 1
+        job["status"] = "done"
+    except Exception as e:
+        job["status"] = "failed"
+        job["error"] = str(e)
 
 
 def _store_document(user_id: int, doc: dict, sense: dict) -> dict:

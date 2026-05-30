@@ -11,11 +11,12 @@ nonce created when the auth URL was minted.
 """
 
 import shutil
+import uuid
 import urllib.parse
 from pathlib import Path
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
@@ -28,6 +29,9 @@ router = APIRouter()
 public_router = APIRouter()  # OAuth callback must be reachable without JWT
 
 _WORKDIR = _DD_PATH / "workdir"
+
+# In-memory job state: job_id -> {status, progress, total, results}
+_jobs: dict[str, dict] = {}
 
 
 def _service(user_id: int):
@@ -133,43 +137,62 @@ def deingest(company: str, user: UserInfo = Depends(require_jwt)):
 
 
 @router.post("/ingest")
-def ingest_files(req: IngestRequest, user: UserInfo = Depends(require_jwt)):
-    """Download selected Drive files, convert to text, tag by document type."""
+def ingest_files(req: IngestRequest, background_tasks: BackgroundTasks, user: UserInfo = Depends(require_jwt)):
+    """Start a background ingest job. Returns job_id immediately; poll /ingest/{job_id} for status."""
     if not req.company.strip():
         raise HTTPException(status_code=400, detail="Company name required")
     if not req.file_ids:
         raise HTTPException(status_code=400, detail="No files selected")
 
     svc = _service(user.user_id)
-
     safe = req.company.strip().replace(" ", "_").replace("/", "-")
     dest_dir = _user_workdir(user.user_id) / safe
 
-    documents = []
-    for fid in req.file_ids:
-        try:
-            doc = ingest_file(svc, fid, dest_dir)
-        except Exception as e:
-            doc = {"filename": f"file_{fid}", "doc_type": "unknown", "chars": 0,
-                   "conversion": "failed", "error": str(e)}
-        documents.append(doc)
-
-    return {
-        "company": req.company.strip(),
-        "date": datetime.now().strftime("%Y-%m-%d"),
-        "summary": {
-            "total": len(documents),
-            "converted": sum(1 for d in documents if d["conversion"] in ("ok", "truncated")),
-            "skipped": sum(1 for d in documents if d["conversion"] == "skipped"),
-            "failed": sum(1 for d in documents if d["conversion"] in ("failed", "download_failed")),
-        },
-        "documents": [
-            {
-                "filename": d["filename"],
-                "doc_type": d.get("doc_type", "unknown"),
-                "chars": d.get("chars", 0),
-                "conversion": d.get("conversion", "unknown"),
-            }
-            for d in documents
-        ],
+    job_id = str(uuid.uuid4())
+    _jobs[job_id] = {
+        "status": "running", "progress": 0, "total": len(req.file_ids),
+        "company": req.company.strip(), "date": datetime.now().strftime("%Y-%m-%d"),
+        "results": [],
     }
+    background_tasks.add_task(_run_ingest, job_id, svc, req.file_ids, dest_dir)
+    return {"job_id": job_id, "total": len(req.file_ids)}
+
+
+@router.get("/ingest/{job_id}")
+def ingest_status(job_id: str, user: UserInfo = Depends(require_jwt)):
+    """Poll ingest job status. status: running | done | failed."""
+    job = _jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+
+def _run_ingest(job_id: str, svc, file_ids: list, dest_dir: Path):
+    """Background worker: download and convert each file."""
+    job = _jobs[job_id]
+    try:
+        for i, fid in enumerate(file_ids):
+            entry = {"filename": f"file_{fid}", "doc_type": "unknown",
+                     "chars": 0, "conversion": "failed"}
+            try:
+                doc = ingest_file(svc, fid, dest_dir)
+                entry = {
+                    "filename": doc["filename"],
+                    "doc_type": doc.get("doc_type", "unknown"),
+                    "chars": doc.get("chars", 0),
+                    "conversion": doc.get("conversion", "unknown"),
+                }
+            except Exception as e:
+                entry["error"] = str(e)
+            job["results"].append(entry)
+            job["progress"] = i + 1
+        job["status"] = "done"
+        job["summary"] = {
+            "total": len(job["results"]),
+            "converted": sum(1 for d in job["results"] if d["conversion"] in ("ok", "truncated")),
+            "skipped": sum(1 for d in job["results"] if d["conversion"] == "skipped"),
+            "failed": sum(1 for d in job["results"] if d["conversion"] in ("failed", "download_failed")),
+        }
+    except Exception as e:
+        job["status"] = "failed"
+        job["error"] = str(e)

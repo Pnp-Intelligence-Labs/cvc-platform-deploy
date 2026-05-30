@@ -202,6 +202,7 @@ export default function DriveIngestPage() {
   const [selected, setSelected]       = useState<Set<string>>(new Set());
   const [company, setCompany]         = useState('');
   const [ingesting, setIngesting]     = useState(false);
+  const [ingestProgress, setIngestProgress] = useState<{ progress: number; total: number } | null>(null);
   const [result, setResult]           = useState<IngestResult | null>(null);
   const [ingestErr, setIngestErr]     = useState<string | null>(null);
   const [ingested, setIngested]       = useState<string[]>([]);
@@ -282,9 +283,7 @@ export default function DriveIngestPage() {
 
   async function runIngest() {
     if (!company.trim() || selected.size === 0) return;
-    setIngesting(true);
-    setIngestErr(null);
-    setResult(null);
+    setIngesting(true); setIngestErr(null); setResult(null); setIngestProgress(null);
     try {
       const res = await fetch('/drive/ingest', {
         method: 'POST',
@@ -292,12 +291,37 @@ export default function DriveIngestPage() {
         body: JSON.stringify({ company: company.trim(), file_ids: [...selected] }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) setIngestErr(body.detail ?? `Error ${res.status}`);
-      else { setResult(body); fetchIngested(); }
+      if (!res.ok) {
+        setIngestErr(body.detail ?? `Error ${res.status}`);
+        setIngesting(false);
+        return;
+      }
+      const { job_id, total } = body;
+      setIngestProgress({ progress: 0, total });
+      // Poll until done
+      let finalJob: any = null;
+      while (true) {
+        await new Promise(r => setTimeout(r, 2000));
+        const sr = await fetch(`/drive/ingest/${job_id}`, { headers: AUTH_HEADER });
+        if (!sr.ok) break;
+        finalJob = await sr.json();
+        setIngestProgress({ progress: finalJob.progress, total: finalJob.total });
+        if (finalJob.status === 'done' || finalJob.status === 'failed') break;
+      }
+      if (finalJob?.status === 'done') {
+        setResult({
+          company: finalJob.company,
+          date: finalJob.date,
+          summary: finalJob.summary,
+          documents: finalJob.results,
+        });
+        fetchIngested();
+      }
     } catch (e) {
       setIngestErr(`Network error: ${e}`);
     }
     setIngesting(false);
+    setIngestProgress(null);
   }
 
   const allIds = tree ? collectFileIds(tree) : [];
@@ -463,7 +487,7 @@ export default function DriveIngestPage() {
                 className="w-full flex items-center justify-center gap-2 text-xs bg-[#1e293b] text-[#f59e0b] rounded px-3 py-2.5 font-semibold disabled:opacity-40 hover:bg-[#334155] transition-colors"
               >
                 {ingesting
-                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Ingesting...</>
+                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {ingestProgress ? `${ingestProgress.progress}/${ingestProgress.total} files...` : 'Starting...'}</>
                   : <><CloudDownload className="w-3.5 h-3.5" /> Run Ingestion</>}
               </button>
               {ingestErr && (

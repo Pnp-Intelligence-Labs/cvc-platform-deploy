@@ -76,6 +76,7 @@ export default defineConfig({
       '/notes':         'http://localhost:8002',
       '/health':        'http://localhost:8002',
       '/drive':         'http://localhost:8002',
+      '/terminal':      'http://localhost:8002',
       '/config':        'http://localhost:8002',
       '/explore':       'http://localhost:8002',
     },
