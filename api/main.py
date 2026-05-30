@@ -37,6 +37,18 @@ app = FastAPI(
 )
 
 
+@app.on_event("startup")
+def _warm_recommender() -> None:
+    """Load the PnPbert encoder in the background so the first /recommendations
+    request doesn't pay cold model-load latency. Non-blocking: startup/health
+    stay instant; the model is ready within a few seconds."""
+    import threading
+
+    from api.routes.recommendations import warm_engine
+
+    threading.Thread(target=warm_engine, daemon=True).start()
+
+
 def _csv_env(name: str) -> list[str]:
     return [item.strip() for item in os.environ.get(name, "").split(",") if item.strip()]
 

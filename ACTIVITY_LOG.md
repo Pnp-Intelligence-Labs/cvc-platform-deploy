@@ -238,3 +238,21 @@ Each new change appends an entry under today's date with:
 - Root cause: designs/figma-dashboard/vite.config.ts proxy whitelist missing `/config` and `/explore`. In `npm run dev` (port 5173) those fetches fell through to vite → returned SPA index.html instead of API JSON. Effect: `/config/plugins` failed so the "Data Explorer" nav link never rendered, and all 8 `/explore/*` report fetches JSON-parse-failed. = "did not run locally".
 - Backend was always fine: data-explorer plugin installed, mounts /explore, all 8 endpoints return 200, schema columns present (match_reviewed mig 090, outcome mig 098). Served via /app (built, same-origin) it worked; only the dev server broke.
 - Fix: added `/config` and `/explore` to vite proxy. Verified through 5173 proxy: /config/plugins returns data-explorer JSON, /explore/sector-overview HTTP 200 application/json with real rows.
+
+## 2026-05-30 — Load cvc_test_data + run locally
+- Added scripts/import_test_data.py: generic introspection-based importer (inserts only keys matching real cvc.* columns, wraps jsonb values, preserves source IDs, bumps SERIAL sequences; TRUNCATE-clean by default, --append optional).
+- Imported cvc_test_data.zip into local Docker Postgres: 2315 companies (89 portfolio), 45 partners, 1648 funding rounds. funding_rounds skipped non-columns amount_local/currency/fx_rate_to_usd.
+- Verified PnPbert on real data via all-MiniLM-L6-v2: robotics+supply-chain query returns relevant top hits, 0/200 zero-score docs, score spread top=1.34/median=0.75.
+- Ran API locally (uvicorn :8002). End-to-end: login nate → GET /recommendations/startups returns pnpbert-scored real companies; /recommendations/feed 200.
+- Perf note: ~15-19s per /recommendations request (CPU MiniLM encodes ~600 texts/request). Acceptable for test box; would need caching/batching for production load.
+
+## 2026-05-30 — Production-ready fast PnPbert (persistent embedding cache)
+- Problem: recommender re-encoded all candidate docs every request (~15s). Docs are static; only the query is dynamic.
+- Added cvc.pnpbert_embeddings (migration 136): persistent text->vector cache, BYTEA float32, PK (model, text_hash).
+- Added core/pnpbert/cache.py EmbeddingCache: in-memory -> Postgres -> encode-misses, dedupes, persists. DB-decoupled via injected conn_factory.
+- engine.py: PnPbert(cache=...) optional; rank() encodes through cache when present (pure/unchanged when None).
+- recommendations.py: wired _engine to EmbeddingCache(get_connection); added warm_engine().
+- main.py: @app.on_event("startup") loads model in a daemon thread (non-blocking boot; first real request hits a warm model).
+- scripts/warmup_embeddings.py: precompute all company facet vectors (idempotent/incremental). Warmed 4101 vectors in 10s.
+- Result: /recommendations/startups 15.3s -> 0.02-0.03s warm (same scores, verified). Cache persists across restarts; per-worker mem self-warms from DB. Stale text self-heals (hash changes -> re-encode).
+- Ops: run scripts/warmup_embeddings.py after data import / bulk enrichment so first post-deploy request is fast.

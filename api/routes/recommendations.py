@@ -16,13 +16,24 @@ from pydantic import BaseModel
 
 from api.auth import require_auth
 from core.db.connection import get_connection
+from core.pnpbert.cache import EmbeddingCache
 from core.pnpbert.engine import PnPbert
 
 router = APIRouter()
 
-# Shared engine instance — TF-IDF state is rebuilt per request (no mutable globals shared
-# between requests in a way that would cause races, since fit() is called inside rank()).
-_engine = PnPbert()
+# Shared engine instance backed by a persistent embedding cache: document facets
+# are encoded once and reused across requests/restarts, so each request only
+# encodes its small query and runs numpy MaxSim against cached vectors.
+_engine = PnPbert(cache=EmbeddingCache(get_connection))
+
+
+def warm_engine() -> None:
+    """Load the encoder model ahead of the first request (called at app startup).
+
+    Cold model load is ~10s; doing it eagerly means real requests hit an
+    already-loaded model and resolve in milliseconds against the cached vectors.
+    """
+    _engine._try_load_encoder()
 
 
 # ------------------------------------------------------------------

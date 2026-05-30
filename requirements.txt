@@ -26,6 +26,7 @@ minio==7.2.20
 
 # ML / recommendations
 numpy>=1.26.0
+sentence-transformers>=3.0.0   # PnPbert semantic encoder (all-MiniLM-L6-v2); falls back to TF-IDF if absent
 
 # Google Drive integration
 google-auth>=2.40.0

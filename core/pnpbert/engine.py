@@ -24,8 +24,9 @@ import numpy as np
 
 
 class PnPbert:
-    def __init__(self) -> None:
+    def __init__(self, cache=None) -> None:
         self._encoder = None       # None = untried, "unavailable" = no sentence-transformers
+        self._cache = cache        # optional EmbeddingCache — encode misses only, reuse the rest
         self._vocab: dict[str, int] = {}
         self._idf: np.ndarray = np.array([])
 
@@ -128,9 +129,12 @@ class PnPbert:
             all_texts.extend(doc)
 
         if self._try_load_encoder():
-            encoded = np.array(self._encoder.encode(  # type: ignore[union-attr]
-                all_texts, normalize_embeddings=True, show_progress_bar=False
-            ))
+            if self._cache is not None:
+                encoded = self._cache.encode(all_texts, self._encoder)
+            else:
+                encoded = np.array(self._encoder.encode(  # type: ignore[union-attr]
+                    all_texts, normalize_embeddings=True, show_progress_bar=False
+                ))
         else:
             self._fit_tfidf(all_texts)
             encoded = self._tfidf_encode(all_texts)
