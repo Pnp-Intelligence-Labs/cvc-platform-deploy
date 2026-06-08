@@ -45,6 +45,8 @@ graphify-out/
 # Claude Code / agent tooling — local only
 .agents/
 .claude/skills/
+memory/
+.enrichment_progress.json
 
 # Installed plugins — managed outside git, installed via install_plugin.sh
 plugins/installed/*

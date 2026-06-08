@@ -11,11 +11,7 @@ import Admin from "./pages/Admin";
 import RequestsPage from "./pages/Requests";
 import SalesPage from "./pages/Sales";
 import DataExplorerPage from "./pages/DataExplorerPage";
-import LPPortalPage from "./pages/LPPortalPage";
-import IndustrialMatrix from "./pages/IndustrialMatrix";
-import EnrichmentQueue from "./pages/EnrichmentQueue";
 import ReportsPage from "./pages/ReportsPage";
-import AdminBatchPage from "./pages/AdminBatchPage";
 import DriveIngestPage from "./pages/DriveIngestPage";
 import TerminalPage from "./pages/TerminalPage";
 
@@ -61,15 +57,11 @@ export const router = createBrowserRouter([
   { path: "/sales",                   Component: () => <Guard component={SalesPage} />,        errorElement: <AppError /> },
   { path: "/requests",                Component: () => <Guard component={RequestsPage} />,     errorElement: <AppError /> },
   { path: "/admin",                   Component: () => <Guard component={Admin} />,            errorElement: <AppError /> },
-  { path: "/admin/batch",             Component: () => <Guard component={AdminBatchPage} />,   errorElement: <AppError /> },
   { path: "/ingest",                  Component: () => <Guard component={DriveIngestPage} />,   errorElement: <AppError /> },
   { path: "/terminal",                Component: () => <Guard component={TerminalPage} />,      errorElement: <AppError /> },
 
   // Plugin pages — only reachable when the corresponding plugin is installed
   { path: "/explore",                 Component: () => <Guard component={DataExplorerPage} />, errorElement: <AppError /> },
-  { path: "/lp",                      Component: () => <Guard component={LPPortalPage} />,     errorElement: <AppError /> },
-  { path: "/industrial",              Component: () => <Guard component={IndustrialMatrix} />, errorElement: <AppError /> },
-  { path: "/enrichment",              Component: () => <Guard component={EnrichmentQueue} />,  errorElement: <AppError /> },
   { path: "/reports",                 Component: () => <Guard component={ReportsPage} />,       errorElement: <AppError /> },
 
   // Redirects for removed/plugin routes
