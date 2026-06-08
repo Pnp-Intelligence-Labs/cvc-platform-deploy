@@ -16,12 +16,15 @@ Endpoints (prefix /auth set in main.py):
 import os
 import shutil
 from pathlib import Path
+from urllib.parse import urlencode
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File
+from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 from jose import JWTError, jwt
 import bcrypt
+import requests as _http
 from core.db.connection import get_connection
 
 AVATARS_DIR = Path(__file__).parent.parent / "static" / "avatars"
@@ -333,3 +336,92 @@ def refresh_token(user: UserInfo = Depends(require_jwt)):
         role=db_user["role"],
         full_name=db_user["full_name"],
     )
+
+
+# ── Google OAuth ──────────────────────────────────────────────────────────────
+
+_GOOGLE_AUTH_URL     = "https://accounts.google.com/o/oauth2/v2/auth"
+_GOOGLE_TOKEN_URL    = "https://oauth2.googleapis.com/token"
+_GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
+
+
+@router.get("/google")
+def google_login():
+    """Redirect browser to Google's OAuth consent screen."""
+    client_id  = os.environ.get("GOOGLE_CLIENT_ID", "")
+    base_url   = os.environ.get("APP_BASE_URL", "http://localhost:8002").rstrip("/")
+    if not client_id:
+        raise HTTPException(status_code=501, detail="Google OAuth not configured")
+    params = urlencode({
+        "client_id":     client_id,
+        "redirect_uri":  f"{base_url}/auth/google/callback",
+        "response_type": "code",
+        "scope":         "openid email profile",
+        "access_type":   "offline",
+        "prompt":        "select_account",
+    })
+    return RedirectResponse(f"{_GOOGLE_AUTH_URL}?{params}")
+
+
+@router.get("/google/callback")
+def google_callback(code: str = None, error: str = None):
+    """Handle Google OAuth callback — exchange code, match user, issue JWT."""
+    base_url = os.environ.get("APP_BASE_URL", "http://localhost:8002").rstrip("/")
+    app_login = f"{base_url}/app/login"
+
+    if error or not code:
+        return RedirectResponse(f"{app_login}?error=google_denied")
+
+    # Exchange code for tokens
+    token_resp = _http.post(_GOOGLE_TOKEN_URL, data={
+        "code":          code,
+        "client_id":     os.environ.get("GOOGLE_CLIENT_ID", ""),
+        "client_secret": os.environ.get("GOOGLE_CLIENT_SECRET", ""),
+        "redirect_uri":  f"{base_url}/auth/google/callback",
+        "grant_type":    "authorization_code",
+    }, timeout=10)
+    if not token_resp.ok:
+        return RedirectResponse(f"{app_login}?error=google_token_failed")
+
+    access_token = token_resp.json().get("access_token")
+
+    # Fetch user info from Google
+    info_resp = _http.get(_GOOGLE_USERINFO_URL, headers={"Authorization": f"Bearer {access_token}"}, timeout=10)
+    if not info_resp.ok:
+        return RedirectResponse(f"{app_login}?error=google_userinfo_failed")
+
+    info        = info_resp.json()
+    google_sub  = str(info.get("id", ""))
+    email       = info.get("email", "")
+
+    # Optional domain restriction
+    allowed_domain = os.environ.get("GOOGLE_ALLOWED_DOMAIN", "")
+    if allowed_domain and not email.lower().endswith(f"@{allowed_domain.lower()}"):
+        return RedirectResponse(f"{app_login}?error=domain_not_allowed")
+
+    # Match user in DB
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            # 1. Match by google_sub (returning visitors)
+            cur.execute(
+                "SELECT id, username, role, full_name, assigned_partner_ids, is_active FROM cvc.users WHERE google_sub = %s",
+                [google_sub],
+            )
+            user = cur.fetchone()
+
+            if not user:
+                # 2. Match by email (first Google login — link the account)
+                cur.execute(
+                    "SELECT id, username, role, full_name, assigned_partner_ids, is_active FROM cvc.users WHERE email = %s",
+                    [email],
+                )
+                user = cur.fetchone()
+                if user:
+                    cur.execute("UPDATE cvc.users SET google_sub = %s WHERE id = %s", [google_sub, user["id"]])
+                    conn.commit()
+
+            if not user or not user["is_active"]:
+                return RedirectResponse(f"{app_login}?error=no_account")
+
+    token = _create_token(dict(user))
+    return RedirectResponse(f"{app_login}?token={token}")
