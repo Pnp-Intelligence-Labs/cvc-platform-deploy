@@ -155,6 +155,29 @@ def get_me(user: UserInfo = Depends(require_jwt)):
 
 _ADMIN_ROLES = {"GP", "Principal", "Director"}
 
+PLATFORM_PERMISSIONS = [
+    {"key": "partner_servicing",  "label": "Partner Servicing",  "desc": "PSM workflows — partner health, intros, partner requests"},
+    {"key": "ventures_pipeline",  "label": "Ventures Pipeline",  "desc": "Company pipeline, DD evaluations, venture assignments"},
+    {"key": "admin_panel",        "label": "Admin Panel",        "desc": "Admin command center and user management"},
+    {"key": "data_explorer",      "label": "Data Explorer",      "desc": "Raw data browsing"},
+    {"key": "requests_mgmt",      "label": "Requests",           "desc": "Create and manage partner/team requests"},
+]
+
+ROLE_DEFAULTS: dict[str, list[str]] = {
+    "GP":         ["partner_servicing", "ventures_pipeline", "admin_panel", "data_explorer", "requests_mgmt"],
+    "Principal":  ["partner_servicing", "ventures_pipeline", "admin_panel", "data_explorer", "requests_mgmt"],
+    "Director":   ["partner_servicing", "ventures_pipeline", "admin_panel", "data_explorer", "requests_mgmt"],
+    "Ventures":   ["ventures_pipeline", "requests_mgmt"],
+    "Senior PSM": ["partner_servicing", "requests_mgmt", "data_explorer"],
+    "PSM":        ["partner_servicing", "requests_mgmt"],
+}
+
+
+def _get_custom_grants(cur, user_id: int) -> list[str]:
+    """Return per-user custom permission grants from cvc.user_permissions."""
+    cur.execute("SELECT permission FROM cvc.user_permissions WHERE user_id = %s ORDER BY granted_at", (user_id,))
+    return [r["permission"] for r in cur.fetchall()]
+
 
 @router.get("/users")
 def list_users(caller: UserInfo = Depends(require_jwt)):
@@ -167,7 +190,12 @@ def list_users(caller: UserInfo = Depends(require_jwt)):
                 "SELECT id, username, role, full_name, email, assigned_partner_ids, is_active, created_at FROM cvc.users ORDER BY role, username"
             )
             rows = cur.fetchall()
-    return {"users": [dict(r) for r in rows]}
+            result = []
+            for r in rows:
+                row = dict(r)
+                row["custom_permissions"] = _get_custom_grants(cur, row["id"])
+                result.append(row)
+    return {"users": result}
 
 
 class CreateUserRequest(BaseModel):
@@ -425,3 +453,70 @@ def google_callback(code: str = None, error: str = None):
 
     token = _create_token(dict(user))
     return RedirectResponse(f"{app_login}?token={token}")
+
+
+# ── User Permissions ──────────────────────────────────────────────────────────
+
+@router.get("/users/{user_id}/permissions")
+def get_user_permissions(user_id: int, caller: UserInfo = Depends(require_jwt)):
+    """Return role defaults + custom grants for a user."""
+    if caller.role not in _ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT role FROM cvc.users WHERE id = %s AND is_active = TRUE", (user_id,))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="User not found")
+            role = row["role"]
+            custom_grants = _get_custom_grants(cur, user_id)
+    defaults = ROLE_DEFAULTS.get(role, [])
+    return {
+        "role":             role,
+        "role_defaults":    defaults,
+        "custom_grants":    custom_grants,
+        "effective":        list(dict.fromkeys(defaults + custom_grants)),
+        "all_permissions":  PLATFORM_PERMISSIONS,
+    }
+
+
+class GrantPermissionRequest(BaseModel):
+    permission: str
+
+
+@router.post("/users/{user_id}/permissions", status_code=201)
+def grant_permission(user_id: int, body: GrantPermissionRequest, caller: UserInfo = Depends(require_jwt)):
+    """Grant a custom permission to a user."""
+    if caller.role not in _ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    valid_keys = {p["key"] for p in PLATFORM_PERMISSIONS}
+    if body.permission not in valid_keys:
+        raise HTTPException(status_code=400, detail=f"Unknown permission '{body.permission}'")
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM cvc.users WHERE id = %s AND is_active = TRUE", (user_id,))
+            if not cur.fetchone():
+                raise HTTPException(status_code=404, detail="User not found")
+            cur.execute(
+                "INSERT INTO cvc.user_permissions (user_id, permission, granted_by) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
+                (user_id, body.permission, caller.username),
+            )
+            conn.commit()
+            custom_grants = _get_custom_grants(cur, user_id)
+    return {"user_id": user_id, "custom_grants": custom_grants}
+
+
+@router.delete("/users/{user_id}/permissions/{permission}", status_code=200)
+def revoke_permission(user_id: int, permission: str, caller: UserInfo = Depends(require_jwt)):
+    """Revoke a custom permission from a user."""
+    if caller.role not in _ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM cvc.user_permissions WHERE user_id = %s AND permission = %s",
+                (user_id, permission),
+            )
+            conn.commit()
+            custom_grants = _get_custom_grants(cur, user_id)
+    return {"user_id": user_id, "custom_grants": custom_grants}

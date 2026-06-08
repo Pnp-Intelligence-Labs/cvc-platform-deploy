@@ -54,6 +54,7 @@ interface StaffUser {
   email: string | null;
   assigned_partner_ids: number[];
   is_active: boolean;
+  custom_permissions: string[];
 }
 
 interface Assignment {
@@ -107,6 +108,27 @@ const ROLE_COLORS: Record<string, string> = {
   Ventures:    'bg-blue-100 text-blue-700',
   'Senior PSM':'bg-emerald-100 text-emerald-700',
   PSM:         'bg-teal-100 text-teal-700',
+};
+
+// ── Permissions ───────────────────────────────────────────────────────────────
+
+const PLATFORM_PERMISSIONS = [
+  { key: 'partner_servicing', label: 'Partner Servicing', desc: 'PSM workflows — partner health, intros, partner requests' },
+  { key: 'ventures_pipeline', label: 'Ventures Pipeline', desc: 'Company pipeline, DD evaluations, venture assignments' },
+  { key: 'admin_panel',       label: 'Admin Panel',       desc: 'Admin command center and user management' },
+  { key: 'data_explorer',     label: 'Data Explorer',     desc: 'Raw data browsing' },
+  { key: 'requests_mgmt',     label: 'Requests',          desc: 'Create and manage partner/team requests' },
+] as const;
+
+type PermKey = typeof PLATFORM_PERMISSIONS[number]['key'];
+
+const ROLE_DEFAULTS: Record<string, PermKey[]> = {
+  'GP':         ['partner_servicing', 'ventures_pipeline', 'admin_panel', 'data_explorer', 'requests_mgmt'],
+  'Principal':  ['partner_servicing', 'ventures_pipeline', 'admin_panel', 'data_explorer', 'requests_mgmt'],
+  'Director':   ['partner_servicing', 'ventures_pipeline', 'admin_panel', 'data_explorer', 'requests_mgmt'],
+  'Ventures':   ['ventures_pipeline', 'requests_mgmt'],
+  'Senior PSM': ['partner_servicing', 'requests_mgmt', 'data_explorer'],
+  'PSM':        ['partner_servicing', 'requests_mgmt'],
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -194,6 +216,9 @@ function PersonCard({
   canDeactivate?: boolean;
   onResetPassword?: (newPassword: string) => Promise<void>;
   canResetPassword?: boolean;
+  customGrants: string[];
+  onGrantPermission: (p: string) => Promise<void>;
+  onRevokePermission: (p: string) => Promise<void>;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showAllActivity, setShowAllActivity] = useState(false);
@@ -354,6 +379,70 @@ function PersonCard({
               )}
             </div>
           )}
+
+          {/* Authorization */}
+          <div className="px-4 py-3 border-b border-slate-100 bg-white">
+            <div className="flex items-center gap-1.5 mb-2">
+              <ShieldCheck className="w-3 h-3 text-slate-400" />
+              <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Authorization</span>
+            </div>
+            <div className="space-y-2">
+              {/* Role defaults — read-only */}
+              <div className="flex flex-wrap gap-1">
+                {(ROLE_DEFAULTS[draft.role] ?? []).map(pk => {
+                  const perm = PLATFORM_PERMISSIONS.find(x => x.key === pk)!;
+                  return (
+                    <span key={pk} title={perm.desc}
+                      className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                      {perm.label}
+                    </span>
+                  );
+                })}
+              </div>
+              {/* Custom grants — removable */}
+              {customGrants.filter(g => !(ROLE_DEFAULTS[draft.role] ?? []).includes(g as PermKey)).length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {customGrants
+                    .filter(g => !(ROLE_DEFAULTS[draft.role] ?? []).includes(g as PermKey))
+                    .map(pk => {
+                      const perm = PLATFORM_PERMISSIONS.find(x => x.key === pk);
+                      if (!perm) return null;
+                      return (
+                        <span key={pk} title={`Custom grant: ${perm.desc}`}
+                          className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                          {perm.label}
+                          {canResetPassword && (
+                            <button onClick={() => onRevokePermission(pk)}
+                              className="hover:text-red-600 transition-colors ml-0.5" title="Revoke">
+                              <X className="w-2.5 h-2.5" />
+                            </button>
+                          )}
+                        </span>
+                      );
+                    })}
+                </div>
+              )}
+              {/* Grant additional permissions */}
+              {canResetPassword && (() => {
+                const available = PLATFORM_PERMISSIONS.filter(p =>
+                  !(ROLE_DEFAULTS[draft.role] ?? []).includes(p.key) &&
+                  !customGrants.includes(p.key)
+                );
+                if (available.length === 0) return null;
+                return (
+                  <div className="flex flex-wrap gap-1">
+                    {available.map(perm => (
+                      <button key={perm.key} onClick={() => onGrantPermission(perm.key)}
+                        title={`Grant: ${perm.desc}`}
+                        className="text-[10px] px-2 py-0.5 rounded-full border border-dashed border-slate-300 text-slate-400 hover:border-blue-400 hover:text-blue-600 transition-colors">
+                        + {perm.label}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
 
           {/* Partner Assignment (PSM / Senior PSM only) */}
           {(draft.role === 'PSM' || draft.role === 'Senior PSM') && partners.length > 0 && (
@@ -727,6 +816,7 @@ export default function Admin() {
   const [partners, setPartners]           = useState<{ id: number; name: string }[]>([]);
   const [savingUserId, setSavingUserId]   = useState<number | null>(null);
   const [staffDrafts, setStaffDrafts]     = useState<Record<number, { role: string; assigned_partner_ids: number[] }>>({});
+  const [customGrants, setCustomGrants] = useState<Record<number, string[]>>({});
 
   // Add User modal
   const [showAddUser, setShowAddUser]     = useState(false);
@@ -794,6 +884,7 @@ export default function Admin() {
       const users: StaffUser[] = userData.users ?? [];
       setStaffUsers(users);
       setStaffDrafts(Object.fromEntries(users.map(u => [u.id, { role: u.role, assigned_partner_ids: u.assigned_partner_ids ?? [] }])));
+      setCustomGrants(Object.fromEntries(users.map(u => [u.id, u.custom_permissions ?? []])));
       setPartners((partnerData.partners ?? []).map((p: any) => ({ id: p.id, name: p.name })));
     }).catch(() => {}).finally(() => setStaffLoading(false));
   }, [isAdmin]);
@@ -812,6 +903,29 @@ export default function Admin() {
         setStaffUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updated } : u));
       }
     } finally { setSavingUserId(null); }
+  };
+
+  const grantPermission = async (userId: number, permission: string) => {
+    const res = await fetch(`/auth/users/${userId}/permissions`, {
+      method: 'POST',
+      headers: { ...AUTH, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ permission }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setCustomGrants(prev => ({ ...prev, [userId]: data.custom_grants }));
+    }
+  };
+
+  const revokePermission = async (userId: number, permission: string) => {
+    const res = await fetch(`/auth/users/${userId}/permissions/${permission}`, {
+      method: 'DELETE',
+      headers: AUTH,
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setCustomGrants(prev => ({ ...prev, [userId]: data.custom_grants }));
+    }
   };
 
   // ── Activity ──────────────────────────────────────────────────────────────
@@ -1073,6 +1187,45 @@ export default function Admin() {
         {mainTab === 'team' && (
           <div className="space-y-6">
 
+            {/* ── Role Permissions Matrix ── */}
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+              <details>
+                <summary className="flex items-center gap-2 px-5 py-3 cursor-pointer hover:bg-slate-50 transition-colors list-none">
+                  <ShieldCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="text-xs font-bold text-slate-600">Role Permissions Reference</span>
+                  <span className="text-[10px] text-slate-400 ml-1">— what each role can access by default</span>
+                </summary>
+                <div className="border-t border-slate-100 px-5 py-4 overflow-x-auto">
+                  <table className="text-[10px] w-full border-collapse">
+                    <thead>
+                      <tr>
+                        <th className="text-left font-bold text-slate-500 py-1 pr-4 whitespace-nowrap">Role</th>
+                        {PLATFORM_PERMISSIONS.map(p => (
+                          <th key={p.key} className="text-center font-bold text-slate-500 py-1 px-3 whitespace-nowrap" title={p.desc}>{p.label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(['GP','Principal','Director','Ventures','Senior PSM','PSM'] as const).map(role => (
+                        <tr key={role} className="border-t border-slate-50">
+                          <td className="py-1.5 pr-4">
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${ROLE_COLORS[role] ?? 'bg-slate-100 text-slate-500'}`}>{role}</span>
+                          </td>
+                          {PLATFORM_PERMISSIONS.map(p => (
+                            <td key={p.key} className="text-center py-1.5 px-3">
+                              {(ROLE_DEFAULTS[role] ?? []).includes(p.key)
+                                ? <span className="text-emerald-600 font-bold">✓</span>
+                                : <span className="text-slate-200">–</span>}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            </div>
+
             {/* ── 2-col: Team list + Announcements ── */}
             <div className="grid grid-cols-2 gap-6 items-stretch">
 
@@ -1153,6 +1306,9 @@ export default function Admin() {
                               onDeactivate={() => deactivateUser(user.id)}
                               canResetPassword={['GP', 'Principal', 'Director'].includes(currentUser?.role ?? '') && user.username !== currentUser?.username}
                               onResetPassword={(pw) => resetUserPassword(user.id, pw)}
+                              customGrants={customGrants[user.id] ?? []}
+                              onGrantPermission={(p) => grantPermission(user.id, p)}
+                              onRevokePermission={(p) => revokePermission(user.id, p)}
                             />
                           );
                         })}
