@@ -1112,20 +1112,24 @@ def get_my_desk(as_user: Optional[int] = None, user=Depends(require_auth)):
     Returns open requests + assigned companies for the caller.
     Pass ?as_user=<user_id> to view another user's desk (elevated roles only).
     """
-    caller_role = user.get("role", "") if isinstance(user, dict) else ""
-    caller_id   = user.get("user_id") if isinstance(user, dict) else None
+    caller_role     = user.get("role", "")     if isinstance(user, dict) else ""
+    caller_username = user.get("username", "") if isinstance(user, dict) else ""
 
     if as_user and caller_role not in ELEVATED_ROLES:
         as_user = None
 
-    target_id = as_user if as_user else caller_id
-
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute(
-                "SELECT id, username, full_name, role FROM cvc.users WHERE id = %s AND is_active = TRUE",
-                [target_id]
-            )
+            if as_user:
+                cur.execute(
+                    "SELECT id, username, full_name, role FROM cvc.users WHERE id = %s AND is_active = TRUE",
+                    [as_user]
+                )
+            else:
+                cur.execute(
+                    "SELECT id, username, full_name, role FROM cvc.users WHERE username = %s AND is_active = TRUE",
+                    [caller_username]
+                )
             target = cur.fetchone()
             if not target:
                 raise HTTPException(status_code=404, detail="User not found")
