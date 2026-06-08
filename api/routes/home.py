@@ -1102,6 +1102,172 @@ def get_portfolio_pulse(user=Depends(require_auth)):
     return events[:3]
 
 
+# ── My Desk endpoints ──────────────────────────────────────────────────────────
+
+ELEVATED_ROLES = {"GP", "Director", "Principal"}
+
+@router.get("/my-desk")
+def get_my_desk(as_user: Optional[int] = None, user=Depends(require_auth)):
+    """
+    Returns open requests + assigned companies for the caller.
+    Pass ?as_user=<user_id> to view another user's desk (elevated roles only).
+    """
+    caller_role = user.get("role", "") if isinstance(user, dict) else ""
+    caller_id   = user.get("user_id") if isinstance(user, dict) else None
+
+    if as_user and caller_role not in ELEVATED_ROLES:
+        as_user = None
+
+    target_id = as_user if as_user else caller_id
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, username, full_name, role FROM cvc.users WHERE id = %s AND is_active = TRUE",
+                [target_id]
+            )
+            target = cur.fetchone()
+            if not target:
+                raise HTTPException(status_code=404, detail="User not found")
+
+            target_username = target["username"]
+
+            # Open requests assigned to this user (up to 15, priority then recency)
+            cur.execute("""
+                SELECT r.id, r.title, r.status, r.priority, r.service_type,
+                       r.partner_name, r.created_at
+                FROM cvc.requests r
+                JOIN cvc.request_assignees ra ON ra.request_id = r.id
+                WHERE ra.username = %s
+                  AND r.status IN ('open', 'active')
+                ORDER BY
+                    CASE r.priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,
+                    r.created_at DESC
+                LIMIT 15
+            """, [target_username])
+            requests_list = [dict(r) for r in cur.fetchall()]
+            for r in requests_list:
+                r["created_at"] = r["created_at"].isoformat() if r["created_at"] else None
+
+            # Assigned companies via venture_assignments (up to 20)
+            cur.execute("""
+                SELECT va.id AS assignment_id, va.title AS assignment_title,
+                       va.priority, va.status AS assignment_status, va.created_at,
+                       c.id AS company_id, c.name, c.stage, c.sector, c.score
+                FROM cvc.venture_assignments va
+                LEFT JOIN cvc.companies c ON c.id = va.company_id
+                WHERE va.assigned_to = %s
+                  AND va.status IN ('open', 'in_progress')
+                ORDER BY
+                    CASE va.priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,
+                    va.created_at DESC
+                LIMIT 20
+            """, [target_username])
+            companies = [dict(r) for r in cur.fetchall()]
+            for c in companies:
+                c["created_at"] = c["created_at"].isoformat() if c["created_at"] else None
+
+    return {
+        "user": dict(target),
+        "requests": requests_list,
+        "companies": companies,
+        "kpis": {
+            "open_requests": len(requests_list),
+            "assigned_companies": len(companies),
+        },
+    }
+
+
+@router.get("/team-members")
+def get_team_members(user=Depends(require_auth)):
+    """All active users sorted by role hierarchy — for the as_user dropdown."""
+    ROLE_ORDER = {"GP": 0, "Director": 1, "Principal": 2, "Senior PSM": 3, "PSM": 4, "Ventures": 5}
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, username, full_name, role,
+                       COALESCE(array_length(assigned_partner_ids, 1), 0) AS partner_count
+                FROM cvc.users
+                WHERE is_active = TRUE
+                ORDER BY full_name
+            """)
+            users = [dict(r) for r in cur.fetchall()]
+    users.sort(key=lambda u: (ROLE_ORDER.get(u["role"], 99), u["full_name"] or u["username"]))
+    return {"members": users}
+
+
+@router.get("/psm-snapshot")
+def get_psm_snapshot(username: str, user=Depends(require_auth)):
+    """PSM-specific data: partner health cards + recent intro activity."""
+    caller_role = user.get("role", "") if isinstance(user, dict) else ""
+    caller_name = user.get("username", "") if isinstance(user, dict) else ""
+
+    if caller_role not in ELEVATED_ROLES and caller_name != username:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, username, full_name, role, assigned_partner_ids
+                FROM cvc.users WHERE username = %s AND is_active = TRUE
+            """, [username])
+            psm = cur.fetchone()
+            if not psm:
+                raise HTTPException(status_code=404, detail="User not found")
+
+            partner_ids = list(psm["assigned_partner_ids"] or [])
+            if not partner_ids:
+                return {"partners": [], "recent_intros": []}
+
+            cur.execute("""
+                SELECT
+                    p.id, p.name, p.contract_status,
+                    COUNT(pi.id)                                                          AS total_intros,
+                    COUNT(pi.id) FILTER (WHERE pi.intro_date >= NOW() - INTERVAL '30 days') AS intros_this_month,
+                    MAX(pi.intro_date)                                                    AS last_intro_date,
+                    COUNT(r.id) FILTER (WHERE r.status IN ('open', 'active'))             AS open_requests
+                FROM cvc.partners p
+                LEFT JOIN cvc.partner_intros pi  ON pi.partner_id = p.id
+                LEFT JOIN cvc.requests r         ON r.partner_id  = p.id
+                WHERE p.id = ANY(%s)
+                GROUP BY p.id, p.name, p.contract_status
+                ORDER BY p.name
+            """, [partner_ids])
+            partners = []
+            for r in cur.fetchall():
+                row = dict(r)
+                last = row["last_intro_date"]
+                if last:
+                    days_since = (datetime.now(timezone.utc) - datetime.combine(last, datetime.min.time()).replace(tzinfo=timezone.utc)).days
+                    row["activity_status"] = "active" if days_since <= 30 else ("warm" if days_since <= 90 else "cold")
+                else:
+                    row["activity_status"] = "cold"
+                row["last_intro_date"] = last.isoformat() if last else None
+                row["total_intros"] = int(row["total_intros"])
+                row["intros_this_month"] = int(row["intros_this_month"])
+                row["open_requests"] = int(row["open_requests"])
+                partners.append(row)
+
+            cur.execute("""
+                SELECT pi.id, pi.intro_date, pi.intro_type,
+                       p.id AS partner_id, p.name AS partner_name,
+                       c.id AS company_id, c.name AS company_name
+                FROM cvc.partner_intros pi
+                JOIN cvc.partners p  ON p.id = pi.partner_id
+                LEFT JOIN cvc.companies c ON c.id = pi.company_id
+                WHERE pi.partner_id = ANY(%s)
+                ORDER BY pi.intro_date DESC NULLS LAST
+                LIMIT 20
+            """, [partner_ids])
+            recent_intros = []
+            for r in cur.fetchall():
+                row = dict(r)
+                row["intro_date"] = row["intro_date"].isoformat() if row["intro_date"] else None
+                recent_intros.append(row)
+
+    return {"partners": partners, "recent_intros": recent_intros}
+
+
 @router.delete("/briefings/insights/{insight_id}")
 def delete_briefing_insight(insight_id: int, user=Depends(require_auth)):
     """Remove a single insight from a weekly briefing (irrelevant item clean-up)."""

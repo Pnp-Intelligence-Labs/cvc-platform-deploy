@@ -439,7 +439,6 @@ const CVCNavbar: React.FC = () => {
 
   const coreNavLinks = [
     { path: '/',           label: 'Home',       roles: null },  // null = all roles
-    { path: '/terminal',   label: 'My Terminal',roles: null },
     { path: '/ventures',   label: 'Ventures',   roles: null },
     { path: '/partners',   label: 'Partners',   roles: null },
     { path: '/sales',      label: 'Sales',      roles: null },
@@ -517,16 +516,6 @@ const CVCNavbar: React.FC = () => {
                   }`}
                 >
                   Admin
-                </Link>
-                <Link
-                  to="/ingest"
-                  className={`hidden sm:flex items-center px-3 py-1.5 rounded text-sm font-semibold transition-colors ${
-                    isActive('/ingest')
-                      ? 'bg-cvc-gold text-[#151411]'
-                      : 'bg-white/10 text-white hover:bg-white/20'
-                  }`}
-                >
-                  Ingest
                 </Link>
               </>
             )}

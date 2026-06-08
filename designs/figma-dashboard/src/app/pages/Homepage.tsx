@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import OnboardingWizard from '../components/OnboardingWizard';
 import useEmblaCarousel from 'embla-carousel-react';
 import { Link } from 'react-router';
+import MyDesk from './MyDesk';
 import { Bell, Activity, FileText, ChevronRight, ChevronDown, AlertCircle, CheckCircle2, Building2, GitBranch, Cpu, Rocket, Zap, Trophy, PencilLine, X, Handshake, BadgeDollarSign, ShieldCheck, AlertTriangle, ThumbsUp, MessageCircle, Send, Target, Swords, Info } from 'lucide-react';
 import CVCNavbar from '../components/CVCNavbar';
 import { api } from '../api/client';
@@ -1398,6 +1399,8 @@ export default function Homepage() {
   // Carousel initial slide: PSMs → Pipeline Pulse (1), Ventures → Traction (2), others → Announcements (0)
   const carouselInitialIndex = isPSM ? 1 : isVentures ? 2 : 0;
 
+  const [homeTab, setHomeTab] = useState<'desk' | 'team'>('desk');
+
   const [data, setData]             = useState<DashboardData | null>(null);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
@@ -1460,6 +1463,28 @@ export default function Homepage() {
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
           </p>
         </div>
+
+        {/* Tab switcher */}
+        <div className="flex gap-0 border-b border-slate-200 mb-8 -mt-2">
+          {(['desk', 'team'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setHomeTab(tab)}
+              className={`px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+                homeTab === tab
+                  ? 'border-[#33322c] text-[#33322c]'
+                  : 'border-transparent text-[#787569] hover:text-[#33322c]'
+              }`}
+            >
+              {tab === 'desk' ? 'My Desk' : 'Team'}
+            </button>
+          ))}
+        </div>
+
+        {homeTab === 'desk' ? (
+          <MyDesk />
+        ) : (
+          <>
 
         {loading && (
           <div className="flex items-center justify-center h-64 text-[#787569]">Loading…</div>
@@ -1602,6 +1627,9 @@ export default function Homepage() {
             </div>
 
           </div>
+        )}
+
+          </>
         )}
       </div>
     </div>
