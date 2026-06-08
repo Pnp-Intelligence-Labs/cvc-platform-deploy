@@ -475,7 +475,7 @@ export default function MyDesk() {
       )}
 
       {/* ── Drive Card ── */}
-      <DriveCard />
+      <DriveSection />
 
     </div>
   );
