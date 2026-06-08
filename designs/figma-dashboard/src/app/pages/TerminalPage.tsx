@@ -152,7 +152,7 @@ function DocModal({ doc, onClose }: { doc: DocDetail; onClose: () => void }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function TerminalPage() {
+export function TerminalPanel() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [auth, setAuth]         = useState<{ authenticated: boolean; google_email?: string } | null>(null);
   const [tree, setTree]         = useState<DriveTree | null>(null);
@@ -292,9 +292,7 @@ export default function TerminalPage() {
   const allIds = tree ? collectFileIds(tree) : [];
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6]">
-      <CVCNavbar />
-      <div className="max-w-screen-xl mx-auto px-6 py-8 space-y-4">
+    <div className="space-y-4">
 
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -442,8 +440,18 @@ export default function TerminalPage() {
           </div>
         </div>
         )}
-      </div>
       {detail && <DocModal doc={detail} onClose={() => setDetail(null)} />}
+    </div>
+  );
+}
+
+export default function TerminalPage() {
+  return (
+    <div className="min-h-screen bg-[#FAF9F6]">
+      <CVCNavbar />
+      <div className="max-w-screen-xl mx-auto px-6 py-8">
+        <TerminalPanel />
+      </div>
     </div>
   );
 }

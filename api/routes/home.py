@@ -1157,7 +1157,7 @@ def get_my_desk(as_user: Optional[int] = None, user=Depends(require_auth)):
             cur.execute("""
                 SELECT va.id AS assignment_id, va.title AS assignment_title,
                        va.priority, va.status AS assignment_status, va.created_at,
-                       c.id AS company_id, c.name, c.stage, c.sector, c.score
+                       c.id AS company_id, c.name, c.stage, c.sector, c.score_composite AS score
                 FROM cvc.venture_assignments va
                 LEFT JOIN cvc.companies c ON c.id = va.company_id
                 WHERE va.assigned_to = %s

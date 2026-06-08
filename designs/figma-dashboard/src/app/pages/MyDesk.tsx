@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { AUTH_HEADER as AUTH } from '../api/client';
 import { api } from '../api/client';
+import { TerminalPanel } from './TerminalPage';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -217,30 +218,28 @@ function PartnerHealthCard({ p }: { p: PartnerHealth }) {
   );
 }
 
-function DriveCard() {
+function DriveSection() {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="bg-white border border-slate-200 rounded p-5 flex items-center gap-4">
-      <div className="w-10 h-10 rounded-lg bg-[#ede8d7] flex items-center justify-center shrink-0">
-        <HardDrive className="w-5 h-5 text-[#8a7200]" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-[#33322c]">Drive &amp; Terminal</p>
-        <p className="text-xs text-[#787569]">Access your ingested documents and Drive browser</p>
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <Link
-          to="/terminal"
-          className="px-3 py-1.5 text-xs font-semibold bg-[#33322c] text-white rounded hover:bg-[#151411] transition-colors"
-        >
-          My Terminal →
-        </Link>
-        <Link
-          to="/ingest"
-          className="px-3 py-1.5 text-xs font-semibold border border-slate-200 text-[#33322c] rounded hover:bg-[#ede8d7] transition-colors"
-        >
-          Drive Ingest →
-        </Link>
-      </div>
+    <div className="bg-white border border-slate-200 rounded overflow-hidden">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center gap-3 px-5 py-4 hover:bg-[#f8fafc] transition-colors text-left"
+      >
+        <div className="w-8 h-8 rounded bg-[#ede8d7] flex items-center justify-center shrink-0">
+          <HardDrive className="w-4 h-4 text-[#8a7200]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-[#33322c]">My Terminal</p>
+          <p className="text-xs text-[#787569]">Google Drive browser, document ingestion &amp; Q&amp;A</p>
+        </div>
+        <ChevronDown className={`w-4 h-4 text-[#787569] transition-transform shrink-0 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="border-t border-slate-100 p-5">
+          <TerminalPanel />
+        </div>
+      )}
     </div>
   );
 }
