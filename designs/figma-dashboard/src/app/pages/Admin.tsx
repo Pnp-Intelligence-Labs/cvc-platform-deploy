@@ -201,6 +201,7 @@ function CollapsibleSection({ id, icon, title, sub, badge, open, onToggle, child
 function PersonCard({
   user, userActivity, userAssignments, userRequests, draft, partners, dirty, saving,
   onDraftChange, onSave, onDeactivate, canDeactivate, onResetPassword, canResetPassword,
+  customGrants, onGrantPermission, onRevokePermission,
 }: {
   user: StaffUser;
   userActivity: any[];
