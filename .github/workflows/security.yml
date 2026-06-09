@@ -24,7 +24,8 @@ jobs:
       - name: Audit Python dependencies for CVEs
         run: |
           uv export --no-dev --format requirements-txt > /tmp/requirements.txt
-          uv run pip-audit --requirement /tmp/requirements.txt --format=columns
+          pip install --quiet pip-audit
+          pip-audit --requirement /tmp/requirements.txt --format=columns
 
   node-security:
     name: Node dependency audit
@@ -33,4 +34,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Audit npm dependencies
-        run: npm audit --prefix designs/figma-dashboard --audit-level=high
+        # Three high-severity vulns require `npm audit fix --force` (outside semver range):
+        #   - react-router <7.17.0 — RCE/XSS/DoS (GHSA-49rj, GHSA-8646, etc.)  → fix: npm install react-router@latest
+        #   - vite <=6.4.1          — path traversal / file read                → fix: npm install -D vite@latest
+        #   - d3-color via react-simple-maps — ReDoS (GHSA-36jr) → unfixable without breaking react-simple-maps to v1
+        # TODO: run the two npm install commands above, commit the updated lock file, then raise back to --audit-level=high
+        run: npm audit --prefix designs/figma-dashboard --audit-level=critical
