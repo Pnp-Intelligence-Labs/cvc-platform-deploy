@@ -4,6 +4,103 @@ Running log of work done in this repo. Newest entries at the top. Per project ru
 
 Format: `YYYY-MM-DD — short title` followed by what changed and why.
 
+## 2026-06-08 — full mobile + tablet responsive pass
+
+- `tokens.ts`: `pageTitle`/`reportTitle` → `text-2xl md:text-3xl` (shrinks h1 on mobile across all 17 pages)
+- `CVCPage.tsx`: PageShell replaced inline `padding: 2rem` with `px-4 py-6 md:px-6 md:py-8`
+- `CVCNavbar.tsx`: container `px-8` → `px-4 md:px-8`
+- `Homepage.tsx`: container padding responsive; carousel slide 3 `grid-cols-2` → `grid-cols-1 sm:grid-cols-2`
+- `Ventures.tsx`: tab bar container `px-8` → `px-4 md:px-8 overflow-x-auto`
+- `Admin.tsx`: container padding responsive; KPI row `grid-cols-4` → `grid-cols-2 md:grid-cols-4`; team+announcements `grid-cols-2` → `grid-cols-1 md:grid-cols-2`; issues stats `grid-cols-4` → `grid-cols-2 md:grid-cols-4`
+- `Requests.tsx`: container padding responsive; report detail modal `grid-cols-[220px_1fr]` → `grid-cols-1 md:grid-cols-[220px_1fr]`
+- `CompanySearch.tsx`: container padding responsive
+- `PartnerManagement.tsx`: container padding responsive
+
+## 2026-06-08 — restore Data Explorer nav link
+
+- `plugins/installed/data-explorer/manifest.json`: flipped `nav_enabled` from `false` → `true`
+- Data Explorer now appears in navbar for GP/Principal/Director/Ventures roles
+- Rehosted locally (port 8002)
+
+## 2026-06-08 — Phase 3+4 compliance hardening: data protection, observability, upload security
+
+**What changed:**
+- `core/db/migrations/141_external_api_calls.sql` (new) — audit table for all outbound third-party API calls (OpenRouter, ProxyCurl, Brave, HIBP, Google Drive); tracks service, endpoint, user_id, data_class, pii_stripped, duration_ms, response_status (ISO A.5.19 / SOC 2 CC9.2)
+- `api/middleware/request_logging.py` (new) — structured JSON access log to stdout (one line per request: ts, request_id, method, path, status, duration_ms, ip, user_agent, user_id); attaches `X-Request-ID` response header; `request_id_var` ContextVar lets downstream code attach request IDs to their own logs (ISO A.8.15 / SOC 2 CC7.2)
+- `api/middleware/upload_validator.py` (new) — magic-byte MIME validation using `filetype` library; rejects disallowed file types with HTTP 415 instead of trusting the client-supplied Content-Type header; optional ClamAV virus scan (gated by `CLAMAV_ENABLED=true`) via INSTREAM socket protocol (ISO A.8.12 / NIST 3.14)
+- `api/middleware/ext_api_log.py` (new) — context-manager `log_ext_call(service, ...)` that writes an audit row to `cvc.external_api_calls` on every outbound third-party call; never blocks the call even on DB error (ISO A.5.19 / SOC 2 CC9.2)
+- `api/main.py` — registers `RequestLoggingMiddleware` as outermost middleware; upload limit now reads `MAX_UPLOAD_MB` env var (default 25 MB, down from hardcoded 150 MB)
+- `api/routes/partners.py` — (1) magic-byte MIME validation on `POST /{id}/documents` and `POST /{id}/contract` via `validate_upload()`; (2) `log_ext_call("openrouter", ...)` wraps all three LLM background functions (`_analyze_document_bg`, `_analyze_document_vision_bg`, `_extract_contract_services_bg`) to audit every OpenRouter call
+- `docker-compose.yml` — `MINIO_SECURE` now reads from env (`${MINIO_SECURE:-false}`) instead of being hardcoded to `"false"`; production deployments that set `MINIO_SECURE=true` now work correctly
+- `docker-compose.logging.yml` (new) — optional Loki + Grafana + Promtail compose overlay; activates centralised log aggregation with 90-day retention; usage: `docker compose -f docker-compose.yml -f docker-compose.logging.yml up -d`
+- `docs/compliance/monitoring/alert_queries.sql` (new) — 12 SQL alert queries against `cvc.auth_events` and `cvc.external_api_calls`: brute-force detection, lockout monitor, admin action auditing, MFA failure detection, SSO first-seen-IP alerts, external API spike detection, and daily auth event summary (ISO A.8.16 / SOC 2 CC7.2)
+- `.env.example` — added `MAX_UPLOAD_MB`, `MFA_REQUIRED_ROLES`, `MFA_ISSUER`, `HIBP_CHECK_ENABLED`, `DATA_CLASSIFICATION_MODE`, `LOG_LEVEL`, `CLAMAV_ENABLED/HOST/PORT`, `GRAFANA_ADMIN_PASSWORD`
+- `pyproject.toml` — added `filetype>=1.2.0` dependency (run `uv sync` after pull)
+
+**Why:** Phases 3+4 of ISO 27001:2022 / NIST SP 800-171 / SOC 2 Type 2 compliance. Closes gaps in: data protection (upload validation, external API audit), observability (structured logging, alert queries), and MinIO TLS configurability. Required for SOC 2 Type 2 observation period and ISO 27001 ISMS documentation.
+
+## 2026-06-08 — Phase 2 compliance hardening: password policy, lockout, dual-token JWT, MFA
+
+**What changed:**
+- `core/db/migrations/140_mfa_and_lockout.sql` (new) — `cvc.auth_lockouts` (5-fail/30-min lockout), `cvc.user_password_history` (last 5 hashes), MFA columns on `cvc.users` (`mfa_enabled`, `mfa_secret_enc`, `mfa_confirmed`)
+- `pyproject.toml` — added `pyotp>=2.9.0` dependency (run `uv sync` after pull)
+- `api/routes/auth.py` — full rewrite incorporating Phase 2:
+  - Password policy: 12-char min, uppercase+lowercase+digit+special required, HIBP k-anonymity check (`HIBP_CHECK_ENABLED` env, default on), last-5 password history on reset
+  - Account lockout: 5 failures → 30-min DB-backed lock; `DELETE /auth/users/{id}/lockout` for GP unlock
+  - Dual-token: 15-min access (`typ=access`, `jti`) + 8-hour refresh (`typ=refresh`); `require_jwt` now rejects non-access tokens
+  - `POST /auth/mfa/challenge` — completes login when MFA enrolled; validates challenge JWT + TOTP → returns full token pair
+  - `POST /auth/refresh` now accepts `{refresh_token}` body (not Authorization header)
+- `api/routes/mfa.py` (new) — `POST /auth/mfa/setup`, `POST /auth/mfa/verify`, `DELETE /auth/mfa`; TOTP secrets encrypted at rest via Fernet (key derived from JWT_SECRET)
+- `api/main.py` — registers MFA router at `/auth/mfa` (auth-protected)
+- `api/routes/keycloak.py` — SSO exchange now returns `access_token` + `refresh_token`
+- `designs/figma-dashboard/src/app/api/client.ts` — `api.login()` now handles `mfa_required` response; `api.mfaChallenge()`, `api.refreshTokens()`, `api.ensureFreshToken()` added; `_storeAuthData` stores `platform_refresh_jwt`; `isLoggedIn()` falls back to refresh-token validity; `_scheduleRefresh()` auto-refreshes 2 min before access-token expiry; `logout()` clears both tokens
+- `designs/figma-dashboard/src/app/components/AuthGuard.tsx` — calls `ensureFreshToken()` before auth check; shows null during async refresh (no flash of protected content)
+- `designs/figma-dashboard/src/app/pages/LoginPage.tsx` — adds MFA challenge step: 6-digit code input screen shown when `mfa_required: true`; "Back to login" cancels challenge
+
+**Why:** Phase 2 of ISO 27001:2022 / NIST SP 800-171 / SOC 2 Type 2 compliance. Covers NIST 3.5.3 (MFA), 3.5.7 (password complexity), NIST 3.1.3 (session expiry), ISO A.8.2 (privileged access control), SOC 2 CC6.1 (logical access). Required before audit engagement.
+
+## 2026-06-08 — Phase 1 compliance hardening (ISO 27001 / NIST SP 800-171 / SOC 2 Type 2)
+
+**What changed:**
+- `api/middleware/security_headers.py` (new) — injects HSTS, CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy on all responses (ISO A.8.26 / NIST 3.13)
+- `api/middleware/rate_limit.py` (new) — in-memory sliding-window rate limiter (thread-safe, no extra dep)
+- `api/middleware/__init__.py` (new) — package init
+- `api/main.py` — registers SecurityHeadersMiddleware as outermost middleware
+- `api/routes/auth.py` — (1) rate limits `/auth/login` to 5 attempts/15 min per IP (NIST 3.5); (2) logs all login success/failure/SSO/deactivation/password-reset events to `cvc.auth_events` (ISO A.8.15 / NIST 3.3 / SOC 2 CC7.2); (3) adds `token_invalidated_at` check in `require_jwt` — deactivated users and password-reset users lose all active tokens immediately (SOC 2 CC6.1); (4) deactivate + reset-password now set `token_invalidated_at = NOW()`; (5) `_create_token` now sets explicit `iat` claim; (6) `_log_auth_event` helper (never raises — logging never blocks auth)
+- `api/routes/keycloak.py` — (1) `email_verified` check before email-based account linking prevents account takeover via unverified KC identities; (2) rate limits `/keycloak/exchange` to 10/min per IP; (3) logs `sso_login` and `sso_rate_limited` events
+- `core/db/migrations/138_auth_events.sql` (new) — `cvc.auth_events` table with indexes on user_id, event_type, created_at, ip_address
+- `core/db/migrations/139_auth_hardening.sql` (new) — adds `token_invalidated_at` column to `cvc.users`
+- `scripts/docker_entrypoint.sh` — production startup checks: blocks start if `ENVIRONMENT=production` and `MINIO_SECURE!=true`, JWT_SECRET empty, or DB_PASSWORD empty
+
+**Why:** First phase of ISO 27001:2022 / NIST SP 800-171 / SOC 2 Type 2 compliance program. These are the critical pre-requisites that auditors check first: auth logging, rate limiting, token revocation, and security headers.
+
+## 2026-06-08 — Keycloak SSO security hardening + DuploCloud deployment guide
+
+**What changed:**
+- `api/routes/keycloak.py` — 6 fixes: (1) deactivated users now get HTTP 403 instead of a valid JWT via ON CONFLICT upsert path; (2) role extraction supports dot-notation (`realm_access.roles`) via nested dict traversal; (3) JWKS cache uses double-checked `threading.Lock` + 60s failure back-off to prevent thundering herd during Keycloak outage; (4) Keycloak role changes now propagate on every login (`role = EXCLUDED.role` added to ON CONFLICT SET clause); (5) pre-auth deep-link destination encoded in state JWT (`from` field) and accepted as `?from=` query param on `/login-url`; (6) state JWT gets `"typ": "oidc_state"` claim to prevent cross-use with platform session JWTs.
+- `.env.example` — `DJANGO_SECRET_KEY` commented out (was active with weak placeholder); `KEYCLOAK_ROLE_CLAIM` comment updated to show all valid forms including dot-notation.
+- `designs/figma-dashboard/src/app/api/client.ts` — extracted private `_storeAuthData()` helper as single source of truth for localStorage key names; added `api.storeAuthData()` public method used by OIDCCallback.
+- `designs/figma-dashboard/src/app/pages/OIDCCallback.tsx` — uses `api.storeAuthData()` instead of inline localStorage writes; decodes `from` from state JWT to restore pre-auth deep-link destination.
+- `designs/figma-dashboard/src/app/pages/LoginPage.tsx` — added 3s `AbortController` timeout on `/auth/keycloak/config` fetch (login form now always renders ≤3s even if backend is slow); passes `from` path to `/auth/keycloak/login-url`.
+- `scripts/run_local.sh` — removed `--quiet` from `uv sync` so lockfile errors surface at install time.
+- `docs/KEYCLOAK_DUPLO.md` — expanded into full deployment guide: new Security Checklist section, step-by-step DuploCloud Keycloak service setup (env vars, image pin, KC_PROXY, load balancer), redirect URI verification guide, updated How It Works flow showing `from`-path preservation, deactivated accounts section.
+
+**Why:** Code review of Keycloak SSO diff found 10 bugs. All fixed. DuploCloud guide expanded so second team can independently deploy Keycloak and wire it to the platform.
+
+## 2026-06-04 — UV/Ruff tooling + Django Ninja scaffold
+
+**What changed:**
+- `pyproject.toml` (new at root) — single source of truth for all Python deps; replaces `requirements.txt`. Includes Ruff + BasedPyright dev deps, Django Ninja deps for parallel backend migration.
+- `uv.lock` (new) — deterministic lockfile generated by `uv lock` (139 packages).
+- `.python-version` (new) — pins Python 3.11 for UV.
+- `Dockerfile` — migrated from `pip install -r requirements.txt` to `uv sync --frozen --no-dev` using the official UV Docker layer.
+- `scripts/run_local.sh` — replaced pip/venv block with `uv sync`; runs uvicorn via `uv run`.
+- `.env.example` — added Keycloak, Google Drive, Ollama, and Django secret key vars.
+- `backend/` (new) — Django 5 + Django Ninja project scaffold (`config/` settings, `api/routes/`). Runs on port 8003 alongside FastAPI; `config.py` route migrated as first example. Incremental migration: FastAPI stays live, routes move one module at a time.
+- `README.md` — updated Local Development section with UV prerequisites, Django backend instructions, dev workflow (`ruff`, `basedpyright`), demo data dump/restore commands. Updated Architecture table.
+
+**Why:** Agreed migration plan from meeting 2026-06-04. UV replaces pip for faster installs and deterministic locks. Ruff replaces no linter. Django Ninja chosen for low migration friction (FastAPI-like syntax). SQL dump deferred — Docker Desktop `/tmp` I/O errors on host machine prevented `docker exec`.
+
 ## 2026-05-29 — Remove unused imports (dead-code sweep)
 
 **What changed:** Removed 4 verified-unused imports (zero call sites, confirmed by grep). No rebuild needed — backend only.
@@ -261,3 +358,14 @@ Each new change appends an entry under today's date with:
 - fix: /terminal missing from Vite dev proxy (was causing 404 on all terminal API calls in dev)
 - feat: async Drive ingest — POST /terminal/ingest and POST /drive/ingest now return job_id immediately; GET /ingest/{job_id} for polling
 - feat: TerminalPage + DriveIngestPage show per-file progress counter while ingesting (no more blocking spinner)
+
+## 2026-06-04 — Keycloak OIDC SSO
+- Added full Keycloak OIDC auth flow (Authorization Code + JWKS validation)
+- New: api/routes/keycloak.py — /auth/keycloak/config, /login-url, /exchange endpoints
+- New: core/db/migrations/137_keycloak_auth.sql — keycloak_sub column, password_hash nullable
+- New: designs/figma-dashboard/src/app/pages/OIDCCallback.tsx — OIDC redirect handler
+- Updated: LoginPage.tsx — SSO button (auto-hides when KC not configured)
+- Updated: routes.tsx — /auth/callback public route
+- New: docs/KEYCLOAK_DUPLO.md — DuploCloud deployment guide
+- Stateless HMAC state (no server storage), auto-provisions users from KC claims
+- Zero changes to require_jwt or any existing endpoints — platform JWT unchanged

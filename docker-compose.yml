@@ -63,7 +63,7 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-platform}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-platform_local}
       MINIO_BUCKET: ${MINIO_BUCKET:-platform-documents}
-      MINIO_SECURE: "false"
+      MINIO_SECURE: ${MINIO_SECURE:-false}
       # Optional — plugins use these if present; leave empty to disable
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       BRAVE_API_KEY: ${BRAVE_API_KEY:-}

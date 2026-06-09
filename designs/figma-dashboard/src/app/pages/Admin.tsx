@@ -1047,7 +1047,7 @@ export default function Admin() {
   return (
     <div className={cls.page}>
       <CVCNavbar />
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-6 md:px-6 md:py-8">
 
         {/* Page header */}
         <div className="mb-6">
@@ -1057,7 +1057,7 @@ export default function Admin() {
 
         {/* ── KPI Row ──────────────────────────────────────────────────────── */}
         {kpis && (
-          <div className="grid grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
 
             {/* Sales */}
             <div className="bg-white border border-slate-200 rounded-xl px-5 py-4 space-y-2">
@@ -1228,7 +1228,7 @@ export default function Admin() {
             </div>
 
             {/* ── 2-col: Team list + Announcements ── */}
-            <div className="grid grid-cols-2 gap-6 items-stretch">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
 
               {/* Left: Team list */}
               {(() => {
@@ -1609,7 +1609,7 @@ export default function Admin() {
               open={open.issues}
               onToggle={() => toggle('issues')}
             >
-              <div className="grid grid-cols-4 gap-4 mb-5">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
                 {[
                   { label: 'High', count: highCount,  cls: 'bg-red-50 border-red-200 text-red-600 text-red-500' },
                   { label: 'Medium', count: mediumCount, cls: 'bg-amber-50 border-amber-200 text-amber-700 text-amber-500' },

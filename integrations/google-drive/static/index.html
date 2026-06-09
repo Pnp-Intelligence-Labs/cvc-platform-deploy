@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Google Drive Ingestion</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <p class="eyebrow">Standalone integration</p>
+      <h1>Google Drive Ingestion Engine</h1>
+      <p class="lede">
+        Sign in with Google, preview a folder or file link, then pull documents locally for platform ingestion.
+      </p>
+    </header>
+
+    <section class="card" id="auth-card">
+      <div class="row between">
+        <div>
+          <h2>1. Connect Google Drive</h2>
+          <p id="auth-status" class="muted">Checking session...</p>
+        </div>
+        <div class="actions">
+          <a class="button primary" id="login-btn" href="/auth/login">Sign in with Google</a>
+          <button class="button ghost" id="logout-btn" hidden type="button">Sign out</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="ingest-card">
+      <h2>2. Preview and ingest</h2>
+      <form id="ingest-form">
+        <label>
+          Drive folder or file URL
+          <input
+            id="drive-url"
+            name="drive_url"
+            type="url"
+            placeholder="https://drive.google.com/drive/folders/..."
+            required
+          />
+        </label>
+        <label>
+          Job name
+          <input id="job-name" name="job_name" type="text" value="dataroom" required />
+        </label>
+        <div class="actions">
+          <button class="button secondary" id="preview-btn" type="button">Preview files</button>
+          <button class="button primary" id="ingest-btn" type="submit">Ingest to local storage</button>
+        </div>
+      </form>
+      <p id="form-message" class="message" hidden></p>
+    </section>
+
+    <section class="card">
+      <div class="row between">
+        <h2>Preview</h2>
+        <span id="preview-count" class="badge">0 files</span>
+      </div>
+      <div id="preview-list" class="preview-list muted">No preview yet.</div>
+    </section>
+
+    <section class="card" id="job-results-card" hidden>
+      <h2>Last job</h2>
+      <div id="job-results"></div>
+    </section>
+
+    <section class="card">
+      <h2>Recent jobs</h2>
+      <div id="jobs-list" class="jobs-list muted">No jobs yet.</div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1893,7 +1893,7 @@ function DataExplorerModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <div className="p-6 grid grid-cols-[220px_1fr] gap-6">
+        <div className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6">
 
           {/* Template picker */}
           <div>
@@ -2548,7 +2548,7 @@ export default function RequestsPage() {
   return (
     <div className={cls.page}>
       <CVCNavbar />
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-6 md:px-6 md:py-8">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-5">

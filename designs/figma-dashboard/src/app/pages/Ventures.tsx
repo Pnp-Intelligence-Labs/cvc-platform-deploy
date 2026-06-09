@@ -20,7 +20,7 @@ export default function Ventures() {
     <div className="min-h-screen bg-linen">
       <CVCNavbar />
       <div className="border-b border-slate-200 bg-white sticky top-14 z-40">
-        <div className="max-w-[1800px] mx-auto px-8 flex gap-0">
+        <div className="max-w-[1800px] mx-auto px-4 md:px-8 flex gap-0 overflow-x-auto">
           {TABS.map(t => (
             <button
               key={t}

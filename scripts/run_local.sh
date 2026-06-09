@@ -37,13 +37,12 @@ else
     echo "PostgreSQL already running."
 fi
 
-# ── Python venv ───────────────────────────────────────────────────────────────
-if [[ ! -d "$REPO/.venv" ]]; then
-    echo "Creating Python venv..."
-    python3 -m venv "$REPO/.venv"
-    "$REPO/.venv/bin/pip" install --quiet --upgrade pip
-    "$REPO/.venv/bin/pip" install --quiet -r "$REPO/requirements.txt"
+# ── Install deps ──────────────────────────────────────────────────────────────
+if ! command -v uv >/dev/null 2>&1; then
+    echo "ERROR: uv not found. Install: curl -LsSf https://astral.sh/uv/install.sh | sh"
+    exit 1
 fi
+uv sync
 
 # ── Start API ─────────────────────────────────────────────────────────────────
 if pgrep -f "uvicorn api.main:app" >/dev/null 2>&1; then
@@ -55,12 +54,11 @@ echo ""
 echo "Platform running at http://127.0.0.1:8002/app"
 echo ""
 
-source "$REPO/.venv/bin/activate"
 export DB_HOST=localhost
 export DB_PORT=5432
 export DB_NAME=platform_db
 export DB_USER=platform
 export DB_PASSWORD=platform_local
 
-PYTHONPATH="$REPO:$REPO/core" exec python -m uvicorn api.main:app \
+PYTHONPATH="$REPO:$REPO/core" exec uv run uvicorn api.main:app \
     --host 127.0.0.1 --port 8002 --reload

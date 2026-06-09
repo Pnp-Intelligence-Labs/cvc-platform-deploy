@@ -26,6 +26,43 @@ export const AUTH_HEADER = new Proxy({} as { Authorization: string }, {
   },
 });
 
+// Single source of truth for auth storage key names.
+function _storeAuthData(data: {
+  access_token?: string;
+  refresh_token?: string;
+  username?: string;
+  role?: string;
+  full_name?: string | null;
+}): void {
+  if (data.access_token)  localStorage.setItem('platform_jwt', data.access_token);
+  if (data.refresh_token) localStorage.setItem('platform_refresh_jwt', data.refresh_token);
+  if (data.username != null) {
+    localStorage.setItem('platform_user', JSON.stringify({
+      username: data.username,
+      role: data.role,
+      full_name: data.full_name ?? null,
+    }));
+  }
+  // Schedule silent refresh ~2 min before access token expires
+  if (data.access_token) _scheduleRefresh(data.access_token);
+}
+
+let _refreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+function _scheduleRefresh(accessToken: string): void {
+  if (_refreshTimer) clearTimeout(_refreshTimer);
+  try {
+    const payload = JSON.parse(atob(accessToken.split('.')[1]));
+    const expiresIn = payload.exp * 1000 - Date.now();
+    const refreshIn = Math.max(expiresIn - 2 * 60 * 1000, 5000); // 2 min before expiry, min 5s
+    _refreshTimer = setTimeout(() => {
+      api.refreshTokens().catch(() => {/* silent — AuthGuard handles expiry */});
+    }, refreshIn);
+  } catch {
+    // ignore malformed token
+  }
+}
+
 export const api = {
   // Company Search
   async searchCompanies(params: {
@@ -484,28 +521,94 @@ export const api = {
   },
 
   // Auth
-  async login(username: string, password: string): Promise<void> {
+  async login(username: string, password: string): Promise<{ mfa_required: boolean; mfa_token?: string }> {
     const response = await fetch('/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: username.trim().toLowerCase(), password }),
     });
-    if (!response.ok) throw new Error('Invalid username or password');
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.detail || 'Invalid username or password');
+    }
     const data = await response.json();
-    localStorage.setItem('platform_jwt', data.access_token);
-    localStorage.setItem('platform_user', JSON.stringify({ username: data.username, role: data.role, full_name: data.full_name }));
+    if (data.mfa_required) {
+      return { mfa_required: true, mfa_token: data.mfa_token };
+    }
+    _storeAuthData(data);
+    return { mfa_required: false };
+  },
+
+  async mfaChallenge(mfa_token: string, totp_code: string): Promise<void> {
+    const response = await fetch('/auth/mfa/challenge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mfa_token, totp_code }),
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.detail || 'Invalid MFA code');
+    }
+    _storeAuthData(await response.json());
+  },
+
+  async refreshTokens(): Promise<boolean> {
+    const refreshToken = localStorage.getItem('platform_refresh_jwt');
+    if (!refreshToken) return false;
+    try {
+      const response = await fetch('/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      if (!response.ok) return false;
+      _storeAuthData(await response.json());
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  async ensureFreshToken(): Promise<void> {
+    const token = localStorage.getItem('platform_jwt');
+    if (!token) return;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const expiresIn = payload.exp * 1000 - Date.now();
+      // Refresh if access token expires within 2 minutes
+      if (expiresIn < 2 * 60 * 1000) {
+        await this.refreshTokens();
+      }
+    } catch {
+      // ignore
+    }
+  },
+
+  storeAuthData(data: { access_token?: string; refresh_token?: string; username?: string; role?: string; full_name?: string | null }): void {
+    _storeAuthData(data);
   },
 
   logout(): void {
+    if (_refreshTimer) clearTimeout(_refreshTimer);
+    _refreshTimer = null;
     localStorage.removeItem('platform_jwt');
+    localStorage.removeItem('platform_refresh_jwt');
     localStorage.removeItem('platform_user');
   },
 
   isLoggedIn(): boolean {
     const token = localStorage.getItem('platform_jwt');
-    if (!token) return false;
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.exp * 1000 > Date.now()) return true;
+      } catch { /* fall through */ }
+    }
+    // Access token expired or missing — check if refresh token is still valid
+    const refresh = localStorage.getItem('platform_refresh_jwt');
+    if (!refresh) return false;
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = JSON.parse(atob(refresh.split('.')[1]));
       return payload.exp * 1000 > Date.now();
     } catch {
       return false;

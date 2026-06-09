@@ -1227,7 +1227,7 @@ function HomeCarousel({ messages, expandedMsg, setExpandedMsg, initialIndex }: {
 
           {/* Slide 3: Corporate Traction + Portfolio Pulse — 50/50 */}
           <div className="flex-[0_0_100%] min-w-0 h-[280px]">
-            <div className="grid grid-cols-2 gap-4 h-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 h-full">
               <div className="overflow-y-auto h-full"><TractionSidebar /></div>
               <div className="overflow-y-auto h-full"><PortfolioPulseWidget /></div>
             </div>
@@ -1453,7 +1453,7 @@ export default function Homepage() {
         />
       )}
 
-      <div className="max-w-[1400px] mx-auto px-6 py-8">
+      <div className="max-w-[1400px] mx-auto px-4 py-6 md:px-6 md:py-8">
 
         {/* Report Header */}
         <div className="border-b-2 border-[#33322c] pb-5 mb-8">

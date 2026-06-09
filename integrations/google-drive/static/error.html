@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign-in Error</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <main class="shell" style="max-width:560px">
+    <header class="hero">
+      <p class="eyebrow">Google Drive Ingestion</p>
+      <h1 style="font-size:clamp(1.8rem,4vw,2.6rem)">Sign-in failed</h1>
+      <p class="lede" id="error-message">An error occurred during Google sign-in.</p>
+    </header>
+
+    <section class="card">
+      <p id="error-detail" class="muted" style="margin:0 0 20px"></p>
+      <div class="actions">
+        <a class="button primary" href="/auth/login">Try again</a>
+        <a class="button ghost" href="/">Back to home</a>
+      </div>
+    </section>
+
+    <section class="card" id="help-card">
+      <h2 style="font-size:1rem;margin-bottom:12px">Common causes</h2>
+      <ul style="margin:0;padding-left:20px;line-height:1.8;color:var(--muted);font-size:0.9rem">
+        <li><strong>org_internal</strong> — OAuth consent screen is set to Internal. Change it to External in GCP Console, or add your email as a test user.</li>
+        <li><strong>redirect_uri_mismatch</strong> — Add <code>http://127.0.0.1:8085/oauth2callback</code> to Authorized redirect URIs in your GCP OAuth client.</li>
+        <li><strong>access_denied</strong> — You declined Drive access. Try again and click Allow.</li>
+      </ul>
+    </section>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const msg = params.get("message");
+    const detail = params.get("detail");
+    if (msg) document.getElementById("error-message").textContent = msg;
+    if (detail) document.getElementById("error-detail").textContent = detail;
+  </script>
+</body>
+</html>

@@ -58,12 +58,53 @@ The installer handles everything: dependencies → `.env` → team config → fr
 
 ## Local Development
 
+**Prerequisites:** Docker Desktop, Node 18+, [`uv`](https://docs.astral.sh/uv/getting-started/installation/)
+
 ```bash
-bash scripts/run_local.sh        # starts PostgreSQL (Docker) + API at :8002
-cd designs/figma-dashboard && npm run dev   # frontend dev server at :5173
+curl -LsSf https://astral.sh/uv/install.sh | sh   # install uv (once)
+```
+
+```bash
+cp .env.example .env                              # fill in DB_PASSWORD and JWT_SECRET
+uv sync                                           # install all Python deps
+bash scripts/run_local.sh                         # PostgreSQL (Docker) + FastAPI at :8002
+cd designs/figma-dashboard && npm run dev         # frontend dev server at :5173
+```
+
+Django backend (parallel migration, port 8003):
+
+```bash
+DJANGO_SETTINGS_MODULE=config.settings \
+PYTHONPATH="$PWD/backend:$PWD" \
+uv run python backend/manage.py runserver 8003
 ```
 
 Default login: `admin` / `changeme`
+
+### Dev workflow
+
+```bash
+uv run ruff check .          # lint
+uv run ruff format .         # format
+uv run basedpyright          # type check
+```
+
+### Demo data
+
+Generate the SQL dump from your running local DB (run once, then commit):
+
+```bash
+docker exec platform-db sh -c "pg_dump -U platform platform_db" > data/demo_data.sql
+```
+
+Restore on a fresh install:
+
+```bash
+# via Docker container
+docker exec -i platform-db psql -U platform platform_db < data/demo_data.sql
+# or via local psql
+psql -h localhost -U platform platform_db < data/demo_data.sql
+```
 
 ---
 
@@ -71,14 +112,20 @@ Default login: `admin` / `changeme`
 
 | Layer | Stack |
 |---|---|
-| Backend | FastAPI (Python 3.10+), port 8002 |
+| Backend (current) | FastAPI + Uvicorn, Python 3.11, port 8002 |
+| Backend (migrating) | Django 5 + Django Ninja, port 8003 — incremental migration in progress |
 | Frontend | React SPA — Vite + Tailwind, served at `/app` |
-| Database | PostgreSQL 16 (Docker) |
-| Auth | JWT HS256, 7-day tokens |
+| Database | PostgreSQL 16 |
+| Auth | JWT HS256, 7-day tokens (Keycloak OIDC scaffolded) |
+| Tooling | `uv` package manager, `ruff` linter/formatter, `basedpyright` type checker |
 | Plugins | Discovered from `plugins/installed/` at startup |
 
 ```
-├── api/                    # FastAPI backend
+├── backend/                # Django Ninja backend (incremental migration from api/)
+│   ├── manage.py
+│   ├── config/             # Django project settings, urls
+│   └── api/routes/         # Migrated route modules (Django Ninja)
+├── api/                    # FastAPI backend (active)
 │   ├── main.py             # App entry point — routes, CORS, plugin loader
 │   ├── auth.py             # JWT auth middleware
 │   ├── plugin_loader.py    # Discovers and mounts installed plugins
@@ -116,6 +163,11 @@ Default login: `admin` / `changeme`
 | `OPENROUTER_API_KEY` | Plugin | AI enrichment, partner analysis, report builder |
 | `BRAVE_API_KEY` | Plugin | Company news, research signals |
 | `PROXYCURL_API_KEY` | Plugin | Founder LinkedIn data |
+| `KEYCLOAK_URL` | Optional | Keycloak server URL for OIDC auth |
+| `KEYCLOAK_REALM` | Optional | Keycloak realm name |
+| `KEYCLOAK_CLIENT_ID` | Optional | Keycloak client ID |
+| `KEYCLOAK_CLIENT_SECRET` | Optional | Keycloak client secret |
+| `DJANGO_SECRET_KEY` | Django | Secret key for Django backend (port 8003) |
 
 ---
 

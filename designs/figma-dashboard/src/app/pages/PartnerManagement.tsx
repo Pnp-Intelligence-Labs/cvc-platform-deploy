@@ -1008,7 +1008,7 @@ export default function PartnerManagement() {
     <div className={cls.page}>
       <CVCNavbar />
 
-      <main className="max-w-[1400px] mx-auto px-6 py-8">
+      <main className="max-w-[1400px] mx-auto px-4 py-6 md:px-6 md:py-8">
         {/* Report header */}
         <div className="border-b-2 border-[#33322c] pb-5 mb-6">
           <div className="text-[10px] font-bold uppercase tracking-widest text-[#787569] mb-2">

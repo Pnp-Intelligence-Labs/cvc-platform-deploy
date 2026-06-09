@@ -1,0 +1,69 @@
+[project]
+name = "cvc-platform"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    # Core API
+    "fastapi==0.135.3",
+    "uvicorn[standard]==0.44.0",
+    "pydantic==2.12.5",
+    "python-multipart==0.0.26",
+    # Database
+    "psycopg2-binary==2.9.9",
+    # Auth
+    "python-jose[cryptography]==3.5.0",
+    "bcrypt==3.2.2",
+    # HTTP
+    "requests==2.31.0",
+    # Config
+    "python-dotenv>=1.0.0",
+    # Document processing
+    "pdfplumber==0.11.4",
+    "python-docx==1.1.2",
+    # Object storage
+    "minio==7.2.20",
+    # ML / recommendations
+    "numpy>=1.26.0",
+    "sentence-transformers>=3.0.0",
+    # MFA (TOTP / RFC 6238)
+    "pyotp>=2.9.0",
+    # Upload security — magic-byte MIME detection (ISO 27001 A.8.12 / NIST 3.14)
+    "filetype>=1.2.0",
+    # Google Drive integration
+    "google-auth>=2.40.0",
+    "google-auth-oauthlib>=1.2.0",
+    "google-auth-httplib2>=0.2.0",
+    "google-api-python-client>=2.179.0",
+    # DD plugin — file conversion
+    "markitdown>=0.1.0",
+    "pandas>=2.0.0",
+    "openpyxl>=3.1.0",
+    # Django Ninja (parallel backend — incremental FastAPI migration)
+    "django>=5.1",
+    "django-ninja>=1.3",
+    "django-cors-headers>=4.0",
+    "djangorestframework-simplejwt>=5.3",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.9",
+    "basedpyright>=1.20",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.basedpyright]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"
+include = ["api", "core", "backend"]

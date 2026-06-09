@@ -14,6 +14,7 @@ import DataExplorerPage from "./pages/DataExplorerPage";
 import ReportsPage from "./pages/ReportsPage";
 import DriveIngestPage from "./pages/DriveIngestPage";
 import TerminalPage from "./pages/TerminalPage";
+import OIDCCallback from "./pages/OIDCCallback";
 
 function Guard({ component: Component }: { component: React.ComponentType }) {
   return <AuthGuard><Component /></AuthGuard>;
@@ -45,6 +46,7 @@ function AppError() {
 export const router = createBrowserRouter([
   // Public
   { path: "/login", Component: LoginPage },
+  { path: "/auth/callback", Component: OIDCCallback },
 
   // Core pages
   { path: "/",                        Component: () => <Guard component={Homepage} />,         errorElement: <AppError /> },

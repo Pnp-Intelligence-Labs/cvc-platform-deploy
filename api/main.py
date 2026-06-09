@@ -8,6 +8,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse
 import os
 
+from api.middleware.security_headers import SecurityHeadersMiddleware
+from api.middleware.request_logging import RequestLoggingMiddleware
+
 from api.routes.companies import router as companies_router
 from api.routes.sourcing import router as sourcing_router
 from api.routes.shortlists import router as shortlists_router
@@ -23,6 +26,8 @@ from api.routes.sales import router as sales_router
 from api.routes.meeting_notes import router as meeting_notes_router
 from api.routes.auth import router as auth_router
 from api.routes.config import router as config_router
+from api.routes.keycloak import router as keycloak_router
+from api.routes.mfa import router as mfa_router
 from api.routes.recommendations import router as recommendations_router
 from api.routes.drive import router as drive_router, public_router as drive_public_router
 from api.routes.terminal import router as terminal_router
@@ -73,7 +78,13 @@ class LimitUploadSize(BaseHTTPMiddleware):
         return await call_next(request)
 
 
-app.add_middleware(LimitUploadSize, max_upload_mb=150)
+_max_upload_mb = int(os.environ.get("MAX_UPLOAD_MB", "25"))
+app.add_middleware(LimitUploadSize, max_upload_mb=_max_upload_mb)
+
+# Security headers — must be outermost so headers are set on all responses
+app.add_middleware(SecurityHeadersMiddleware)
+# Request logging — outermost so it captures final status code + security headers in timing
+app.add_middleware(RequestLoggingMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -121,6 +132,9 @@ app.include_router(terminal_router, prefix="/terminal", tags=["terminal"])
 
 # Auth routes — public
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(keycloak_router, prefix="/auth/keycloak", tags=["auth"])
+app.include_router(mfa_router, prefix="/auth/mfa", tags=["auth"],
+                   dependencies=[Depends(require_auth)])
 app.include_router(config_router, prefix="/config", tags=["config"])
 
 # Plugins — discovered from plugins/installed/ at startup

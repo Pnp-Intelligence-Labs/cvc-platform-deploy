@@ -103,10 +103,10 @@ export const cls = {
 
   // ── Typography ──────────────────────────────────────────────────────────────
   // Change pageTitle here → all page h1s update at once
-  pageTitle:    'text-3xl font-extrabold tracking-tight text-[#1E293B]',
+  pageTitle:    'text-2xl md:text-3xl font-extrabold tracking-tight text-[#1E293B]',
   sectionTitle: 'text-lg font-bold text-[#334155]',
   cardTitle:    'text-base font-semibold text-[#1E293B]',
-  reportTitle:  'text-3xl font-extrabold tracking-tight text-[#1E293B]',  // page compat
+  reportTitle:  'text-2xl md:text-3xl font-extrabold tracking-tight text-[#1E293B]',  // page compat
 
   // Metadata / technical labels — monospace all-caps for precision-tool feel
   meta:    'font-mono text-[10px] uppercase tracking-widest text-slate-500 font-bold',

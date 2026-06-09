@@ -1,0 +1,62 @@
+# docker-compose.logging.yml — Optional Loki + Grafana log stack
+#
+# Adds centralised log aggregation (SOC 2 CC7.2 / ISO 27001 A.8.15).
+# Promtail ships the JSON access logs from the API container to Loki.
+# Grafana provides dashboards and alert rules.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.logging.yml up -d
+#
+# Grafana:  http://localhost:3000  (admin / changeme — change immediately)
+# Loki API: http://localhost:3100
+#
+# Retention: Loki retains logs for 90 days by default (SOC 2 requires logs
+# to cover the entire observation period, typically 6–12 months).
+# Increase retention_period in loki-config.yaml for longer audits.
+
+services:
+  loki:
+    image: grafana/loki:2.9.4
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+      - ./config/loki-config.yaml:/etc/loki/local-config.yaml:ro
+    command: -config.file=/etc/loki/local-config.yaml
+
+  promtail:
+    image: grafana/promtail:2.9.4
+    restart: unless-stopped
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/promtail-config.yaml:/etc/promtail/config.yaml:ro
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on: [loki]
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-changeme}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on: [loki]
+
+  # Override API service to add JSON log driver so Promtail can parse it
+  api:
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "10"
+        tag: "{{.Name}}"
+
+volumes:
+  loki_data:
+  grafana_data:

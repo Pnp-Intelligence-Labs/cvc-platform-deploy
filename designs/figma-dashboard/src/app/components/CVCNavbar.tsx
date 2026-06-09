@@ -466,7 +466,7 @@ const CVCNavbar: React.FC = () => {
   return (
     <>
     <nav className="bg-[#151411] border-b border-white/10 sticky top-0 z-50">
-      <div className="max-w-[1800px] mx-auto px-8">
+      <div className="max-w-[1800px] mx-auto px-4 md:px-8">
         <div className="flex items-center justify-between h-14">
 
           {/* Logo */}

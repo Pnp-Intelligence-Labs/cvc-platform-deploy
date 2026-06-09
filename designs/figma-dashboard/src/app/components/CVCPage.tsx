@@ -21,7 +21,7 @@ export function PageShell({ children, navActive, maxWidth = '1400px' }: PageShel
   return (
     <div className={cls.page}>
       <CVCNavbar active={navActive} />
-      <div style={{ maxWidth, margin: '0 auto', padding: '2rem' }}>
+      <div style={{ maxWidth }} className="mx-auto px-4 py-6 md:px-6 md:py-8">
         {children}
       </div>
     </div>

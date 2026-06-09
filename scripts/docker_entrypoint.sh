@@ -6,6 +6,24 @@
 
 set -e
 
+# ── Production safety checks (NIST 3.13 / ISO 27001 A.8.24) ─────────────────
+ENVIRONMENT="${ENVIRONMENT:-}"
+if [ "${ENVIRONMENT}" = "production" ]; then
+    if [ "${MINIO_SECURE:-false}" != "true" ]; then
+        echo "[entrypoint] FATAL: MINIO_SECURE must be 'true' in production. Set MINIO_SECURE=true."
+        exit 1
+    fi
+    if [ -z "${JWT_SECRET:-}" ]; then
+        echo "[entrypoint] FATAL: JWT_SECRET must be set in production."
+        exit 1
+    fi
+    if [ -z "${DB_PASSWORD:-}" ]; then
+        echo "[entrypoint] FATAL: DB_PASSWORD must be set in production."
+        exit 1
+    fi
+fi
+# ─────────────────────────────────────────────────────────────────────────────
+
 DB_HOST="${DB_HOST:-db}"
 DB_PORT="${DB_PORT:-5432}"
 DB_NAME="${DB_NAME:-platform_db}"

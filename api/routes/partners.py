@@ -4,6 +4,8 @@ from core.db.connection import get_connection
 from core.storage import storage as _storage
 from psycopg2.extras import RealDictCursor, Json
 from api.routes.auth import require_jwt, UserInfo
+from api.middleware.upload_validator import validate_upload
+from api.middleware.ext_api_log import log_ext_call
 import io
 import json
 import threading
@@ -138,7 +140,11 @@ def _analyze_document_bg(doc_id: int, raw_text: str, filename: str, title: str |
         excerpt = raw_text[:12000] if len(raw_text) > 12000 else raw_text
         display_name = title or filename
         prompt = _INTEL_PROMPT.format(filename=display_name, body=f"Text:\n{excerpt}")
-        result = llm_call(prompt, model="qwen/qwen3-8b", temperature=0.1, max_tokens=1024, activity="Partner Doc Intel")
+        with log_ext_call("openrouter", endpoint="partner-doc-intel",
+                          data_class="confidential", pii_stripped=False,
+                          rows_sent=1, detail=f"doc_id={doc_id}") as _ctx:
+            result = llm_call(prompt, model="qwen/qwen3-8b", temperature=0.1, max_tokens=1024, activity="Partner Doc Intel")
+            _ctx.set_status(200)
         _save_intel(doc_id, result)
     except Exception as e:
         print(f"[partner doc intel] doc {doc_id} failed: {e}")
@@ -170,23 +176,27 @@ def _analyze_document_vision_bg(doc_id: int, pdf_bytes: bytes, filename: str, ti
         for b64 in images_b64:
             content_parts.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}})
 
-        resp = _req.post(
-            OPENROUTER_URL,
-            headers={
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": "https://github.com/natelouie11-tech",
-                "X-Title": "CVC Partner Doc Intel",
-            },
-            json={
-                "model": "google/gemini-2.0-flash-001",
-                "messages": [{"role": "user", "content": content_parts}],
-                "temperature": 0.1,
-                "max_tokens": 1024,
-            },
-            timeout=120,
-        )
-        resp.raise_for_status()
+        with log_ext_call("openrouter", endpoint="partner-doc-vision",
+                          data_class="confidential", pii_stripped=False,
+                          rows_sent=len(images_b64), detail=f"doc_id={doc_id}") as _vctx:
+            resp = _req.post(
+                OPENROUTER_URL,
+                headers={
+                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://github.com/natelouie11-tech",
+                    "X-Title": "CVC Partner Doc Intel",
+                },
+                json={
+                    "model": "google/gemini-2.0-flash-001",
+                    "messages": [{"role": "user", "content": content_parts}],
+                    "temperature": 0.1,
+                    "max_tokens": 1024,
+                },
+                timeout=120,
+            )
+            resp.raise_for_status()
+            _vctx.set_status(resp.status_code)
         result_text = resp.json()["choices"][0]["message"]["content"]
         _save_intel(doc_id, result_text)
         print(f"[partner doc vision] doc {doc_id} analyzed via vision LLM")
@@ -572,12 +582,15 @@ def get_documents(id: int, user: UserInfo = Depends(require_jwt)):
 @router.post("/{id}/documents")
 def upload_document(id: int, file: UploadFile = File(...), source_label: str = Form(""), user: UserInfo = Depends(require_jwt)):
     content = file.file.read()
+    fname = file.filename or ""
+
+    # Validate MIME type via magic bytes (rejects spoofed Content-Type headers)
+    detected_mime = validate_upload(content, fname)
 
     # Extract text from PDFs immediately on upload
     raw_text = None
     parsed = False
-    fname = file.filename or ""
-    if file.content_type == "application/pdf" or fname.lower().endswith(".pdf"):
+    if detected_mime == "application/pdf" or fname.lower().endswith(".pdf"):
         raw_text = _extract_pdf_text(content)
         parsed = raw_text is not None
 
@@ -885,7 +898,11 @@ def _extract_contract_services_bg(contract_id: int, partner_id: int, raw_text: s
         excerpt = raw_text[:14000] if len(raw_text) > 14000 else raw_text
         services_list = "\n".join(f"- {s}" for s in _CONTRACT_SERVICES)
         prompt = _CONTRACT_PROMPT.replace("{services}", services_list).replace("{text}", excerpt)
-        result = llm_call(prompt, model="qwen/qwen3-8b", temperature=0.1, max_tokens=800, activity="Contract Intel")
+        with log_ext_call("openrouter", endpoint="contract-intel",
+                          data_class="confidential", pii_stripped=False,
+                          rows_sent=1, detail=f"contract_id={contract_id}") as _cctx:
+            result = llm_call(prompt, model="qwen/qwen3-8b", temperature=0.1, max_tokens=800, activity="Contract Intel")
+            _cctx.set_status(200)
         if not result:
             return
         clean = result.strip()
@@ -984,10 +1001,14 @@ def patch_contract_fields(id: int, data: dict):
 def upload_contract(id: int, file: UploadFile = File(...)):
     content = file.file.read()
     fname = file.filename or "contract"
-    ftype = file.content_type or "application/octet-stream"
+
+    # Validate MIME type via magic bytes (rejects spoofed Content-Type headers)
+    detected_mime = validate_upload(content, fname)
+
+    ftype = detected_mime or file.content_type or "application/octet-stream"
 
     raw_text = None
-    if ftype == "application/pdf" or fname.lower().endswith(".pdf"):
+    if detected_mime == "application/pdf" or fname.lower().endswith(".pdf"):
         raw_text = _extract_pdf_text(content)
 
     # Determine contract year from current year
