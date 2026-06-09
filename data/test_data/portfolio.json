@@ -1,0 +1,3991 @@
+[
+  {
+    "id": 1668,
+    "name": "Aircon",
+    "website": "https://www.airconai.com",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "AI-powered gateway-as-a-service platform for air freight consolidation",
+    "hq_city": "Dallas-Fort Worth Metroplex",
+    "country": "USA",
+    "founded": 2021,
+    "score_composite": 71.75,
+    "score_commercial": 60.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Blumberg Capital",
+      "Las Olas Venture Capital (LOVC)",
+      "Plug and Play",
+      "Schematic Ventures",
+      "Underscore VC"
+    ],
+    "tags": [
+      "air freight",
+      "freight forwarding",
+      "AI automation",
+      "logistics optimization",
+      "digital freight",
+      "quoting automation"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed 1",
+        "amount_usd": 1000000,
+        "amount_local": 1000000,
+        "currency": "USD",
+        "announced_date": "2021-12-01",
+        "investors": [
+          "Bain Capital Ventures",
+          "Battery Ventures",
+          "Bessemer Venture Partners",
+          "Bread and Butter Ventures",
+          "IrishAngels",
+          "Matchstick Ventures",
+          "Motivate Ventures",
+          "Schematic Ventures",
+          "Social Starts",
+          "Vitalize Venture Group",
+          "Aditya Raghupathy",
+          "Daren Cotter"
+        ]
+      },
+      {
+        "round_type": "Seed 2",
+        "amount_usd": 3000000,
+        "amount_local": 3000000,
+        "currency": "USD",
+        "announced_date": "2023-08-01",
+        "investors": [
+          "Underscore VC"
+        ]
+      },
+      {
+        "round_type": "Seed",
+        "amount_usd": 5000000,
+        "amount_local": 5000000,
+        "currency": "USD",
+        "announced_date": "2025-06-01",
+        "investors": [
+          "Bain Capital Ventures",
+          "Battery Ventures",
+          "Bessemer Venture Partners",
+          "Bread and Butter Ventures",
+          "IrishAngels",
+          "Matchstick Ventures",
+          "Motivate Ventures",
+          "Schematic Ventures",
+          "Social Starts",
+          "Vitalize Venture Group",
+          "Aditya Raghupathy",
+          "Daren Cotter",
+          "Blumberg Capital"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 77,
+    "name": "Amesa (fka Composabl)",
+    "website": "https://amesa.ai",
+    "sector": "Manufacturing",
+    "stage": "Seed",
+    "one_liner": "Amesa is an enterprise AI platform that lets organizations design, train, and deploy orchestrated teams of autonomous agents in a safe proving ground before real-world deployment.",
+    "hq_city": "San Francisco",
+    "country": "United States",
+    "founded": 2023,
+    "score_composite": 51.25,
+    "score_commercial": 20.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Exposition Ventures",
+      "Momenta Ventures"
+    ],
+    "tags": [
+      "Analytics",
+      "Machine Learning",
+      "ML"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 8820000,
+        "amount_local": 8820000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1669,
+    "name": "Amitruck",
+    "website": "https://www.amitruck.com",
+    "sector": "Supply Chain",
+    "stage": "Undisclosed",
+    "one_liner": "Digital marketplace for efficient trucking logistics in Africa",
+    "hq_city": "Nairobi",
+    "country": "Kenya",
+    "founded": 2018,
+    "score_composite": 63.0,
+    "score_commercial": 40.0,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": [],
+    "tags": [
+      "Delivery",
+      "Last Mile Logistics",
+      "Distribution",
+      "E-Commerce Logistics",
+      "Logistics",
+      "Trucking"
+    ],
+    "funding_rounds": []
+  },
+  {
+    "id": 1643,
+    "name": "Apian",
+    "website": "https://www.apian.aero",
+    "sector": "Robotics",
+    "stage": "Seed",
+    "one_liner": "Apian is an API that integrates drones into the healthcare ecosystem in a simple, scalable and sustainable way.",
+    "hq_city": "London",
+    "country": "United Kingdom",
+    "founded": 2020,
+    "score_composite": 72.25,
+    "score_commercial": 70.0,
+    "score_irs": null,
+    "env_4d": "Aerial",
+    "func_4d": "Mobility",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": null,
+    "tags": [
+      "healthcare logistics",
+      "drone delivery",
+      "autonomous logistics",
+      "NHS",
+      "medical supplies",
+      "API"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 6000000,
+        "amount_local": 6000000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 355,
+    "name": "Arkestro",
+    "website": "http://arkestro.com",
+    "sector": "Supply Chain",
+    "stage": "Series B",
+    "one_liner": "The only predictive procurement software that helps your team continuously exceed targets.",
+    "hq_city": "San Francisco",
+    "country": "United States",
+    "founded": 2017,
+    "score_composite": 49.8,
+    "score_commercial": 55.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Activant Capital",
+      "Altira Group",
+      "Aramco Ventures",
+      "Cervin Ventures",
+      "Construct Capital",
+      "Correlation Ventures",
+      "El Cap Holdings",
+      "Forum Ventures",
+      "Illuminate Ventures",
+      "Koch Disruptive Technologies",
+      "Mentors Fund",
+      "New Enterprise Associates",
+      "Plug and Play",
+      "Right Side Capital Management",
+      "Tech Wildcatters",
+      "Tenacity Venture Capital"
+    ],
+    "tags": [
+      "predictive procurement",
+      "spend optimization",
+      "supply chain automation",
+      "procurement analytics",
+      "enterprise software"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Series A",
+        "amount_usd": 26000000,
+        "amount_local": 26000000,
+        "currency": "USD",
+        "announced_date": "2022-06-14",
+        "investors": [
+          "NEA",
+          "Construct",
+          "Koch Disruptive Technologies",
+          "Four More Capital"
+        ]
+      },
+      {
+        "round_type": "Series B",
+        "amount_usd": 36000000,
+        "amount_local": 36000000,
+        "currency": "USD",
+        "announced_date": "2025-05-14",
+        "investors": [
+          "Aramco Ventures"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1670,
+    "name": "Atmo AI",
+    "website": "https://atmo.ai",
+    "sector": "Other",
+    "stage": "Series A",
+    "one_liner": "AI-powered weather forecasting with 100x higher resolution than traditional models for governments and enterprises.",
+    "hq_city": "Berkeley",
+    "country": "United States",
+    "founded": 2019,
+    "score_composite": 77.7,
+    "score_commercial": 72.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Tofino Capital",
+      "Y Combinator"
+    ],
+    "tags": [
+      "AI weather forecasting",
+      "deep learning",
+      "microclimates",
+      "extreme resolution",
+      "real-time data",
+      "government forecasting"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 9592133,
+        "amount_local": 9592133,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 19184267,
+        "amount_local": 19184267,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1671,
+    "name": "Autobon AI",
+    "website": "http://autobon.ai",
+    "sector": "Physical AI",
+    "stage": "Out of Business",
+    "one_liner": "Retrofit autonomous driving platform for commercial semi-trucks",
+    "hq_city": "Rolling Meadows",
+    "country": "United States",
+    "founded": 2016,
+    "score_composite": 59.25,
+    "score_commercial": 40.0,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": [
+      "MicroVentures",
+      "Sica Ventures",
+      "Plug and Play",
+      "Techstars"
+    ],
+    "tags": [
+      "Automation",
+      "Automotive",
+      "Connected Car",
+      "Autonomous Vehicles",
+      "Driving",
+      "B2B",
+      "B2B2C",
+      "Delivery",
+      "Last Mile Logistics",
+      "E-Commerce Logistics",
+      "Logistics",
+      "Process Automation",
+      "Retail Automation",
+      "RPA",
+      "Robotic Process Automation",
+      "Transportation",
+      "Warehousing",
+      "Warehouse Automation"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 1300000,
+        "amount_local": 1300000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1473,
+    "name": "AVATOUR",
+    "website": "https://avatour.co",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "AVATOUR remote presence makes it possible to visit a facility or job site without travel. Combining full-motion 360\u00b0 capture with real-time communication, AVATOUR enables remote inspections, marketing tours, training, and more - saving time and money while keeping personnel safe.",
+    "hq_city": "Palo Alto",
+    "country": "United States",
+    "founded": 2018,
+    "score_composite": 51.8,
+    "score_commercial": 50.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Human_Collaboration",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "500 Global",
+      "B.I.F.",
+      "Merus Capital",
+      "NTT DOCOMO Ventures",
+      "Plug and Play",
+      "Ulu Ventures"
+    ],
+    "tags": [
+      "remote collaboration",
+      "360\u00b0 video",
+      "virtual inspections",
+      "immersive training",
+      "facility tours",
+      "telepresence"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 2900000,
+        "amount_local": 2900000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1672,
+    "name": "Basetwo AI",
+    "website": "http://basetwo.ai",
+    "sector": "Industrial Automation",
+    "stage": "Series A",
+    "one_liner": "No-code AI platform that enables manufacturing teams to optimize production processes through physics-based digital twins and machine learning",
+    "hq_city": "Toronto",
+    "country": "Canada",
+    "founded": 2022,
+    "score_composite": 72.25,
+    "score_commercial": 60.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Aerospace Xelerated",
+      "Argon Ventures",
+      "AXA Venture Partners",
+      "Caffeinated Capital",
+      "CEAS Investments",
+      "Deloitte Ventures",
+      "Glasswing Ventures",
+      "Global Brain Corporation",
+      "Graphite Ventures",
+      "MaRS Investment Accelerator Fund",
+      "Pareto Holdings",
+      "Plug and Play",
+      "Quiet Capital"
+    ],
+    "tags": [
+      "digital twin",
+      "manufacturing optimization",
+      "machine learning",
+      "no-code",
+      "process engineering",
+      "industrial AI"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Series A",
+        "amount_usd": 12282235,
+        "amount_local": 12282235,
+        "currency": "USD",
+        "announced_date": "2025-01-01",
+        "investors": [
+          "Axa Venture Partners (AVP)"
+        ]
+      },
+      {
+        "round_type": "Seed",
+        "amount_usd": 6141117,
+        "amount_local": 6141117,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1030,
+    "name": "bext360",
+    "website": "http://www.bext360.com",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "Bext360 develops technologies that streamline critical supply chains in emerging economies.",
+    "hq_city": "Denver",
+    "country": "United States",
+    "founded": 2015,
+    "score_composite": 50.5,
+    "score_commercial": 50.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Perception",
+    "stack_4d": "Solution",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Plug and Play",
+      "SKS Capital"
+    ],
+    "tags": [
+      "agriculture",
+      "supply chain traceability",
+      "blockchain",
+      "AI",
+      "machine vision",
+      "emerging markets"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 4600000,
+        "amount_local": 4600000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1673,
+    "name": "Bosta",
+    "website": "http://bosta.co",
+    "sector": "Supply Chain",
+    "stage": "Series A",
+    "one_liner": "Overnight delivery and logistics platform for e-commerce companies in Egypt",
+    "hq_city": "Cairo",
+    "country": "Egypt",
+    "founded": 2017,
+    "score_composite": 77.15,
+    "score_commercial": 72.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Mobility",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [],
+    "tags": [
+      "logistics",
+      "e-commerce",
+      "delivery",
+      "fintech",
+      "SaaS",
+      "last-mile delivery"
+    ],
+    "funding_rounds": []
+  },
+  {
+    "id": 1674,
+    "name": "Cafler",
+    "website": "http://cafler.com",
+    "sector": "Supply Chain",
+    "stage": "Series A",
+    "one_liner": "AI-powered marketplace and operating system for car services and mobility companies",
+    "hq_city": "Barcelona",
+    "country": "Spain",
+    "founded": 2021,
+    "score_composite": 75.3,
+    "score_commercial": 72.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Alumni Ventures Group",
+      "Amarena",
+      "Banc Sabadell and the Institut Catal\u00e0 de Finances (ICF)",
+      "Brainstorm Ventures",
+      "BStartup",
+      "Cathay Innovation",
+      "Encomenda VC",
+      "g\u00fcil Mobility Ventures",
+      "Plug and Play",
+      "Seaya Ventures",
+      "Shilling Capital Partners",
+      "Wayra",
+      "WIND Ventures"
+    ],
+    "tags": [
+      "AI marketplace",
+      "fleet management",
+      "connected car",
+      "automotive services",
+      "IoT",
+      "SaaS"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 8580774,
+        "amount_local": 8580774,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 17161547,
+        "amount_local": 17161547,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 25,
+    "name": "Cambridge Terahertz, Inc",
+    "website": "https://www.thzcorp.com",
+    "sector": "Other",
+    "stage": "Seed",
+    "one_liner": "Develops terahertz imaging cameras for detecting concealed objects through clothing and barriers",
+    "hq_city": "Sunnyvale",
+    "country": "United States",
+    "founded": 2016,
+    "score_composite": 28.75,
+    "score_commercial": 10.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Perception",
+    "stack_4d": "Solution",
+    "biz_model_4d": "Hardware_OEM",
+    "investors": [],
+    "tags": [],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 12000000,
+        "amount_local": 12000000,
+        "currency": "USD",
+        "announced_date": "2025-05-01",
+        "investors": [
+          "Felicis"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1675,
+    "name": "Carbon Ridge",
+    "website": "https://www.carbonridge.net",
+    "sector": "Industrial Automation",
+    "stage": "Seed",
+    "one_liner": "Modular onboard carbon capture for maritime shipping.",
+    "hq_city": "Los Angeles",
+    "country": "United States",
+    "founded": 2022,
+    "score_composite": 51.75,
+    "score_commercial": 20.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Infrastructure",
+    "stack_4d": "Solution",
+    "biz_model_4d": "Hardware_OEM",
+    "investors": [
+      "Lowercarbon Capital",
+      "Congruent Ventures",
+      "Prelude Ventures",
+      "MCJ Collective",
+      "Watershed",
+      "Y Combinator"
+    ],
+    "tags": [
+      "carbon capture",
+      "maritime shipping",
+      "decarbonization",
+      "OCCS",
+      "modular hardware",
+      "climate tech"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 15500000,
+        "amount_local": 15500000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 645,
+    "name": "Catena Clearing",
+    "website": "https://catenaclearing.io",
+    "sector": "Supply Chain",
+    "stage": "Pre-Seed",
+    "one_liner": "Catena Clearing enhances connections between software providers to their customers by simplifying and enriching supply chain data through robust, scalable integrations.",
+    "hq_city": "New York",
+    "country": "United States",
+    "founded": 2023,
+    "score_composite": 44.5,
+    "score_commercial": 40.0,
+    "score_irs": null,
+    "env_4d": "Environment_Agnostic",
+    "func_4d": "Infrastructure",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [],
+    "tags": [
+      "AI",
+      "Artificial Intelligence",
+      "B2B",
+      "Big Data",
+      "CPG",
+      "Data Enrichment"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Pre-Seed",
+        "amount_usd": 400000,
+        "amount_local": 400000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 835,
+    "name": "Ceres Technology",
+    "website": "https://www.cerestech.co",
+    "sector": "Supply Chain",
+    "stage": "Pre-Seed",
+    "one_liner": "Ceres uses AI to predict supply chain delays months in advance.",
+    "hq_city": "Austin",
+    "country": "United States",
+    "founded": 2019,
+    "score_composite": 40.5,
+    "score_commercial": 35.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [],
+    "tags": [
+      "AI forecasting",
+      "supply chain intelligence",
+      "procurement analytics",
+      "risk detection",
+      "what-if modeling",
+      "ERP integration"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Pre-Seed",
+        "amount_usd": 325000,
+        "amount_local": 325000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1474,
+    "name": "Chunker",
+    "website": "https://www.chunker.com",
+    "sector": "Supply Chain",
+    "stage": "Undisclosed",
+    "one_liner": "On-demand, short-term warehouse marketplace connecting companies needing temporary space with those that have excess space.",
+    "hq_city": "Lehi",
+    "country": "United States",
+    "founded": 2017,
+    "score_composite": 44.8,
+    "score_commercial": 40.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Infrastructure",
+    "stack_4d": "Platform",
+    "biz_model_4d": "Marketplace",
+    "investors": [],
+    "tags": [
+      "warehouse marketplace",
+      "short-term storage",
+      "supply chain",
+      "logistics",
+      "flexible space",
+      "3PL"
+    ],
+    "funding_rounds": []
+  },
+  {
+    "id": 1676,
+    "name": "Claimit",
+    "website": "claimit.ai",
+    "sector": "Supply Chain",
+    "stage": "Undisclosed",
+    "one_liner": "AI-powered SaaS platform that automates shipping invoice auditing and claims recovery to eliminate hidden logistics costs",
+    "hq_city": "London",
+    "country": "United Kingdom",
+    "founded": null,
+    "score_composite": 45.5,
+    "score_commercial": 15.0,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": [],
+    "tags": [
+      "AI Ops"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 1581768,
+        "amount_local": 1581768,
+        "currency": "USD",
+        "announced_date": "2024-11-26",
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 206,
+    "name": "Claryo",
+    "website": "https://www.claryo.co/",
+    "sector": "Robotics",
+    "stage": "Seed",
+    "one_liner": "The leading provider of Spatial Generative AI, Claryo is a turnkey\nway to upgrade your entire warehouse ecosystem",
+    "hq_city": "San Francisco",
+    "country": "United States",
+    "founded": 2022,
+    "score_composite": 51.8,
+    "score_commercial": 50.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Cortical Ventures",
+      "Page One Ventures",
+      "Plug and Play",
+      "The Hive",
+      "Transform VC",
+      "Village Global"
+    ],
+    "tags": [
+      "warehouse automation",
+      "digital twin",
+      "AI analytics",
+      "robotics integration",
+      "spatial AI"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Pre-Seed",
+        "amount_usd": 3250000,
+        "amount_local": 3250000,
+        "currency": "USD",
+        "announced_date": "2023-01-03",
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 27,
+    "name": "Cogniac",
+    "website": "http://cogniac.ai",
+    "sector": "Robotics",
+    "stage": "Series B",
+    "one_liner": "Cogniac is an enterprise platform that enables easy automation of any visual task using the latest in AI-based Deep Learning SW solutions.",
+    "hq_city": "San Jose",
+    "country": "United States",
+    "founded": 2015,
+    "score_composite": 60.2,
+    "score_commercial": 60.0,
+    "score_irs": null,
+    "env_4d": "Environment_Agnostic",
+    "func_4d": "Perception",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Autotech Ventures",
+      "Cisco Investments",
+      "Energy Innovation Capital",
+      "George Kaiser Family Foundation",
+      "LLC",
+      "London Technology Club",
+      "National Grid Partners (NGP)",
+      "Plug and Play",
+      "SAP.iO",
+      "Shield Capital",
+      "Vanedge Capital",
+      "Wing Venture Capital",
+      "Yellowstone Capital Partners"
+    ],
+    "tags": [
+      "AI",
+      "Artificial Intelligence",
+      "B2B",
+      "B2B2C",
+      "Big Data",
+      "Cloud",
+      "Cloud Computing",
+      "Cloud Security",
+      "Enterprise",
+      "Industrial Robotics",
+      "Infrastructure",
+      "Internet of Things",
+      "IoT",
+      "Large Enterprise",
+      "SaaS",
+      "Smart Infrastructure",
+      "Software as a Service",
+      "UX",
+      "User Experience"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Series B",
+        "amount_usd": 10000000,
+        "amount_local": 10000000,
+        "currency": "USD",
+        "announced_date": "2020-09-28",
+        "investors": [
+          "Autotech Ventures",
+          "Vanedge Capital",
+          "Wing Venture Capital",
+          "Yellowstone"
+        ]
+      },
+      {
+        "round_type": "Series B",
+        "amount_usd": 40100000,
+        "amount_local": 40100000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1677,
+    "name": "Colonia Tech",
+    "website": "https://colonia.tech",
+    "sector": "Supply Chain",
+    "stage": "Series A",
+    "one_liner": "B2B marketplace for truck and trailer sharing",
+    "hq_city": "Berlin",
+    "country": "Germany",
+    "founded": 2021,
+    "score_composite": 75.25,
+    "score_commercial": 65.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Mobility",
+    "stack_4d": "Platform",
+    "biz_model_4d": "Marketplace",
+    "investors": [],
+    "tags": [
+      "truck sharing",
+      "logistics marketplace",
+      "fleet rental",
+      "commercial vehicles",
+      "supply chain",
+      "B2B mobility"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 5858400,
+        "amount_local": 5858400,
+        "currency": "USD",
+        "announced_date": "2022-12-16",
+        "investors": [
+          "Octopus Ventures"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1678,
+    "name": "Data Gumbo",
+    "website": "http://www.datagumbo.com",
+    "sector": "Supply Chain",
+    "stage": "Out of Business",
+    "one_liner": "Data Gumbo provides blockchain-based smart contracts to automate contract execution between industrial companies.",
+    "hq_city": "Houston",
+    "country": "United States",
+    "founded": 2016,
+    "score_composite": 72.25,
+    "score_commercial": 60.0,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": [
+      "Equinor Technology Ventures",
+      "Equinor Ventures",
+      "L37 Venture Partners",
+      "Saudi Aramco Energy Ventures"
+    ],
+    "tags": [
+      "Blockchain",
+      "Distributed Energy",
+      "Payment Processing",
+      "Renewable Energy",
+      "Software as a Service",
+      "SaaS"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 2665000,
+        "amount_local": 2665000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 5330000,
+        "amount_local": 5330000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series B",
+        "amount_usd": 7995000,
+        "amount_local": 7995000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series C",
+        "amount_usd": 10660000,
+        "amount_local": 10660000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1679,
+    "name": "Datch",
+    "website": "http://datch.io",
+    "sector": "Industrial Automation",
+    "stage": "Series A",
+    "one_liner": "Customizable mobile platform for frontline industrial teams to capture asset data and manage equipment maintenance",
+    "hq_city": "San Francisco",
+    "country": "United States",
+    "founded": 2018,
+    "score_composite": 74.25,
+    "score_commercial": 60.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Lux Capital",
+      "Costanoa Ventures",
+      "Congruent Ventures"
+    ],
+    "tags": [
+      "industrial AI",
+      "predictive maintenance",
+      "frontline workforce",
+      "EAM",
+      "asset diagnostics",
+      "knowledge management"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 3000000,
+        "amount_local": 3000000,
+        "currency": "USD",
+        "announced_date": "2020-05-01",
+        "investors": [
+          "Blue Bear Capital"
+        ]
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 15000000,
+        "amount_local": 15000000,
+        "currency": "USD",
+        "announced_date": "2024-08-07",
+        "investors": [
+          "Third Prime",
+          "Blackhorn Ventures",
+          "Blue Bear Capital",
+          "Susquehanna International",
+          "Susquehanna Investment Group"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1192,
+    "name": "Delivers.ai",
+    "website": "http://delivers.ai",
+    "sector": "Robotics",
+    "stage": "Seed",
+    "one_liner": "Delivers.ai is designed to autonomously deliver food and grocery from shops to your doorstep, combining state of the art next-gen navigation technology with appealing design.",
+    "hq_city": "Istanbul",
+    "country": "Turkey",
+    "founded": 2020,
+    "score_composite": 53.2,
+    "score_commercial": 50.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Mobility",
+    "stack_4d": "Solution",
+    "biz_model_4d": "RaaS",
+    "investors": [
+      "Driventure",
+      "Hackquarters",
+      "hiVC",
+      "Impetus Capital",
+      "Istanbul Technical University",
+      "ITK Ventures",
+      "Japan Post Capital",
+      "Kalyon Venture Capital",
+      "K\u00fcltepe Investment",
+      "StartersHub",
+      "StartupFon",
+      "Technology & Innovation Fund",
+      "Turkey Development Fund"
+    ],
+    "tags": [
+      "autonomous delivery",
+      "last-mile delivery",
+      "robotics",
+      "RaaS",
+      "sustainable logistics",
+      "OOHA"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 4734115,
+        "amount_local": 4734115,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1681,
+    "name": "Drift",
+    "website": "https://www.drift.com/",
+    "sector": "Other",
+    "stage": "Growth",
+    "one_liner": "Conversational marketing and sales platform that generates qualified leads and accelerates the sales cycle",
+    "hq_city": "Boston",
+    "country": "USA",
+    "founded": 2014,
+    "score_composite": 74.75,
+    "score_commercial": 85.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Human_Collaboration",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Chang Corporation",
+      "CRV",
+      "Employee Stock Option Fund",
+      "Founder Collective",
+      "General Catalyst",
+      "Harmony Partners",
+      "HubSpot Ventures",
+      "NextView Ventures",
+      "Sequoia Capital"
+    ],
+    "tags": [
+      "conversational marketing",
+      "sales acceleration",
+      "lead generation",
+      "chatbot",
+      "customer engagement",
+      "B2B SaaS"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 7133333,
+        "amount_local": 7133333,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 14266667,
+        "amount_local": 14266667,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series B",
+        "amount_usd": 21400000,
+        "amount_local": 21400000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series C",
+        "amount_usd": 28533333,
+        "amount_local": 28533333,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Growth",
+        "amount_usd": 35666667,
+        "amount_local": 35666667,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1738,
+    "name": "Drift Biotechnology",
+    "website": "https://driftbio.com",
+    "sector": "Other",
+    "stage": "Pre-Seed",
+    "one_liner": "Develops advanced biomaterials using synthetic biology for industrial applications.",
+    "hq_city": "Boston",
+    "country": "USA",
+    "founded": 2022,
+    "score_composite": null,
+    "score_commercial": null,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": null,
+    "tags": null,
+    "funding_rounds": []
+  },
+  {
+    "id": 1736,
+    "name": "DroidDrive / DuckTrain",
+    "website": null,
+    "sector": "Robotics",
+    "stage": "Out of Business",
+    "one_liner": "Developed compact autonomous mobile robots for indoor logistics using advanced AI-based navigation and perception systems.",
+    "hq_city": "Boston",
+    "country": "USA",
+    "founded": 2018,
+    "score_composite": null,
+    "score_commercial": null,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": null,
+    "tags": null,
+    "funding_rounds": []
+  },
+  {
+    "id": 1680,
+    "name": "Dyna Robotics",
+    "website": "https://www.dyna.co/",
+    "sector": "Physical AI",
+    "stage": "Series B",
+    "one_liner": "Dyna Robotics develops high-performance, autonomous robots powered by embodied foundation models, enabling sustained, dexterous operation in real-world environments.",
+    "hq_city": "San Francisco",
+    "country": "United States",
+    "founded": null,
+    "score_composite": 65.25,
+    "score_commercial": 35.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Manipulation",
+    "stack_4d": "Platform",
+    "biz_model_4d": "RaaS",
+    "investors": [],
+    "tags": [
+      "Physical AI",
+      "autonomous robots",
+      "embodied intelligence",
+      "robot foundation model",
+      "dexterous manipulation",
+      "RaaS"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 23500000,
+        "amount_local": 23500000,
+        "currency": "USD",
+        "announced_date": "2025-03-01",
+        "investors": []
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 120000000,
+        "amount_local": 120000000,
+        "currency": "USD",
+        "announced_date": "2025-09-15",
+        "investors": [
+          "Robostrategy",
+          "CRV",
+          "First Round Capital",
+          "Salesforce Ventures",
+          "NVentures",
+          "Amazon Industrial Innovation Fund"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 377,
+    "name": "EAIGLE Inc.",
+    "website": "https://eaigle.com/",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "EAIGLE is an E2E AI-powered computer vision platform that automates gate & yard functions.",
+    "hq_city": "Toronto, ON",
+    "country": "Canada",
+    "founded": 2018,
+    "score_composite": 53.2,
+    "score_commercial": 50.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Perception",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [],
+    "tags": [
+      "computer vision",
+      "yard management",
+      "supply chain automation",
+      "AI",
+      "logistics"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 3600000,
+        "amount_local": 3600000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1085,
+    "name": "Einride",
+    "website": "http://einride.tech",
+    "sector": "Supply Chain",
+    "stage": "Series C",
+    "one_liner": "Einride provides autonomous and all-electric freight transportation.",
+    "hq_city": "Stockholm",
+    "country": "Sweden",
+    "founded": 2016,
+    "score_composite": 77.8,
+    "score_commercial": 80.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Mobility",
+    "stack_4d": "Platform",
+    "biz_model_4d": "RaaS",
+    "investors": [
+      "AMF",
+      "Barclays Corporate Banking",
+      "BUILD Capital Partners",
+      "Capital Group",
+      "Centripetal",
+      "EQT Ventures",
+      "Ericsson",
+      "Ericsson Ventures",
+      "Maersk Growth",
+      "Nineyards Equity",
+      "NordicNinja VC",
+      "Norrsken VC",
+      "Northzone",
+      "Park Bench Capital",
+      "Plug and Play",
+      "Plum Alley",
+      "Polar Structure",
+      "Soros Fund Management",
+      "Temasek Holdings",
+      "Wolfswood Partners"
+    ],
+    "tags": [
+      "autonomous trucks",
+      "electric freight",
+      "logistics",
+      "AI",
+      "sustainable transport",
+      "road freight"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Series A",
+        "amount_usd": 25000000,
+        "amount_local": 25000000,
+        "currency": "USD",
+        "announced_date": "2019-10-10",
+        "investors": [
+          "EQT Ventures",
+          "NordicNinja VC"
+        ]
+      },
+      {
+        "round_type": "Series B",
+        "amount_usd": 110000000,
+        "amount_local": 110000000,
+        "currency": "USD",
+        "announced_date": "2021-05-06",
+        "investors": [
+          "Temasek",
+          "Soros Fund Management LLC",
+          "Northzone"
+        ]
+      },
+      {
+        "round_type": "Series C",
+        "amount_usd": 500000000,
+        "amount_local": 500000000,
+        "currency": "USD",
+        "announced_date": "2022-12-06",
+        "investors": []
+      }
+    ]
+  },
+  {
+    "id": 141,
+    "name": "Ethos",
+    "website": "https://www.ethossystems.com",
+    "sector": "Supply Chain",
+    "stage": "Series A",
+    "one_liner": "For organizations where success depends on readiness, Ethos is the only human readiness platform that maximizes human performance in critical operations.",
+    "hq_city": "Redwood City",
+    "country": "United States",
+    "founded": 2018,
+    "score_composite": 63.0,
+    "score_commercial": 70.0,
+    "score_irs": null,
+    "env_4d": "Environment_Agnostic",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Hyperspace Ventures",
+      "J4.Ventures",
+      "Norwest Venture Partners",
+      "Pear Ventures",
+      "The Westly Group"
+    ],
+    "tags": [
+      "human readiness",
+      "AI training",
+      "enterprise learning",
+      "readiness platform",
+      "performance optimization",
+      "mission-critical training"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Series A",
+        "amount_usd": 34565000,
+        "amount_local": 34565000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1741,
+    "name": "Everest",
+    "website": "https://useeverest.com",
+    "sector": "Other",
+    "stage": "Pre-Seed",
+    "one_liner": "Insufficient public information to generate accurate one-liner.",
+    "hq_city": "San Francisco",
+    "country": "USA",
+    "founded": null,
+    "score_composite": null,
+    "score_commercial": null,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Solution",
+    "biz_model_4d": "SaaS",
+    "investors": null,
+    "tags": [
+      "AI recruiting",
+      "logistics",
+      "truckng",
+      "driver acquisition",
+      "automated screening",
+      "SaaS"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 5000000,
+        "amount_local": 5000000,
+        "currency": "USD",
+        "announced_date": "2023-10-15",
+        "investors": []
+      }
+    ]
+  },
+  {
+    "id": 1682,
+    "name": "Everest Networks",
+    "website": "http://www.everestnetworks.com",
+    "sector": "Other",
+    "stage": "Series A",
+    "one_liner": "Develops AI-powered Wi-Fi access points using phased array antennas for high-density venues like stadiums and arenas",
+    "hq_city": "Saratoga",
+    "country": "United States",
+    "founded": 2017,
+    "score_composite": 68.5,
+    "score_commercial": 70.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Infrastructure",
+    "stack_4d": "Solution",
+    "biz_model_4d": "Hardware_OEM",
+    "investors": [
+      "Panasonic"
+    ],
+    "tags": [
+      "Wi-Fi",
+      "AI",
+      "phased array",
+      "high-density",
+      "stadiums",
+      "wireless LAN"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 4000000,
+        "amount_local": 4000000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 8000000,
+        "amount_local": 8000000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 715,
+    "name": "Facilis AI",
+    "website": "https://facilis.ai",
+    "sector": "Supply Chain",
+    "stage": "Pre-Seed",
+    "one_liner": "We're on a mission to trivialize manufacturing analytics and process control. \nWe are offering a turn-key AI-based analytics platform to help manufacturing and business personnel with no data science and engineering training turn raw data and domain knowledge into actionable insights with extendable",
+    "hq_city": "Ann Arbor",
+    "country": "United States",
+    "founded": 2023,
+    "score_composite": 44.0,
+    "score_commercial": 40.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [],
+    "tags": [
+      "AI",
+      "Advanced Manufacturing",
+      "Artificial Intelligence",
+      "Big Data",
+      "Data Analytics"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Pre-Seed",
+        "amount_usd": 250000,
+        "amount_local": 250000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1683,
+    "name": "Ferto",
+    "website": "http://ferto.app",
+    "sector": "Supply Chain",
+    "stage": "Undisclosed",
+    "one_liner": "On-demand delivery platform connecting consumers with local stores for instant delivery",
+    "hq_city": "Athens",
+    "country": "Greece",
+    "founded": 2021,
+    "score_composite": 43.0,
+    "score_commercial": 30.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Mobility",
+    "stack_4d": "Platform",
+    "biz_model_4d": "Marketplace",
+    "investors": [],
+    "tags": [
+      "on-demand delivery",
+      "instant delivery",
+      "crowdsourced logistics",
+      "last-mile delivery",
+      "local stores",
+      "urban logistics"
+    ],
+    "funding_rounds": []
+  },
+  {
+    "id": 249,
+    "name": "GenLogs",
+    "website": "https://www.genlogs.io",
+    "sector": "Supply Chain",
+    "stage": "Series B",
+    "one_liner": "Freight Intelligence on every carrier, shipper, and asset via a nationwide sensor network",
+    "hq_city": "Arlington, Virginia",
+    "country": "United States",
+    "founded": 2022,
+    "score_composite": 58.5,
+    "score_commercial": 55.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Perception",
+    "stack_4d": "Platform",
+    "biz_model_4d": "Data_Analytics",
+    "investors": [
+      "ASC VC",
+      "Autotech Ventures",
+      "BBQ Capital",
+      "Heartland Ventures",
+      "HOF Capital",
+      "Lighthouse Labs RVA",
+      "Miami-Dade Innovation Authority",
+      "Plug and Play",
+      "Steel Atlas",
+      "TitletownTech",
+      "Venrock",
+      "Venture 53",
+      "J.B. Hunt",
+      "AIPSO",
+      "Werner Enterprises"
+    ],
+    "tags": [
+      "freight intelligence",
+      "supply chain visibility",
+      "carrier compliance",
+      "asset tracking",
+      "cargo security",
+      "truck data"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Series A",
+        "amount_usd": 14600000,
+        "amount_local": 14600000,
+        "currency": "USD",
+        "announced_date": "2025-03-01",
+        "investors": null
+      },
+      {
+        "round_type": "Series B",
+        "amount_usd": 60000000,
+        "amount_local": 60000000,
+        "currency": "USD",
+        "announced_date": "2026-02-02",
+        "investors": [
+          "Battery Ventures",
+          "IVP",
+          "Cathay Innovation",
+          "9Yards",
+          "Venrock",
+          "Steel Atlas",
+          "HOF Capital",
+          "TitletownTech",
+          "Autotech Ventures"
+        ]
+      },
+      {
+        "round_type": "Seed",
+        "amount_usd": 8073333,
+        "amount_local": 8073333,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1684,
+    "name": "GenLots",
+    "website": "https://www.genlots.com",
+    "sector": "Supply Chain",
+    "stage": "Series A",
+    "one_liner": "GenLots is how manufacturing companies plan their external material purchases.",
+    "hq_city": "Lausanne",
+    "country": "Switzerland",
+    "founded": 2019,
+    "score_composite": 81.95,
+    "score_commercial": 75.0,
+    "score_irs": null,
+    "env_4d": "Environment_Agnostic",
+    "func_4d": "Cognition",
+    "stack_4d": "Solution",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Index Ventures",
+      "Alven",
+      "BTG Pactual"
+    ],
+    "tags": [
+      "supply chain optimization",
+      "AI planning",
+      "MRP",
+      "inventory reduction",
+      "sustainable procurement",
+      "SAP integration"
+    ],
+    "funding_rounds": []
+  },
+  {
+    "id": 1685,
+    "name": "HausBots",
+    "website": "http://www.hausbots.com",
+    "sector": "Robotics",
+    "stage": "Seed",
+    "one_liner": "Builds surface-climbing robots for inspecting critical infrastructure like bridges, storage tanks, and pipelines",
+    "hq_city": "Birmingham",
+    "country": "United Kingdom",
+    "founded": 2018,
+    "score_composite": 78.0,
+    "score_commercial": 70.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Perception",
+    "stack_4d": "Platform",
+    "biz_model_4d": "RaaS",
+    "investors": [
+      "Britbots",
+      "British Design Fund",
+      "British Robotics Seed Fund",
+      "HAX",
+      "Pi Labs",
+      "Plug and Play",
+      "SOSV"
+    ],
+    "tags": [
+      "robotic inspection",
+      "NDT",
+      "infrastructure monitoring",
+      "climbing robots",
+      "AEROGRIP",
+      "asset integrity"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 2125655,
+        "amount_local": 2125655,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 81,
+    "name": "HypergameAI",
+    "website": "https://hypergame.ai/",
+    "sector": "Manufacturing",
+    "stage": "Pre-Seed",
+    "one_liner": "HypergameAI builds AI-driven, adaptive decisions that detect, learn, adapt, and control high-end cyber adversaries.",
+    "hq_city": "Scottsdale",
+    "country": "United States",
+    "founded": 2023,
+    "score_composite": 45.25,
+    "score_commercial": 15.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "PHX Ventures",
+      "Plug and Play",
+      "Sterling Road"
+    ],
+    "tags": [
+      "Aerospace",
+      "Spacetech",
+      "Artificial Intelligence",
+      "AI",
+      "Cybersecurity",
+      "Maritime"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Pre-Seed",
+        "amount_usd": 500000,
+        "amount_local": 500000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 464,
+    "name": "icustoms",
+    "website": "https://www.icustoms.ai",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "ClearCustoms use AI & ML to reduce 200m new annual customs declarations time",
+    "hq_city": "London",
+    "country": "United Kingdom",
+    "founded": 2022,
+    "score_composite": 40.5,
+    "score_commercial": 40.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Fuel Ventures",
+      "MontBlu Capital",
+      "Outrun Ventures",
+      "Plug and Play",
+      "SyndicateRoom"
+    ],
+    "tags": [
+      "AI customs",
+      "trade compliance",
+      "automated declarations",
+      "global trade",
+      "document processing",
+      "ICS2"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 2200000,
+        "amount_local": 2200000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 121,
+    "name": "Industrial Next",
+    "website": "https://www.industrialnext.ai",
+    "sector": "Robotics",
+    "stage": "Seed",
+    "one_liner": "Industrial Next develops AI-powered workstations that automate manual assembly processes using proprietary learning, vision, and control software.",
+    "hq_city": "San Francisco",
+    "country": "United States",
+    "founded": 2021,
+    "score_composite": 54.2,
+    "score_commercial": 50.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Perception",
+    "stack_4d": "Solution",
+    "biz_model_4d": "Integration_Consulting",
+    "investors": [
+      "AlphaX Partners",
+      "BOILING POINT INVESTMENT",
+      "Khosla Ventures",
+      "Lenovo Capital and Incubator Group (LCIG)",
+      "MiraclePlus",
+      "Xiaomi Ventures",
+      "Y Combinator"
+    ],
+    "tags": [
+      "AI",
+      "Advanced Manufacturing",
+      "Artificial Intelligence",
+      "Automation",
+      "Computer Vision",
+      "Consumer Electronics",
+      "EV",
+      "Electronic Vehicles",
+      "Electronics",
+      "Employee Management",
+      "Factory",
+      "Factory Workflow",
+      "HMI",
+      "Hardware",
+      "Human Machine Interface",
+      "Industrial IoT",
+      "Industrial Robotics",
+      "Industry 4.0",
+      "Inspection",
+      "Internet of Things",
+      "Inventory Management",
+      "IoT",
+      "ML",
+      "Machine Learning",
+      "Machine Vision",
+      "Pick and Pack",
+      "Process Automation",
+      "Production",
+      "Productivity",
+      "Robotics",
+      "Sensors",
+      "Supply Chain Optimization",
+      "Warehouse Automation",
+      "Warehousing",
+      "Workflow Automation"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 12000000,
+        "amount_local": 12000000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 17,
+    "name": "Infinity Loop",
+    "website": "https://www.infinityloop.ai",
+    "sector": "Supply Chain",
+    "stage": "Undisclosed",
+    "one_liner": "Procurement negotiations, simplified.",
+    "hq_city": "New York",
+    "country": "United States",
+    "founded": 2022,
+    "score_composite": 40.5,
+    "score_commercial": 40.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [],
+    "tags": [
+      "Analytics",
+      "B2B",
+      "Enterprise",
+      "Procurement",
+      "SaaS",
+      "Software as a Service",
+      "Sourcing"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 1350000,
+        "amount_local": 1350000,
+        "currency": "USD",
+        "announced_date": "2024-08-29",
+        "investors": [
+          "Restive Ventures"
+        ]
+      },
+      {
+        "round_type": "Seed",
+        "amount_usd": 5000000,
+        "amount_local": 5000000,
+        "currency": "USD",
+        "announced_date": "2025-08-14",
+        "investors": [
+          "Glasswing Ventures",
+          "TIAA Ventures",
+          "Plug and Play",
+          "Restive Ventures",
+          "angel investors"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1688,
+    "name": "Kardinal",
+    "website": "https://kardinal.ai",
+    "sector": "Supply Chain",
+    "stage": "Series A",
+    "one_liner": "AI-powered route optimization platform for delivery logistics that dynamically adapts routes in real-time to operational disruptions.",
+    "hq_city": "Paris",
+    "country": "France",
+    "founded": 2015,
+    "score_composite": 82.25,
+    "score_commercial": 70.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Benhamou Global Ventures",
+      "CapHorn Invest",
+      "Plug and Play",
+      "Serena Capital"
+    ],
+    "tags": [
+      "route optimization",
+      "last-mile delivery",
+      "AI logistics",
+      "real-time routing",
+      "SaaS",
+      "transportation management"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 4214375,
+        "amount_local": 4214375,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 8428751,
+        "amount_local": 8428751,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1687,
+    "name": "Koffie Labs",
+    "website": "http://www.getkoffie.com",
+    "sector": "Other",
+    "stage": "Series A",
+    "one_liner": "AI-driven insurance for commercial fleets.",
+    "hq_city": "San Francisco",
+    "country": "United States",
+    "founded": 2017,
+    "score_composite": 63.25,
+    "score_commercial": 35.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Solution",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "2048 Ventures",
+      "Anthemis Group",
+      "Breakout Capital",
+      "C2 Ventures: C2ventures.co",
+      "Lerer Hippeau",
+      "Plug and Play",
+      "Plug and Play Insurtech",
+      "Two Lanterns Venture Partners"
+    ],
+    "tags": [
+      "AI insurance",
+      "commercial fleets",
+      "autonomous vehicles",
+      "predictive underwriting",
+      "truck insurance"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 5166667,
+        "amount_local": 5166667,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 10333333,
+        "amount_local": 10333333,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1686,
+    "name": "Krave Mart",
+    "website": "http://kravemart.com",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "Quick-commerce darkstore model for Pakistan",
+    "hq_city": "Karachi",
+    "country": "Pakistan",
+    "founded": 2021,
+    "score_composite": 71.75,
+    "score_commercial": 70.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Mobility",
+    "stack_4d": "Solution",
+    "biz_model_4d": "Marketplace",
+    "investors": [
+      "MSA Capital",
+      "92 Ventures",
+      "Zain Capital and Angel Inesvtors"
+    ],
+    "tags": [
+      "quick-commerce",
+      "grocery delivery",
+      "darkstore",
+      "last-mile delivery",
+      "e-commerce",
+      "Pakistan"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 1600000,
+        "amount_local": 1600000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1740,
+    "name": "KraveMart",
+    "website": "https://www.kravemart.com",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "A tech-enabled last-mile delivery platform offering fast, reliable delivery of groceries and convenience items in urban markets.",
+    "hq_city": "Los Angeles",
+    "country": "USA",
+    "founded": 2021,
+    "score_composite": null,
+    "score_commercial": null,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": null,
+    "tags": null,
+    "funding_rounds": []
+  },
+  {
+    "id": 1478,
+    "name": "Lula",
+    "website": "https://www.luladelivery.com/",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "We're creating the world's largest convenience store by empowering local retail. An instant needs delivery service which reduces plastic waste and carbon emissions while bringing convenience to you!",
+    "hq_city": "Philadelphia",
+    "country": "United States",
+    "founded": 2020,
+    "score_composite": 59.5,
+    "score_commercial": 65.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Mobility",
+    "stack_4d": "Platform",
+    "biz_model_4d": "Marketplace",
+    "investors": [
+      "Alumni Ventures Group",
+      "Ben Franklin Technology Partners of Southeastern Pennsylvania",
+      "Broad Street Angels",
+      "Exelon Corporation",
+      "Food-X",
+      "Fund for Health",
+      "Juno Capital",
+      "NZVCA",
+      "Outlander Labs",
+      "Park City Angels",
+      "Plug and Play",
+      "Ripple Ventures",
+      "Simple.capital",
+      "SOSV",
+      "UP Partners"
+    ],
+    "tags": [
+      "Care Delivery / Delivery / Last Mile Logistics / Drug Delivery / Hardware / Retail Automation / Software / Software as a Service / SaaS / Transportation"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 6610000,
+        "amount_local": 6610000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1689,
+    "name": "Lyrid",
+    "website": "http://lyrid.io",
+    "sector": "Other",
+    "stage": "Seed",
+    "one_liner": "Airbnb-like platform for cloud computing enabling cost-effective scaling through local data centers",
+    "hq_city": "San Jose",
+    "country": "United States",
+    "founded": 2019,
+    "score_composite": 64.5,
+    "score_commercial": 50.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Infrastructure",
+    "stack_4d": "Platform",
+    "biz_model_4d": "Marketplace",
+    "investors": [],
+    "tags": [
+      "cloud infrastructure",
+      "Kubernetes automation",
+      "cloud cost optimization",
+      "platform engineering",
+      "distributed cloud",
+      "AI-powered automation"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 3100000,
+        "amount_local": 3100000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 353,
+    "name": "Maven Robotics",
+    "website": "http://mavenrobotics.ai",
+    "sector": "Robotics",
+    "stage": "Series A",
+    "one_liner": "Robotics company developing general-purpose autonomous working robots for industrial environments",
+    "hq_city": "Santa Clara",
+    "country": "United States",
+    "founded": 2024,
+    "score_composite": 46.2,
+    "score_commercial": 45.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Manipulation",
+    "stack_4d": "Solution",
+    "biz_model_4d": "Hardware_OEM",
+    "investors": [],
+    "tags": [
+      "autonomous robots",
+      "industrial automation",
+      "robotic manipulation",
+      "AI robotics",
+      "manufacturing",
+      "logistics"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 15000000,
+        "amount_local": 15000000,
+        "currency": "USD",
+        "announced_date": "2024-08-12",
+        "investors": [
+          "LocalGlobe"
+        ]
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 100000000,
+        "amount_local": 100000000,
+        "currency": "USD",
+        "announced_date": "2026-05-01",
+        "investors": []
+      }
+    ]
+  },
+  {
+    "id": 1690,
+    "name": "Maximum AI",
+    "website": "https://www.getmaximum.ai/",
+    "sector": "Supply Chain",
+    "stage": "Undisclosed",
+    "one_liner": "AI-powered communications platform that automates phone, email, and chat outreach to help freight brokers match shipments with available truck capacity",
+    "hq_city": "Chicago",
+    "country": "USA",
+    "founded": null,
+    "score_composite": 42.5,
+    "score_commercial": 15.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [],
+    "tags": [
+      "freight brokerage",
+      "AI automation",
+      "CRM",
+      "supply chain communications",
+      "logistics tech"
+    ],
+    "funding_rounds": []
+  },
+  {
+    "id": 1731,
+    "name": "Mosaic",
+    "website": "https://mosaicltl.com",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "Mosaic unifies technology, people, and process to help distributors and manufacturers accelerate sales, optimize freight costs, and gain network-wide visibility.",
+    "hq_city": "Chicago",
+    "country": "USA",
+    "founded": 2021,
+    "score_composite": null,
+    "score_commercial": null,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": null,
+    "tags": null,
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 3600000,
+        "amount_local": 3600000,
+        "currency": "USD",
+        "announced_date": "2024-10-28",
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1691,
+    "name": "Nemodata",
+    "website": "https://www.nemodata.ai",
+    "sector": "Physical AI",
+    "stage": "Out of Business",
+    "one_liner": "AI-powered predictive maintenance platform for commercial vehicle fleets to prevent breakdowns and optimize operations",
+    "hq_city": "Tel Aviv",
+    "country": "Israel",
+    "founded": 2020,
+    "score_composite": 68.0,
+    "score_commercial": 50.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "EIT Urban Mobility"
+    ],
+    "tags": [
+      "predictive maintenance",
+      "fleet operations",
+      "electric vehicles",
+      "AI analytics",
+      "telematics",
+      "commercial vehicles"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 350000,
+        "amount_local": 350000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1692,
+    "name": "newtrul",
+    "website": "http://www.newtrul.com",
+    "sector": "Supply Chain",
+    "stage": "Out of Business",
+    "one_liner": "Expedia-like search platform enabling freight carriers to find and book shipments instantly.",
+    "hq_city": "Chicago",
+    "country": "USA",
+    "founded": 2018,
+    "score_composite": 59.0,
+    "score_commercial": 40.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [],
+    "tags": [
+      "freight brokerage",
+      "AI automation",
+      "carrier matching",
+      "logistics SaaS",
+      "load booking",
+      "supply chain"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 2250000,
+        "amount_local": 2250000,
+        "currency": "USD",
+        "announced_date": "2021-01-01",
+        "investors": [
+          "Autotech Ventures",
+          "I2BF",
+          "Fission Ventures",
+          "Plug and Play Ventures"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1732,
+    "name": "Nexxa AI",
+    "website": "https://nexxa.ai",
+    "sector": null,
+    "stage": "Seed",
+    "one_liner": "Nexxa AI builds specialized AI agents that augment industrial engineers in heavy project industries like railroads, energy, construction, and mining.",
+    "hq_city": "San Francisco",
+    "country": "US",
+    "founded": 2024,
+    "score_composite": null,
+    "score_commercial": null,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Augment Ventures"
+    ],
+    "tags": [
+      "AI automation",
+      "enterprise AI",
+      "process optimization",
+      "decision intelligence",
+      "RPA"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 9000000,
+        "amount_local": 9000000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": []
+      }
+    ]
+  },
+  {
+    "id": 1742,
+    "name": "Ocean",
+    "website": null,
+    "sector": "Supply Chain",
+    "stage": "Pre-Seed",
+    "one_liner": "Optimizes ocean freight and global shipping logistics using data-driven supply chain solutions to improve efficiency and reduce costs.",
+    "hq_city": "San Francisco",
+    "country": "USA",
+    "founded": 2022,
+    "score_composite": null,
+    "score_commercial": null,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": null,
+    "tags": null,
+    "funding_rounds": []
+  },
+  {
+    "id": 1693,
+    "name": "Oloid",
+    "website": "https://www.oloid.ai",
+    "sector": "Physical AI",
+    "stage": "Series A",
+    "one_liner": "Computer vision-based authentication and workplace safety platform for deskless industrial workers",
+    "hq_city": "Sunnyvale",
+    "country": "United States",
+    "founded": 2018,
+    "score_composite": 81.45,
+    "score_commercial": 78.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Perception",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Emergent Ventures",
+      "Unusual Ventures"
+    ],
+    "tags": [
+      "passwordless authentication",
+      "computer vision",
+      "IAM",
+      "frontline workers",
+      "workplace security",
+      "biometrics"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Series A",
+        "amount_usd": 15334000,
+        "amount_local": 15334000,
+        "currency": "USD",
+        "announced_date": "2022-02-01",
+        "investors": null
+      },
+      {
+        "round_type": "Series A1",
+        "amount_usd": 6000000,
+        "amount_local": 6000000,
+        "currency": "USD",
+        "announced_date": "2024-10-24",
+        "investors": [
+          "Yaletown Partners",
+          "Exposition Ventures",
+          "George Kaiser Family Foundation",
+          "Carya Ventures"
+        ]
+      },
+      {
+        "round_type": "Seed",
+        "amount_usd": 7667000,
+        "amount_local": 7667000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 413,
+    "name": "Omnix IA Corp",
+    "website": "http://omnixcorp.com",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "OMNIX is a B2B SaaS platform designed for process automation and the improvement of operational fluidity across various industries. The solution focuses on three fundamental pillars: the ability to work with inaccurate data, anomaly detection, and the recovery of operational fluidity.",
+    "hq_city": "Santiago",
+    "country": "Chile",
+    "founded": 2019,
+    "score_composite": 51.5,
+    "score_commercial": 50.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Fundaci\u00f3n Chile",
+      "Plug and Play",
+      "Wayra"
+    ],
+    "tags": [
+      "AI automation",
+      "operational efficiency",
+      "anomaly detection",
+      "process optimization",
+      "real-time decisioning",
+      "SaaS platform"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 1450000,
+        "amount_local": 1450000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1733,
+    "name": "Onyx",
+    "website": "https://onyx-robotics.com",
+    "sector": "Physical AI",
+    "stage": "Seed",
+    "one_liner": "Onyx Robotics is a Boston-based software platform that optimizes AI models from real hardware data to improve accuracy in simulation and robotic controls without requiring teams to manage AI/ML infrastructure.",
+    "hq_city": "San Francisco",
+    "country": "United States",
+    "founded": 2021,
+    "score_composite": null,
+    "score_commercial": null,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": null,
+    "tags": null,
+    "funding_rounds": [
+      {
+        "round_type": "Series A",
+        "amount_usd": 35000000,
+        "amount_local": 35000000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": [
+          "Conviction"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 165,
+    "name": "Ottopia Technologies",
+    "website": "http://ottopia.tech",
+    "sector": "Robotics",
+    "stage": "Series A",
+    "one_liner": "Ottopia Technologies develops and provides a platform that enables remote humans to guide vehicles in a way that is safe, reliable, scalable, and cyber-secure.",
+    "hq_city": "Tel Aviv",
+    "country": "Israel",
+    "founded": 2018,
+    "score_composite": 58.5,
+    "score_commercial": 55.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Mobility",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "AI Alliance Fund",
+      "ComfortDelGro Capital Partners",
+      "Glory Ventures",
+      "Hyundai Motor Company",
+      "IN Venture",
+      "Maven Ventures",
+      "MizMaa Ventures",
+      "Nextgear Ventures",
+      "Plug and Play"
+    ],
+    "tags": [
+      "teleoperation",
+      "autonomous vehicles",
+      "remote driving",
+      "hybrid AI",
+      "defense robotics",
+      "fleet management"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 8833333,
+        "amount_local": 8833333,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 17666667,
+        "amount_local": 17666667,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 253,
+    "name": "Porth",
+    "website": "https://www.porth.app",
+    "sector": "Supply Chain",
+    "stage": "Pre-Seed",
+    "one_liner": "Porth is a Collaborative Control Tower for Global Supply Chain. With full and real-time visibility, automation and collaboration between business partners, we're simplifying global trade.",
+    "hq_city": "Guadalajara",
+    "country": "Mexico",
+    "founded": 2021,
+    "score_composite": 42.8,
+    "score_commercial": 40.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Human_Collaboration",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Plug and Play"
+    ],
+    "tags": [
+      "supply chain",
+      "logistics",
+      "real-time tracking",
+      "collaboration",
+      "global trade",
+      "SaaS"
+    ],
+    "funding_rounds": []
+  },
+  {
+    "id": 1479,
+    "name": "Proof Energy",
+    "website": "http://proof-energy.com",
+    "sector": "Supply Chain",
+    "stage": "Growth",
+    "one_liner": "Fuel Cells 2.0",
+    "hq_city": "San Francisco",
+    "country": "United States",
+    "founded": 2018,
+    "score_composite": 49.5,
+    "score_commercial": 45.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Mobility",
+    "stack_4d": "Solution",
+    "biz_model_4d": "Hardware_OEM",
+    "investors": [
+      "Cleantech Open"
+    ],
+    "tags": [
+      "fuel cells",
+      "hydrogen",
+      "commercial EVs",
+      "clean energy",
+      "ethanol",
+      "ammonia"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 800000,
+        "amount_local": 800000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 1600000,
+        "amount_local": 1600000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series B",
+        "amount_usd": 2400000,
+        "amount_local": 2400000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series C",
+        "amount_usd": 3200000,
+        "amount_local": 3200000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Growth",
+        "amount_usd": 4000000,
+        "amount_local": 4000000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1694,
+    "name": "Qaptis",
+    "website": "https://www.qaptis.com",
+    "sector": "Other",
+    "stage": "Seed",
+    "one_liner": "A carbon capture kit that can capture up to 90% of carbon emissions from trucks.",
+    "hq_city": "Lausanne",
+    "country": "Switzerland",
+    "founded": 2020,
+    "score_composite": 47.25,
+    "score_commercial": 15.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Mobility",
+    "stack_4d": "Solution",
+    "biz_model_4d": "Hardware_OEM",
+    "investors": [
+      "BlackWood Ventures",
+      "Cargill",
+      "Plug and Play",
+      "YB StartUp"
+    ],
+    "tags": [
+      "carbon capture",
+      "decarbonization",
+      "heavy-duty vehicles",
+      "retrofit technology",
+      "climate tech"
+    ],
+    "funding_rounds": []
+  },
+  {
+    "id": 1695,
+    "name": "Qualle",
+    "website": "http://qualle.co",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "Automates street turn requests for shipping containers to reduce empty miles",
+    "hq_city": "Nashville",
+    "country": "United States",
+    "founded": 2019,
+    "score_composite": 70.0,
+    "score_commercial": 50.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "Marketplace",
+    "investors": [
+      "Maersk Growth"
+    ],
+    "tags": [
+      "supply chain",
+      "logistics",
+      "sustainability",
+      "container optimization",
+      "street turns",
+      "decarbonization"
+    ],
+    "funding_rounds": []
+  },
+  {
+    "id": 1696,
+    "name": "Rafay Systems",
+    "website": "https://www.rafay.co",
+    "sector": "Other",
+    "stage": "Series B",
+    "one_liner": "Provides a SaaS platform for automating lifecycle management of containerized applications and Kubernetes operations across cloud and edge environments.",
+    "hq_city": "Sunnyvale",
+    "country": "United States",
+    "founded": 2017,
+    "score_composite": 78.0,
+    "score_commercial": 75.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Infrastructure",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Costanoa Ventures",
+      "FLOODGATE",
+      "ForgePoint Capital",
+      "Menlo Ventures",
+      "Moment Ventures",
+      "NTT DOCOMO Ventures",
+      "Plug and Play",
+      "Ridge Ventures (Formerly known as IDG Ventures USA)"
+    ],
+    "tags": [
+      "Kubernetes management",
+      "AI infrastructure orchestration",
+      "cloud-native",
+      "multi-tenancy",
+      "GPU orchestration",
+      "SaaS"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 5500000,
+        "amount_local": 5500000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 11000000,
+        "amount_local": 11000000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series B",
+        "amount_usd": 16500000,
+        "amount_local": 16500000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 845,
+    "name": "RapidFort",
+    "website": "http://rapidfort.com",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "RapidFort is the first Software Attack Surface Optimization Platform.",
+    "hq_city": "Sunnyvale",
+    "country": "United States",
+    "founded": 2020,
+    "score_composite": 44.2,
+    "score_commercial": 40.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Alumni Ventures Group",
+      "Bloomberg Beta",
+      "Boulder Ventures",
+      "Cheyenne Ventures",
+      "Felicis Ventures",
+      "Florida Funders",
+      "ForgePoint Capital",
+      "Gaingels",
+      "GIT1K",
+      "Global Founders Capital",
+      "Mana Ventures",
+      "Plug and Play"
+    ],
+    "tags": [
+      "container security",
+      "software supply chain",
+      "CVE remediation",
+      "cloud security",
+      "compliance automation",
+      "attack surface reduction"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Series A",
+        "amount_usd": 42000000,
+        "amount_local": 42000000,
+        "currency": "USD",
+        "announced_date": "2026-02-03",
+        "investors": [
+          "Blue Cloud Ventures",
+          "Forgepoint Capital",
+          "Felicis Ventures",
+          "Alumni Ventures"
+        ]
+      },
+      {
+        "round_type": "Seed",
+        "amount_usd": 10750000,
+        "amount_local": 10750000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1014,
+    "name": "REPOWR",
+    "website": "http://repowr.com",
+    "sector": "Supply Chain",
+    "stage": "Series A",
+    "one_liner": "A collaborative logistics marketplace and digital-leasing platform for logistics companies.",
+    "hq_city": "Birmingham",
+    "country": "United States",
+    "founded": 2020,
+    "score_composite": 51.0,
+    "score_commercial": 50.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Mobility",
+    "stack_4d": "Platform",
+    "biz_model_4d": "Marketplace",
+    "investors": [
+      "Bessemer Venture Partners",
+      "Harbinger Capital",
+      "Greenline Ventures",
+      "Harbert Growth Partners"
+    ],
+    "tags": [
+      "logistics",
+      "trailer sharing",
+      "on-demand fleet",
+      "asset utilization",
+      "digital freight",
+      "supply chain"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 4225000,
+        "amount_local": 4225000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 8450000,
+        "amount_local": 8450000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1697,
+    "name": "Ship Angel",
+    "website": "https://www.shipangel.com/",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "AI-enabled rate management platform for global shippers and cargo owners.",
+    "hq_city": "New York",
+    "country": "United States",
+    "founded": 2023,
+    "score_composite": 66.0,
+    "score_commercial": 40.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [],
+    "tags": [
+      "AI logistics",
+      "rate management",
+      "supply chain automation",
+      "freight audit",
+      "booking automation",
+      "SaaS"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 5500000,
+        "amount_local": 5500000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 647,
+    "name": "SimpliRoute",
+    "website": "http://simpliroute.com",
+    "sector": "Supply Chain",
+    "stage": "Series B",
+    "one_liner": "SimpliRoute has developed an all-in-one intuitive last-mile platform with advanced route optimization engines and machine learning technology. The company integrates optimization and route tracking into one intuitive online platform.",
+    "hq_city": "Santiago",
+    "country": "Chile",
+    "founded": 2015,
+    "score_composite": 62.0,
+    "score_commercial": 65.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "500 Global",
+      "ChileGlobal Angels",
+      "Chile Ventures",
+      "Google for Startups",
+      "Magical",
+      "OIC",
+      "Plug and Play",
+      "Right Side Capital Management",
+      "Taram Capital",
+      "TheVentureCity Fund",
+      "Wayra",
+      "Wayra Chile"
+    ],
+    "tags": [
+      "last-mile delivery",
+      "route optimization",
+      "AI logistics",
+      "real-time tracking",
+      "autonomous agents",
+      "logistics automation"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 1905833,
+        "amount_local": 1905833,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 3811667,
+        "amount_local": 3811667,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series B",
+        "amount_usd": 5717500,
+        "amount_local": 5717500,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1698,
+    "name": "Sinay",
+    "website": "https://www.sinay.fr",
+    "sector": "Other",
+    "stage": "Series A",
+    "one_liner": "Maritime data analytics platform for fisheries and marine environment monitoring",
+    "hq_city": "Caen",
+    "country": "France",
+    "founded": 2008,
+    "score_composite": 65.75,
+    "score_commercial": 60.0,
+    "score_irs": null,
+    "env_4d": "Subsea_Underground",
+    "func_4d": "Perception",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Alpana Ventures",
+      "Betatron Venture Group",
+      "BNP Paribas",
+      "Cr\u00e9dit Agricole",
+      "Cr\u00e9dit Agricole Innove en Normandie",
+      "Littoral Capital Partners",
+      "LLC",
+      "Motion Ventures",
+      "Normandie Incubation",
+      "Normandie Littoral",
+      "Normandie Participations",
+      "Plug and Play",
+      "Seabird Ventures",
+      "Seventure Partners",
+      "Shift4Good",
+      "Sustainable Ocean Alliance"
+    ],
+    "tags": [
+      "maritime monitoring",
+      "environmental compliance",
+      "offshore wind",
+      "marine biodiversity",
+      "acoustic monitoring",
+      "weather analytics"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 3984290,
+        "amount_local": 3984290,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 7968580,
+        "amount_local": 7968580,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1739,
+    "name": "Slik",
+    "website": "https://slik.ai",
+    "sector": "Physical AI",
+    "stage": "Pre-Seed",
+    "one_liner": "Develops foundational AI models that power adaptive robotic systems for industrial and logistics automation.",
+    "hq_city": "San Francisco",
+    "country": "USA",
+    "founded": 2022,
+    "score_composite": null,
+    "score_commercial": null,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": null,
+    "tags": null,
+    "funding_rounds": []
+  },
+  {
+    "id": 291,
+    "name": "Southie Autonomy",
+    "website": "http://southieautonomyworks.com",
+    "sector": "Robotics",
+    "stage": "Out of Business",
+    "one_liner": "Southie Autonomy makes a No-Code software platform for robot arms that lets logistics and manufacturing businesses automate tasks as fast as their products change.",
+    "hq_city": "Boston",
+    "country": "United States",
+    "founded": 2017,
+    "score_composite": 59.2,
+    "score_commercial": 55.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Subsystem",
+    "biz_model_4d": "Pure_SaaS",
+    "investors": [
+      "BootstrapLabs",
+      "Creative Ventures",
+      "MassChallenge",
+      "MassVentures",
+      "Ocean Azul Partners",
+      "Plug and Play",
+      "Techstars",
+      "kineo finance"
+    ],
+    "tags": [
+      "AR",
+      "Advanced Manufacturing",
+      "Augmented Reality",
+      "Robotics",
+      "Warehouse Automation",
+      "Warehousing"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Debt financing",
+        "amount_usd": 7720000,
+        "amount_local": 7720000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1737,
+    "name": "Synchronous",
+    "website": null,
+    "sector": "Robotics",
+    "stage": "Seed",
+    "one_liner": "Developed robotic automation solutions for industrial manufacturing processes, combining hardware and intelligent control systems.",
+    "hq_city": "Boston",
+    "country": "USA",
+    "founded": 2018,
+    "score_composite": null,
+    "score_commercial": null,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": null,
+    "tags": null,
+    "funding_rounds": []
+  },
+  {
+    "id": 1019,
+    "name": "Syncware",
+    "website": "http://syncware.ai",
+    "sector": "Robotics",
+    "stage": "Seed",
+    "one_liner": "SYNCWARE uses AI to calculate better picking routes, slotting strategies, and warehouse layouts.",
+    "hq_city": "Singapore",
+    "country": "Singapore",
+    "founded": 2021,
+    "score_composite": 55.2,
+    "score_commercial": 50.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Intelligence",
+    "biz_model_4d": "Pure_SaaS",
+    "investors": [
+      "Plug and Play Tech Center",
+      "Y Combinator"
+    ],
+    "tags": [
+      "Robotics"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 1000000,
+        "amount_local": 1000000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1699,
+    "name": "Taloflow",
+    "website": "https://www.taloflow.ai",
+    "sector": "Other",
+    "stage": "Seed",
+    "one_liner": "AI-powered collaborative platform for enterprise technology vendor evaluation and selection",
+    "hq_city": "Los Angeles",
+    "country": "United States",
+    "founded": 2017,
+    "score_composite": 57.5,
+    "score_commercial": 40.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Blockchain Founders Fund",
+      "First Check Ventures",
+      "Plug and Play",
+      "Victory Square",
+      "Voyager Capital",
+      "Wonder Ventures",
+      "Y Combinator",
+      "Y Combinator Continuity Fund"
+    ],
+    "tags": [
+      "vendor evaluation",
+      "enterprise SaaS",
+      "AI research",
+      "procurement automation",
+      "technology selection"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 3694380,
+        "amount_local": 3694380,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1638,
+    "name": "Thalorin",
+    "website": "https://www.thalorin.ai/",
+    "sector": "Defense",
+    "stage": "Seed",
+    "one_liner": "Thalorin is a software company that develops regulatory compliance management software solutions.",
+    "hq_city": "Denver",
+    "country": "United States",
+    "founded": 2024,
+    "score_composite": 46.0,
+    "score_commercial": 20.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Forum Ventures",
+      "Plug and Play",
+      "Right Side Capital Management"
+    ],
+    "tags": [
+      "compliance automation",
+      "GRC",
+      "AI governance",
+      "cybersecurity",
+      "regulatory tech",
+      "defense tech"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 2715000,
+        "amount_local": 2715000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1700,
+    "name": "ThroughPut",
+    "website": "http://www.throughput.ai",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "AI-powered supply chain optimization platform for predictive replenishment and industrial operations.",
+    "hq_city": "Palo Alto",
+    "country": "United States",
+    "founded": 2017,
+    "score_composite": 65.5,
+    "score_commercial": 40.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Bishop Ranch Intelligence Innovation Accelerator",
+      "Epicenter Logistics Innovation Accelerator",
+      "Innova Memphis",
+      "Plug and Play",
+      "Sacramento Angels",
+      "Team Ignite Ventures"
+    ],
+    "tags": [
+      "supply chain optimization",
+      "predictive replenishment",
+      "AI analytics",
+      "spare parts management",
+      "digital twin",
+      "demand sensing"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 10975000,
+        "amount_local": 10975000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1701,
+    "name": "Turbodega",
+    "website": "http://www.turbodega.com",
+    "sector": "Supply Chain",
+    "stage": "Out of Business",
+    "one_liner": "Digitizing the supply chain of small grocery stores in Latam",
+    "hq_city": "Lima",
+    "country": "Peru",
+    "founded": 2019,
+    "score_composite": 67.25,
+    "score_commercial": 45.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "2048 Ventures",
+      "BNSG Capital",
+      "Creative Destruction Lab (CDL)",
+      "Green Egg Ventures",
+      "Harlem Capital Partners",
+      "Kairos",
+      "Kairos Venture Investments",
+      "LLC",
+      "Plug and Play",
+      "Plug & Play Mexico",
+      "Reflect Ventures",
+      "Supernode Ventures"
+    ],
+    "tags": [
+      "supply chain",
+      "fintech",
+      "Latam",
+      "B2B",
+      "SMB",
+      "digital transformation"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 4500000,
+        "amount_local": 4500000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1734,
+    "name": "Upwell",
+    "website": "https://upwell.com",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "Upwell is an AI-powered accounts receivable automation platform built specifically for logistics companies to streamline billing, collections, and cash flow.",
+    "hq_city": "San Francisco",
+    "country": "USA",
+    "founded": 2021,
+    "score_composite": null,
+    "score_commercial": null,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": null,
+    "tags": null,
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 6500000,
+        "amount_local": 6500000,
+        "currency": "USD",
+        "announced_date": "2025-03-07",
+        "investors": [
+          "Vertical Ventures"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1702,
+    "name": "USYNCRO",
+    "website": "http://usyncro.com",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "Cloud platform that digitizes international trade by synchronizing shipment documentation, transactions, and logistics processes across supply chain stakeholders.",
+    "hq_city": "Madrid",
+    "country": "Spain",
+    "founded": 2018,
+    "score_composite": 63.5,
+    "score_commercial": 40.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "Draper B1",
+      "Plug and Play",
+      "TheVentureCity - First Ticket",
+      "TheVentureCity Fund"
+    ],
+    "tags": [
+      "trade digitization",
+      "blockchain",
+      "AI",
+      "supply chain",
+      "logistics",
+      "customs"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 1536082,
+        "amount_local": 1536082,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1703,
+    "name": "Veho",
+    "website": "http://shipveho.com",
+    "sector": "Supply Chain",
+    "stage": "Series C",
+    "one_liner": "Crowdsourced last-mile delivery platform for e-commerce companies",
+    "hq_city": "Boulder",
+    "country": "United States",
+    "founded": 2016,
+    "score_composite": 80.5,
+    "score_commercial": 85.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Mobility",
+    "stack_4d": "Solution",
+    "biz_model_4d": "Marketplace",
+    "investors": [
+      "Bling Capital",
+      "Cold Start Ventures",
+      "Construct Capital",
+      "Dorm Room Fund",
+      "Fontinalis Partners",
+      "General Catalyst",
+      "Industry Ventures",
+      "MANTIS Venture Capital",
+      "Origin Ventures",
+      "Plug and Play",
+      "SoftBank Vision Fund",
+      "SpringTime Ventures",
+      "Techstars",
+      "Tiger Global Management"
+    ],
+    "tags": [
+      "last-mile delivery",
+      "e-commerce logistics",
+      "crowdsourced delivery",
+      "parcel delivery",
+      "supply chain technology"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 29916266,
+        "amount_local": 29916266,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 59832531,
+        "amount_local": 59832531,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series B",
+        "amount_usd": 89748797,
+        "amount_local": 89748797,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series C",
+        "amount_usd": 119665063,
+        "amount_local": 119665063,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1735,
+    "name": "Veratrak",
+    "website": "https://veratrak.com",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "Provides a digital trade platform that automates supply chain documentation and processes to increase efficiency and reduce errors in global trade.",
+    "hq_city": "London",
+    "country": "GB",
+    "founded": 2017,
+    "score_composite": null,
+    "score_commercial": null,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": null,
+    "tags": null,
+    "funding_rounds": []
+  },
+  {
+    "id": 6,
+    "name": "Waku Robotics",
+    "website": "http://www.waku-robotics.com",
+    "sector": "Robotics",
+    "stage": "Seed",
+    "one_liner": "Enabling warehouses and factories to select, implement and operate the best robotic solutions.",
+    "hq_city": "Berlin",
+    "country": "Germany",
+    "founded": 2019,
+    "score_composite": 54.2,
+    "score_commercial": 50.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "BITO CAMPUS",
+      "Deeptech Labs",
+      "High-Tech Gr\u00fcnderfonds",
+      "Pi Labs",
+      "Plug and Play",
+      "Plug & Play Mexico",
+      "Schauenburg Ventures GmbH",
+      "TGFS - Technologiegruenderfonds Sachsen"
+    ],
+    "tags": [
+      "robotics",
+      "maintenance management",
+      "predictive maintenance",
+      "CMMS",
+      "industrial automation",
+      "AGV/AMR"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 2762044,
+        "amount_local": 2762044,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "name": "Wareclouds",
+    "website": "http://wareclouds.com",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "Crowdsourcing for ecommerce logistics",
+    "hq_city": "Santiago",
+    "country": "Chile",
+    "founded": 2020,
+    "score_composite": 62.2,
+    "score_commercial": 60.0,
+    "score_irs": null,
+    "env_4d": "Structured_Indoor",
+    "func_4d": "Manipulation",
+    "stack_4d": "Solution",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "2048 Ventures",
+      "ChileGlobal Ventures",
+      "CLIN",
+      "Start-Up Chile"
+    ],
+    "tags": [
+      "ecommerce logistics",
+      "same-day delivery",
+      "crowdsourced fulfillment",
+      "dark stores",
+      "distributed warehousing",
+      "B2C logistics"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 2000000,
+        "amount_local": 2000000,
+        "currency": "USD",
+        "announced_date": "2023-10-23",
+        "investors": [
+          "2048 Ventures"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1704,
+    "name": "Wilya (FKA Gig and Take)",
+    "website": "https://wilya.com",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "Wilya is a workforce scheduling platform that helps manufacturers build a flexible, cross-skilled labor pool to meet shifting production demands.",
+    "hq_city": "Mechanicsburg",
+    "country": "United States",
+    "founded": 2021,
+    "score_composite": 85.0,
+    "score_commercial": 85.0,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": [
+      "25madison",
+      "Ben Franklin Technology Partners",
+      "Iron Prairie Ventures",
+      "Ironspring",
+      "Motivate Venture Capital",
+      "Plug and Play",
+      "Schematic Ventures",
+      "SHRMLabs"
+    ],
+    "tags": [
+      "Advanced Manufacturing",
+      "Delivery",
+      "Last Mile Logistics",
+      "E-Commerce Logistics",
+      "Factory",
+      "Factory Workflow",
+      "Future of Work",
+      "Logistics",
+      "Software",
+      "Software as a Service",
+      "SaaS",
+      "Transportation"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 4000000,
+        "amount_local": 4000000,
+        "currency": "USD",
+        "announced_date": "2024-06-24",
+        "investors": [
+          "Ironspring Ventures",
+          "Schematic Ventures",
+          "Plug & Play Ventures",
+          "Iron Prairie Ventures",
+          "Motivate Ventures",
+          "25Madison"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1743,
+    "name": "xNova",
+    "website": null,
+    "sector": "Physical AI",
+    "stage": "Pre-Seed",
+    "one_liner": "Develops a foundation vision model for industrial and robotic systems to understand and interact with physical environments.",
+    "hq_city": "Boston",
+    "country": "USA",
+    "founded": 2022,
+    "score_composite": null,
+    "score_commercial": null,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": null,
+    "tags": null,
+    "funding_rounds": []
+  },
+  {
+    "id": 1705,
+    "name": "xNova International",
+    "website": "https://www.xnovainternational.com",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "SaaS platform providing SMEs with market intelligence to find buyers and expand in international markets",
+    "hq_city": "Madrid",
+    "country": "Spain",
+    "founded": 2022,
+    "score_composite": 47.0,
+    "score_commercial": 25.0,
+    "score_irs": null,
+    "env_4d": "Virtual_Simulated",
+    "func_4d": "Cognition",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [],
+    "tags": [
+      "market intelligence",
+      "international trade",
+      "SME export",
+      "import-export data",
+      "sales prospecting",
+      "trade analytics"
+    ],
+    "funding_rounds": []
+  },
+  {
+    "id": 1706,
+    "name": "YellowBird",
+    "website": "http://goyellowbird.com",
+    "sector": "Other",
+    "stage": "Seed",
+    "one_liner": "On-demand marketplace connecting insurance carriers and brokers with vetted EHS and risk management professionals",
+    "hq_city": "Scottsdale",
+    "country": "United States",
+    "founded": 2019,
+    "score_composite": 72.25,
+    "score_commercial": 65.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Human_Collaboration",
+    "stack_4d": "Platform",
+    "biz_model_4d": "Marketplace",
+    "investors": [
+      "2Gether-International",
+      "Acadian Capital Ventures",
+      "Arizona Tech Investors",
+      "Bela Juju Ventures",
+      "Cameron Ventures",
+      "Clearstone Enterprises",
+      "Manifold",
+      "Plug and Play",
+      "Revelry Venture Partners",
+      "Ridgepeak Partners"
+    ],
+    "tags": [
+      "EHS",
+      "risk management",
+      "insurance",
+      "safety compliance",
+      "on-demand workforce",
+      "marketplace"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 8030500,
+        "amount_local": 8030500,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1707,
+    "name": "Zeew",
+    "website": "http://www.zeew.eu",
+    "sector": "Supply Chain",
+    "stage": "Seed",
+    "one_liner": "Latvian startup offering on-demand B2C and C2C delivery services via taxi networks, like Uber for packages",
+    "hq_city": "Riga",
+    "country": "Latvia",
+    "founded": 2017,
+    "score_composite": 52.0,
+    "score_commercial": 45.0,
+    "score_irs": null,
+    "env_4d": "Unstructured_Outdoor",
+    "func_4d": "Mobility",
+    "stack_4d": "Platform",
+    "biz_model_4d": "SaaS",
+    "investors": [
+      "500 Global",
+      "Plug and Play",
+      "Poland Prize Program",
+      "Sanabil 500 MENA Seed Accelerator",
+      "Startup Wise Guys",
+      "YouStartIT by MITA Innovation Hub"
+    ],
+    "tags": [
+      "last-mile delivery",
+      "on-demand delivery",
+      "white-label platform",
+      "food delivery",
+      "logistics automation",
+      "SaaS"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 1347524,
+        "amount_local": 1347524,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  },
+  {
+    "id": 1708,
+    "name": "Zuum Transportation",
+    "website": "http://www.zuumapp.com",
+    "sector": "Supply Chain",
+    "stage": "Out of Business",
+    "one_liner": "Zuum provides shippers with on-demand truck drivers ready to pickup and deliver their freight.",
+    "hq_city": "Irvine",
+    "country": "United States",
+    "founded": 2016,
+    "score_composite": 77.5,
+    "score_commercial": 75.0,
+    "score_irs": null,
+    "env_4d": null,
+    "func_4d": null,
+    "stack_4d": null,
+    "biz_model_4d": null,
+    "investors": [
+      "Bridge Bank",
+      "Holman Growth Ventures",
+      "Plug and Play",
+      "SAIC Venture Capital"
+    ],
+    "tags": [
+      "Automotive",
+      "Connected Car",
+      "Logistics",
+      "Transportation"
+    ],
+    "funding_rounds": [
+      {
+        "round_type": "Seed",
+        "amount_usd": 6430000,
+        "amount_local": 6430000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series A",
+        "amount_usd": 12860000,
+        "amount_local": 12860000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      },
+      {
+        "round_type": "Series B",
+        "amount_usd": 19290000,
+        "amount_local": 19290000,
+        "currency": "USD",
+        "announced_date": null,
+        "investors": null
+      }
+    ]
+  }
+]

@@ -5,10 +5,10 @@ import { cls } from '../components/tokens';
 import { AUTH_HEADER as AUTH, api } from '../api/client';
 
 
-const STAGES = ['All Stages', 'pre_seed', 'seed', 'series_a', 'series_b', 'series_c', 'undisclosed'];
+const STAGES = ['All Stages', 'Pre-Seed', 'Seed', 'Series A', 'Series B', 'Series C', 'Undisclosed'];
 const STAGE_LABELS: Record<string, string> = {
-  'All Stages': 'All Stages', pre_seed: 'Pre-Seed', seed: 'Seed',
-  series_a: 'Series A', series_b: 'Series B', series_c: 'Series C+', undisclosed: 'Undisclosed',
+  'All Stages': 'All Stages', 'Pre-Seed': 'Pre-Seed', 'Seed': 'Seed',
+  'Series A': 'Series A', 'Series B': 'Series B', 'Series C': 'Series C', 'Undisclosed': 'Undisclosed',
 };
 
 interface Company {

@@ -1,7 +1,5 @@
 """
 api/routes/sourcing.py — Startup sourcing endpoint with advanced filters.
-
-STAGE VALUES (exact): pre_seed, seed, series_a, series_b, series_c, series_d, undisclosed, n/a
 """
 from fastapi import APIRouter, Query, Depends
 from typing import Optional, List
@@ -11,6 +9,25 @@ from core.db.connection import get_connection
 from api.auth import require_auth
 
 router = APIRouter()
+
+# Normalize legacy snake_case stage values sent by older frontend versions
+_STAGE_NORM = {
+    "pre_seed": "Pre-Seed", "pre-seed": "Pre-Seed",
+    "seed": "Seed",
+    "series_a": "Series A", "series a": "Series A",
+    "series_b": "Series B", "series b": "Series B",
+    "series_c": "Series C", "series c": "Series C", "series c+": "Series C",
+    "series_d": "Series D+", "series d": "Series D+",
+    "series_e": "Series E",
+    "growth": "Growth",
+    "undisclosed": "Undisclosed",
+    "n/a": "Undisclosed",
+}
+
+def _norm_stage(s: Optional[str]) -> Optional[str]:
+    if not s:
+        return None
+    return _STAGE_NORM.get(s.lower().strip(), s)
 
 
 def _format_raised(amount: Optional[int]) -> Optional[str]:
@@ -85,10 +102,10 @@ async def list_sourcing_companies(
                 conditions.append("sector = %s")
                 params.append(sector)
             
-            # Stage filter
+            # Stage filter — normalise so both "series_a" and "Series A" work
             if stage:
                 conditions.append("stage = %s")
-                params.append(stage)
+                params.append(_norm_stage(stage))
             
             # Subsector filter
             if subsector:

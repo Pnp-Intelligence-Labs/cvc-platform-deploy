@@ -369,3 +369,30 @@ Each new change appends an entry under today's date with:
 - New: docs/KEYCLOAK_DUPLO.md — DuploCloud deployment guide
 - Stateless HMAC state (no server storage), auto-provisions users from KC claims
 - Zero changes to require_jwt or any existing endpoints — platform JWT unchanged
+
+## 2026-06-09 — Import cvc_test_data.zip
+- Extracted cvc_test_data.zip → data/test_data/ (2315 companies, 45 partners, 1648 rounds, 89 portfolio)
+- Rewrote scripts/import_test_data.py: added --append upsert-by-name, stage normalization, portfolio.json merging, funding round dedup, company_lifecycle entries
+- Imported all data: 2315 companies (stages normalized), 45 partners, 1648 funding rounds, 89 lifecycle entries (stage=portfolio, status=invested)
+
+## 2026-06-09 — Feature audit + fixes: PnPBERT, recommendations, news, sourcing
+
+### PnPBERT / Recommendation Engine
+- Confirmed working: sentence-transformers all-MiniLM-L6-v2 loaded, pnpbert_embeddings table exists
+- Ran warmup_embeddings.py: 3979 unique company facets cached in 6.3s, 4766 vectors in DB
+- Assigned nate to 8 partners (Brambles, BNSF, Cummins, Rockwell, Walmart, Amazon, Northrop Grumman, Maersk) — partner personalization now active
+- Enriched partner sectors_of_interest/challenge_areas for BNSF + Brambles for richer PnPBERT query vectors
+- Fixed .env: DB_PASSWORD=platform_local (was blank, breaking warmup/standalone scripts)
+
+### Sourcing stage filter (broken → fixed)
+- Stage normalization (import) changed DB values from snake_case to canonical (Seed, Series A etc.)
+- CompanySearch.tsx: STAGES + STAGE_LABELS updated from snake_case to canonical values
+- SourcingView.tsx: Series C+ → Series C (DB has Series C)
+- api/routes/sourcing.py: added _norm_stage() so backend accepts both old and new format
+- Verified: Seed→741, Series A→373, Pre-Seed→128, series_a (legacy)→373 ✅
+
+### News feature status
+- Feed endpoint works but returns only activity items (no news/briefings)
+- Requires BRAVE_API_KEY in .env to fetch news articles into companies.news_articles
+- Requires briefing worker run to populate weekly_signals + briefing_insights tables
+- Traction scoring code is correct — needs partner_intros data (real usage or import)

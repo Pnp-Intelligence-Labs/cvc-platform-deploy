@@ -29,7 +29,7 @@ interface ShortlistModal {
   companyName: string;
 }
 
-const STAGES  = ['All Stages', 'Pre-Seed', 'Seed', 'Series A', 'Series B', 'Series C+'];
+const STAGES  = ['All Stages', 'Pre-Seed', 'Seed', 'Series A', 'Series B', 'Series C'];
 
 function ScoreBar({ score }: { score: number }) {
   const color = score >= 80 ? '#10b981' : score >= 60 ? '#F59E0B' : '#ef4444';
