@@ -6,6 +6,7 @@ Primary + backup key fallback via env vars BRAVE_SEARCH_KEY / BRAVE_SEARCH_KEY_B
 """
 
 import os
+
 import requests
 
 

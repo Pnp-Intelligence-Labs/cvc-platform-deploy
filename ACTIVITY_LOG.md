@@ -4,6 +4,32 @@ Running log of work done in this repo. Newest entries at the top. Per project ru
 
 Format: `YYYY-MM-DD — short title` followed by what changed and why.
 
+## 2026-06-09 — CVE dependency fixes (requests, pdfminer-six, python-multipart)
+
+6 known vulnerabilities across 3 packages — all resolved by version bumps.
+
+| Package | Was | Now | CVEs fixed |
+|---|---|---|---|
+| `requests` | 2.31.0 | 2.34.2 | CVE-2024-35195, CVE-2024-47081, CVE-2026-25645 |
+| `pdfplumber` | 0.11.4 | 0.11.9 | — (pulls in fixed pdfminer-six) |
+| `pdfminer-six` | 20231228 | 20251230 | CVE-2025-64512, CVE-2025-70559 |
+| `python-multipart` | 0.0.26 | 0.0.32 | CVE-2026-42561 |
+
+- `pyproject.toml`: `requests==2.31.0` → `>=2.33.0`; `python-multipart==0.0.26` → `>=0.0.27`; `pdfplumber==0.11.4` → `==0.11.9` (0.11.9 pins `pdfminer-six==20251230`)
+- `uv.lock`: regenerated — 4 packages updated
+
+## 2026-06-09 — code quality pass + unit test suite
+
+Ruff import-sorting + type annotation modernisation across all `api/` and `core/` modules. No behavioural changes.
+
+- All files: imports sorted alphabetically (ruff `I` rules)
+- `Dict[k, v]` / `Optional[X]` → builtin `dict[k, v]` / `X | None` throughout `core/`
+- `datetime.timezone.utc` → `datetime.UTC` (Python 3.11+) in `api/routes/auth.py`
+- `api/routes/auth.py`: `JWT_SECRET` type-narrowed to `str` after runtime guard to satisfy pyright
+- `pyproject.toml`: `pytest>=9.0.3` added to dev deps; `basedpyright` venv path + per-rule suppression configured (psycopg2 stubs have ~1100 false-positive `RealDictCursor` type errors — suppressed at config level rather than casting 1000+ call sites)
+- `conftest.py` (new): adds project root to `sys.path` for test imports
+- `tests/test_core_features.py` (new): unit tests for pure-logic modules — `RateLimiter`, `upload_validator`, `config_loader`, auth JWT helpers + password policy, `home.py` helpers, `security_headers`
+
 ## 2026-06-09 — security hardening: MFA enforcement, MinIO secret rotation, CI, TLS, folder cleanup
 
 Closed gaps G1, G2, G3, G5, G8 from `docs/ISO27001_SOC2_GAPS.md`.

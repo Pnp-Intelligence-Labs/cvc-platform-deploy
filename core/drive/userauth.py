@@ -12,8 +12,8 @@ GDRIVE_CREDS_PATH (default ~/producer/gdrive_credentials.json). The per-user
 """
 
 import os
-import time
 import secrets
+import time
 from pathlib import Path
 
 from core.db.connection import get_connection
@@ -115,7 +115,7 @@ def _save_token(user_id: int, token_json: str, email: str | None) -> None:
             )
 
 
-def _load_token_row(user_id: int) -> dict | None:
+def _load_token_row(user_id: int):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -132,8 +132,8 @@ def load_creds(user_id: int):
     if not row:
         return None
 
-    from google.oauth2.credentials import Credentials
     from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
 
     creds = Credentials.from_authorized_user_info(_json_loads(row["token_json"]), SCOPES)
     if creds.valid:

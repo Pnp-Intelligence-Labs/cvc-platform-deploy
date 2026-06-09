@@ -5,6 +5,7 @@ GET /config  — public (no auth required), returns the team configuration.
 """
 import json
 import os
+
 from fastapi import APIRouter, HTTPException
 
 router = APIRouter()

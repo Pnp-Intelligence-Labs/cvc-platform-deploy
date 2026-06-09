@@ -6,7 +6,6 @@ that show up in the dashboard notification bell.
 """
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -14,11 +13,11 @@ logger = logging.getLogger(__name__)
 def write_notification(
     type: str,
     title: str,
-    body: Optional[str] = None,
-    source: Optional[str] = None,
-    link: Optional[str] = None,
-    reference_id: Optional[int] = None,
-    target_user: Optional[str] = None,
+    body: str | None = None,
+    source: str | None = None,
+    link: str | None = None,
+    reference_id: int | None = None,
+    target_user: str | None = None,
 ) -> None:
     """
     Insert a row into cvc.notifications.
@@ -26,7 +25,7 @@ def write_notification(
     target_user=None broadcasts to all users; pass a username to restrict visibility.
     """
     try:
-        from db.connection import get_connection  # noqa: relative import for workers
+        from db.connection import get_connection  # noqa: E402
         with get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
@@ -38,7 +37,7 @@ def write_notification(
         logger.warning(f"write_notification failed (non-fatal): {e}")
 
 
-def write_cron_error(job_name: str, error_msg: str, source: Optional[str] = None) -> None:
+def write_cron_error(job_name: str, error_msg: str, source: str | None = None) -> None:
     """
     Convenience wrapper — call this in the top-level except block of any cron worker.
     Writes a 'cron_error' notification visible in the platform bell and Admin page.

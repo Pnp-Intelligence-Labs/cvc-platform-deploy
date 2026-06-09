@@ -9,7 +9,8 @@ All new code should use require_jwt directly from api.routes.auth.
 """
 
 from fastapi import Depends
-from api.routes.auth import require_jwt, UserInfo
+
+from api.routes.auth import UserInfo, require_jwt
 
 
 def require_auth(user: UserInfo = Depends(require_jwt)) -> dict:

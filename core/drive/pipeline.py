@@ -27,8 +27,8 @@ def ingest_file(svc, file_id: str, dest_dir: Path) -> dict:
               failed | download_failed.
     """
     _ensure_dd_on_path()
-    from ingestion.drive import download_file
     from ingestion.converter import convert_file
+    from ingestion.drive import download_file
     from ingestion.tagger import tag_document
 
     dest_dir.mkdir(parents=True, exist_ok=True)

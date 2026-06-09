@@ -15,8 +15,8 @@ Usage:
 """
 import json
 import os
+
 import psycopg2
-from typing import Optional
 
 _DB = dict(
     host=os.environ.get("CVC_DB_HOST", "100.83.104.117"),
@@ -27,7 +27,7 @@ _DB = dict(
 )
 
 
-def start_job(name: str, machine: str) -> Optional[int]:
+def start_job(name: str, machine: str) -> int | None:
     """Insert a running row. Returns run_id or None on failure."""
     try:
         conn = psycopg2.connect(**_DB)
@@ -47,10 +47,10 @@ def start_job(name: str, machine: str) -> Optional[int]:
 
 
 def finish_job(
-    run_id: Optional[int],
+    run_id: int | None,
     status: str = "ok",
-    summary: Optional[dict] = None,
-    error_text: Optional[str] = None,
+    summary: dict | None = None,
+    error_text: str | None = None,
 ) -> None:
     """Update run row with outcome. No-op if run_id is None."""
     if run_id is None:

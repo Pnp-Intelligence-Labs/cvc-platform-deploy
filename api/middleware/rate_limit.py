@@ -11,8 +11,8 @@ Usage:
         raise HTTPException(429, ...)
 """
 
-import time
 import threading
+import time
 from collections import defaultdict, deque
 
 

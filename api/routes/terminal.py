@@ -14,15 +14,15 @@ import json
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 
-from api.routes.auth import require_jwt, UserInfo
+from api.routes.auth import UserInfo, require_jwt
 from core.db.connection import get_connection
 from core.drive import userauth
 from core.drive.browse import build_tree
-from core.drive.pipeline import ingest_file, _DD_PATH
-from core.drive.sense import make_sense, answer_question
+from core.drive.pipeline import _DD_PATH, ingest_file
+from core.drive.sense import answer_question, make_sense
 
 router = APIRouter()
 
@@ -138,7 +138,7 @@ def _run_ingest(job_id: str, svc, file_ids: list, user_id: int, dest_dir: Path):
         job["error"] = str(e)
 
 
-def _store_document(user_id: int, doc: dict, sense: dict) -> dict:
+def _store_document(user_id: int, doc: dict, sense: dict):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(

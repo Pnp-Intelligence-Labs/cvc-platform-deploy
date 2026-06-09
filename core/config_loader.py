@@ -19,7 +19,7 @@ Keys (seeded in migration 077):
 """
 
 import logging
-from typing import Dict, Optional
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 # Returned if DB is unreachable OR the key isn't in cvc.platform_settings.
 # Keep these in sync with the seed data in migration 077.
 
-SAFE_DEFAULTS: Dict[str, str] = {
+SAFE_DEFAULTS: dict[str, str] = {
     "investment_thesis": (
         "Pre-seed to Series A fund focused on supply chain, industrials, and robotics."
     ),
@@ -58,7 +58,7 @@ class _ConfigLoader:
     """
 
     _instance: Optional["_ConfigLoader"] = None
-    _cache: Dict[str, str]
+    _cache: dict[str, str]
     _loaded: bool
 
     def __new__(cls) -> "_ConfigLoader":

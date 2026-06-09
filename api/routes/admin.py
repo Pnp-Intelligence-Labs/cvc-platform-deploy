@@ -1,16 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFile, File
-from pydantic import BaseModel, Field
-from typing import Optional, Literal
 import csv
 import io
+import os
 import subprocess
 import sys
-import os
 from datetime import datetime
+from typing import Literal
+
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from psycopg2.extras import RealDictCursor
-from core.db.connection import get_connection
+from pydantic import BaseModel, Field
+
 from api.auth import require_auth
 from api.plugin_loader import get_loaded_plugins, update_plugin_nav
+from core.db.connection import get_connection
 
 router = APIRouter()
 
@@ -19,7 +21,7 @@ _ADMIN_ROLES = {"GP", "Principal", "Director"}
 class BatchEnrichRequest(BaseModel):
     job: Literal["founder", "4d", "funding", "deployments", "industrial", "score_refresh"] = Field(..., description="Type of enrichment job")
     target: Literal["sector", "portfolio", "all"] = Field(..., description="Target scope")
-    sector: Optional[str] = Field(None, description="Specific sector when target=sector")
+    sector: str | None = Field(None, description="Specific sector when target=sector")
 
 class BatchJobResponse(BaseModel):
     job_id: int
@@ -30,16 +32,16 @@ class BatchJobStatus(BaseModel):
     id: int
     job_type: str
     target_type: str
-    sector: Optional[str]
+    sector: str | None
     status: str
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
+    started_at: datetime | None
+    completed_at: datetime | None
     results_summary: dict
     progress_current: int
     progress_total: int
     created_at: datetime
 
-def run_batch_enrichment(job_id: int, job_type: str, target_type: str, sector: Optional[str]):
+def run_batch_enrichment(job_id: int, job_type: str, target_type: str, sector: str | None):
     """Background task to run batch enrichment subprocess"""
     try:
         with get_connection() as conn:
@@ -49,10 +51,10 @@ def run_batch_enrichment(job_id: int, job_type: str, target_type: str, sector: O
                     (job_id,)
                 )
                 conn.commit()
-        
+
         cmd = [
             sys.executable,
-            "-m", 
+            "-m",
             "workers.batch_enrichment",
             "--job-id", str(job_id),
             "--job-type", job_type,
@@ -60,7 +62,7 @@ def run_batch_enrichment(job_id: int, job_type: str, target_type: str, sector: O
         ]
         if sector:
             cmd.extend(["--sector", sector])
-        
+
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         result = subprocess.run(
             cmd,
@@ -68,13 +70,13 @@ def run_batch_enrichment(job_id: int, job_type: str, target_type: str, sector: O
             text=True,
             cwd=repo_root
         )
-        
+
         with get_connection() as conn:
             with conn.cursor() as cur:
                 if result.returncode == 0:
                     cur.execute(
-                        """UPDATE cvc.batch_jobs 
-                           SET status = 'completed', 
+                        """UPDATE cvc.batch_jobs
+                           SET status = 'completed',
                                completed_at = NOW(),
                                results_summary = %s::jsonb
                            WHERE id = %s""",
@@ -82,21 +84,21 @@ def run_batch_enrichment(job_id: int, job_type: str, target_type: str, sector: O
                     )
                 else:
                     cur.execute(
-                        """UPDATE cvc.batch_jobs 
-                           SET status = 'failed', 
+                        """UPDATE cvc.batch_jobs
+                           SET status = 'failed',
                                completed_at = NOW(),
                                error_message = %s
                            WHERE id = %s""",
                         (result.stderr or 'Unknown error', job_id)
                     )
                 conn.commit()
-                
+
     except Exception as e:
         with get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    """UPDATE cvc.batch_jobs 
-                       SET status = 'failed', 
+                    """UPDATE cvc.batch_jobs
+                       SET status = 'failed',
                            completed_at = NOW(),
                            error_message = %s
                        WHERE id = %s""",
@@ -127,7 +129,7 @@ async def create_batch_enrichment(
             row = cur.fetchone()
             job_id = row["id"]
             conn.commit()
-    
+
     background_tasks.add_task(
         run_batch_enrichment,
         job_id,
@@ -135,14 +137,14 @@ async def create_batch_enrichment(
         req.target,
         req.sector
     )
-    
+
     return BatchJobResponse(
         job_id=job_id,
         status="pending",
         message=f"Batch {req.job} enrichment started for {req.target}"
     )
 
-@router.get("/enrich/batch/latest", response_model=Optional[BatchJobStatus])
+@router.get("/enrich/batch/latest", response_model=BatchJobStatus | None)
 async def get_latest_batch_job(user=Depends(require_auth)):
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -208,10 +210,10 @@ async def get_batch_job(job_id: int, user=Depends(require_auth)):
 # ── Brave Search Templates ─────────────────────────────────────────────────────
 
 class BraveTemplateUpdate(BaseModel):
-    query_template: Optional[str] = None
-    result_count:   Optional[int] = None
-    active:         Optional[bool] = None
-    notes:          Optional[str] = None
+    query_template: str | None = None
+    result_count:   int | None = None
+    active:         bool | None = None
+    notes:          str | None = None
 
 
 @router.get("/brave/templates")
@@ -463,7 +465,6 @@ def get_admin_kpis(user=Depends(require_auth)):
             """)
             requests_stale = int(cur.fetchone()["cnt"])
 
-            total_closed = requests_done_30d + req_by_status.get("cancelled", 0)
             total_opened = sum(req_by_status.values())
             completion_rate = round(requests_done_30d / total_opened * 100) if total_opened > 0 else None
 

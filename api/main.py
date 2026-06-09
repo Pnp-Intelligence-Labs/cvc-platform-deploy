@@ -1,39 +1,39 @@
 """
 Platform API
 """
-from starlette.middleware.base import BaseHTTPMiddleware
-from fastapi import FastAPI, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, RedirectResponse
 import os
 
-from api.middleware.security_headers import SecurityHeadersMiddleware
-from api.middleware.request_logging import RequestLoggingMiddleware
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 
+from api.auth import require_auth
+from api.middleware.request_logging import RequestLoggingMiddleware
+from api.middleware.security_headers import SecurityHeadersMiddleware
+from api.plugin_loader import get_loaded_plugins, load_plugins
+from api.routes.admin import router as admin_router
+from api.routes.assignments import router as assignments_router
+from api.routes.auth import router as auth_router
 from api.routes.companies import router as companies_router
-from api.routes.sourcing import router as sourcing_router
-from api.routes.shortlists import router as shortlists_router
+from api.routes.config import router as config_router
 from api.routes.dealflow import router as dealflow_router
+from api.routes.drive import public_router as drive_public_router
+from api.routes.drive import router as drive_router
+from api.routes.home import router as home_router
+from api.routes.keycloak import router as keycloak_router
+from api.routes.meeting_notes import router as meeting_notes_router
+from api.routes.mfa import router as mfa_router
+from api.routes.notifications import router as notifications_router
 from api.routes.partners import router as partners_router
 from api.routes.portfolio import router as portfolio_router
-from api.routes.home import router as home_router
-from api.routes.admin import router as admin_router
-from api.routes.notifications import router as notifications_router
-from api.routes.assignments import router as assignments_router
+from api.routes.recommendations import router as recommendations_router
 from api.routes.requests import router as requests_router
 from api.routes.sales import router as sales_router
-from api.routes.meeting_notes import router as meeting_notes_router
-from api.routes.auth import router as auth_router
-from api.routes.config import router as config_router
-from api.routes.keycloak import router as keycloak_router
-from api.routes.mfa import router as mfa_router
-from api.routes.recommendations import router as recommendations_router
-from api.routes.drive import router as drive_router, public_router as drive_public_router
+from api.routes.shortlists import router as shortlists_router
+from api.routes.sourcing import router as sourcing_router
 from api.routes.terminal import router as terminal_router
-from api.auth import require_auth
-from api.plugin_loader import load_plugins, get_loaded_plugins
-
 
 app = FastAPI(
     title="Platform API",

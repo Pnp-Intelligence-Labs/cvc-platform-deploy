@@ -5,12 +5,15 @@ GET /home/dashboard — Homepage data bundle
   - Notifications (items needing attention)
 GET/POST/DELETE /home/messages — Home team messages (admin → team)
 """
-from fastapi import APIRouter, HTTPException, Depends
+import math as _math
+from datetime import UTC, datetime, timedelta
+from datetime import date as date_type
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional
-from core.db.connection import get_connection
+
 from api.auth import require_auth
-from datetime import datetime, timezone, timedelta, date as date_type
+from core.db.connection import get_connection
 
 router = APIRouter()
 
@@ -235,7 +238,7 @@ def get_dashboard():
             })
 
         # ── Recent activity (last 14 days) ───────────────────────────────────
-        cutoff = datetime.now(timezone.utc) - timedelta(days=14)
+        cutoff = datetime.now(UTC) - timedelta(days=14)
         activity = []
 
         # New companies added
@@ -270,9 +273,7 @@ def get_dashboard():
             "due_diligence": "Due Diligence",
             "invested":      "Invested",
             "passed":        "Passed",
-            "passed":       "Passed",
-            "invested":     "Invested",
-            "portfolio":    "Portfolio",
+            "portfolio":     "Portfolio",
         }
         for row in cur.fetchall():
             activity.append({
@@ -513,7 +514,7 @@ def get_deliverables(user=Depends(require_auth)):
 def get_team_activity(user=Depends(require_auth)):
     """All user-attributed activity for the last 14 days — used by Admin team cards.
     No global cap so every team member's actions show up regardless of total volume."""
-    cutoff = datetime.now(timezone.utc) - timedelta(days=14)
+    cutoff = datetime.now(UTC) - timedelta(days=14)
     activity = []
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -634,8 +635,6 @@ def get_my_activity(user=Depends(require_auth)):
     return {"edits": edits}
 
 
-import math as _math
-
 # ── Traction scoring constants ─────────────────────────────────────────────────
 _MILESTONE_PTS: dict[str, float] = {
     'nda':                  10.0,
@@ -672,10 +671,10 @@ def _score_intros(intros: list, win_start: datetime, win_end: datetime) -> float
             continue
         # psycopg2 returns date objects — convert to datetime
         if not isinstance(intro_date, datetime):
-            intro_date = datetime(intro_date.year, intro_date.month, intro_date.day, tzinfo=timezone.utc)
+            intro_date = datetime(intro_date.year, intro_date.month, intro_date.day, tzinfo=UTC)
         else:
             if intro_date.tzinfo is None:
-                intro_date = intro_date.replace(tzinfo=timezone.utc)
+                intro_date = intro_date.replace(tzinfo=UTC)
 
         # Intro milestone
         if win_start <= intro_date <= win_end:
@@ -692,7 +691,7 @@ def _score_intros(intros: list, win_start: datetime, win_end: datetime) -> float
             if ts is None:
                 continue
             if ts.tzinfo is None:
-                ts = ts.replace(tzinfo=timezone.utc)
+                ts = ts.replace(tzinfo=UTC)
 
             if win_start <= ts <= win_end:
                 base = _MILESTONE_PTS.get(stage_key, 0.0)
@@ -725,7 +724,7 @@ def _has_velocity(intros: list, win_start: datetime, win_end: datetime) -> bool:
         if intro_date is None:
             continue
         if not isinstance(intro_date, datetime):
-            intro_date = datetime(intro_date.year, intro_date.month, intro_date.day, tzinfo=timezone.utc)
+            intro_date = datetime(intro_date.year, intro_date.month, intro_date.day, tzinfo=UTC)
         log = intro.get('status_log') or []
         prev = intro_date
         for entry in reversed(log):
@@ -734,7 +733,7 @@ def _has_velocity(intros: list, win_start: datetime, win_end: datetime) -> bool:
             if ts is None:
                 continue
             if ts.tzinfo is None:
-                ts = ts.replace(tzinfo=timezone.utc)
+                ts = ts.replace(tzinfo=UTC)
             if stage_key in _MILESTONE_PTS and win_start <= ts <= win_end:
                 days_since = (ts - prev).total_seconds() / 86400
                 if 0 < days_since < 30:
@@ -757,7 +756,6 @@ def _last_updated(intros: list) -> datetime | None:
 def _current_stage(intros: list) -> str | None:
     """Return the highest milestone stage across all intros."""
     stage_rank = {'commercial agreement': 5, 'commercial': 5, 'pilot': 4, 'poc': 3, 'nda': 2, 'hold': 1, 'close': 0}
-    best_key = None
     best_rank = -1
     best_label = None
     for intro in intros:
@@ -766,7 +764,6 @@ def _current_stage(intros: list) -> str | None:
         rank = stage_rank.get(key, -1)
         if rank > best_rank:
             best_rank = rank
-            best_key = key
             best_label = outcome
     return best_label
 
@@ -777,7 +774,7 @@ def _is_stagnating(intros: list, now: datetime) -> bool:
     if lu is None:
         return False
     if lu.tzinfo is None:
-        lu = lu.replace(tzinfo=timezone.utc)
+        lu = lu.replace(tzinfo=UTC)
     return (now - lu).total_seconds() / 86400 > 45
 
 
@@ -787,7 +784,7 @@ def get_traction(window: str = "2mo", user=Depends(require_auth)):
     if window not in _WINDOW_MAP:
         window = "2mo"
     cur_days, prior_days = _WINDOW_MAP[window]
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     win_start  = now - timedelta(days=cur_days)
     prior_start = now - timedelta(days=prior_days)
 
@@ -837,7 +834,7 @@ def get_traction(window: str = "2mo", user=Depends(require_auth)):
 @router.get("/traction/psm-leaderboard")
 def get_traction_psm_leaderboard(user=Depends(require_auth)):
     """Return per-PSM points generated this month + data freshness score."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     two_weeks_ago = now - timedelta(days=14)
 
@@ -865,7 +862,7 @@ def get_traction_psm_leaderboard(user=Depends(require_auth)):
             if ts is None:
                 continue
             if ts.tzinfo is None:
-                ts = ts.replace(tzinfo=timezone.utc)
+                ts = ts.replace(tzinfo=UTC)
             stage_key = (entry.get('outcome') or '').lower().strip()
             psm_all_intros[logged_by].add(intro_id)
             if ts >= month_start:
@@ -891,11 +888,11 @@ def get_traction_psm_leaderboard(user=Depends(require_auth)):
 
 class UpvoteBody(BaseModel):
     week_start: str           # YYYY-MM-DD
-    insight_id: Optional[int] = None
+    insight_id: int | None = None
     insight_text: str
     section: str = "Podcasts"
-    source_title: Optional[str] = None
-    source_url: Optional[str] = None
+    source_title: str | None = None
+    source_url: str | None = None
 
 
 @router.post("/briefings/upvote")
@@ -962,7 +959,7 @@ def get_briefing_upvotes(week_start: str):
 
 class CommentBody(BaseModel):
     week_start: str           # YYYY-MM-DD
-    insight_id: Optional[int] = None
+    insight_id: int | None = None
     insight_text: str
     section: str = "Podcasts"
     comment: str
@@ -1107,7 +1104,7 @@ def get_portfolio_pulse(user=Depends(require_auth)):
 ELEVATED_ROLES = {"GP", "Director", "Principal"}
 
 @router.get("/my-desk")
-def get_my_desk(as_user: Optional[int] = None, user=Depends(require_auth)):
+def get_my_desk(as_user: int | None = None, user=Depends(require_auth)):
     """
     Returns open requests + assigned companies for the caller.
     Pass ?as_user=<user_id> to view another user's desk (elevated roles only).
@@ -1242,7 +1239,7 @@ def get_psm_snapshot(username: str, user=Depends(require_auth)):
                 row = dict(r)
                 last = row["last_intro_date"]
                 if last:
-                    days_since = (datetime.now(timezone.utc) - datetime.combine(last, datetime.min.time()).replace(tzinfo=timezone.utc)).days
+                    days_since = (datetime.now(UTC) - datetime.combine(last, datetime.min.time()).replace(tzinfo=UTC)).days
                     row["activity_status"] = "active" if days_since <= 30 else ("warm" if days_since <= 90 else "cold")
                 else:
                     row["activity_status"] = "cold"

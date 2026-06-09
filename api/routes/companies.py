@@ -1,14 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
-from typing import List, Optional
-from pydantic import BaseModel
+import io
 import json
 import os
-import io
 import re
+from datetime import UTC, datetime
+
 import requests
-from datetime import datetime, timezone
-from core.db.connection import get_connection
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from pydantic import BaseModel
+
 from api.auth import require_auth
+from core.db.connection import get_connection
 
 router = APIRouter()
 
@@ -24,55 +25,55 @@ def _log_activity(cur, company_id: int, changed_by: str, field_name: str,
 
 
 class CompanyUpdate(BaseModel):
-    name: Optional[str] = None
-    one_liner: Optional[str] = None
-    description: Optional[str] = None
-    website: Optional[str] = None
-    linkedin_url: Optional[str] = None
-    sector: Optional[str] = None
-    secondary_sector: Optional[str] = None
-    sector_confidence: Optional[int] = None
-    sector_rationale: Optional[str] = None
-    sector_reviewed_by: Optional[str] = None
-    sector_reviewed_at: Optional[str] = None
-    stage: Optional[str] = None
-    hq_city: Optional[str] = None
-    country: Optional[str] = None
-    founded: Optional[int] = None
-    employee_count: Optional[int] = None
-    total_raised_usd: Optional[int] = None
-    investors: Optional[List[str]] = None
-    tags: Optional[List[str]] = None
-    env_4d: Optional[str] = None
-    func_4d: Optional[str] = None
-    stack_4d: Optional[str] = None
-    biz_model_4d: Optional[str] = None
-    background: Optional[str] = None
-    competitive_advantage: Optional[str] = None
-    case_study: Optional[str] = None
-    industrial_readiness_score: Optional[float] = None
-    sovereignty_score: Optional[float] = None
-    protocol_support: Optional[List[str]] = None
-    verified_certs: Optional[List[str]] = None
-    deployment_signal_level: Optional[str] = None
-    integration_notes: Optional[str] = None
-    score_composite: Optional[float] = None
-    score_commercial: Optional[float] = None
-    score_technical: Optional[float] = None
-    score_market_timing: Optional[float] = None
-    score_partner_fit: Optional[float] = None
-    score_capital_eff: Optional[float] = None
-    commercial_signals: Optional[dict] = None
-    revenue_arr_usd: Optional[int] = None
-    revenue_period: Optional[str] = None
-    revenue_source: Optional[str] = None
+    name: str | None = None
+    one_liner: str | None = None
+    description: str | None = None
+    website: str | None = None
+    linkedin_url: str | None = None
+    sector: str | None = None
+    secondary_sector: str | None = None
+    sector_confidence: int | None = None
+    sector_rationale: str | None = None
+    sector_reviewed_by: str | None = None
+    sector_reviewed_at: str | None = None
+    stage: str | None = None
+    hq_city: str | None = None
+    country: str | None = None
+    founded: int | None = None
+    employee_count: int | None = None
+    total_raised_usd: int | None = None
+    investors: list[str] | None = None
+    tags: list[str] | None = None
+    env_4d: str | None = None
+    func_4d: str | None = None
+    stack_4d: str | None = None
+    biz_model_4d: str | None = None
+    background: str | None = None
+    competitive_advantage: str | None = None
+    case_study: str | None = None
+    industrial_readiness_score: float | None = None
+    sovereignty_score: float | None = None
+    protocol_support: list[str] | None = None
+    verified_certs: list[str] | None = None
+    deployment_signal_level: str | None = None
+    integration_notes: str | None = None
+    score_composite: float | None = None
+    score_commercial: float | None = None
+    score_technical: float | None = None
+    score_market_timing: float | None = None
+    score_partner_fit: float | None = None
+    score_capital_eff: float | None = None
+    commercial_signals: dict | None = None
+    revenue_arr_usd: int | None = None
+    revenue_period: str | None = None
+    revenue_source: str | None = None
 
 
 @router.get("/")
 def search_companies(
-    q: Optional[str] = None,
-    sector: Optional[str] = None,
-    stage: Optional[str] = None,
+    q: str | None = None,
+    sector: str | None = None,
+    stage: str | None = None,
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     name_only: bool = False,
@@ -147,7 +148,7 @@ def search_companies(
                 ORDER BY {order}
                 LIMIT %s OFFSET %s
             """, params + order_params + [limit, offset])
-            
+
             rows = cur.fetchall()
             return rows
 
@@ -252,7 +253,7 @@ def update_company(company_id: int, payload: CompanyUpdate, user=Depends(require
             sector_review_fields = {"sector", "secondary_sector", "sector_confidence", "sector_rationale"}
             if updates and sector_review_fields.intersection(updates.keys()):
                 updates["sector_reviewed_by"] = changed_by
-                updates["sector_reviewed_at"] = datetime.now(timezone.utc).isoformat()
+                updates["sector_reviewed_at"] = datetime.now(UTC).isoformat()
 
             if updates:
                 set_clause = ", ".join(
@@ -346,11 +347,11 @@ def get_company_intel(company_id: int, user=Depends(require_auth)):
 async def add_company_intel(
     company_id: int,
     intel_type: str = Form(...),
-    label: Optional[str] = Form(None),
-    source_url: Optional[str] = Form(None),
-    raw_text: Optional[str] = Form(None),
-    intent: Optional[str] = Form(None),
-    file: Optional[UploadFile] = File(None),
+    label: str | None = Form(None),
+    source_url: str | None = Form(None),
+    raw_text: str | None = Form(None),
+    intent: str | None = Form(None),
+    file: UploadFile | None = File(None),
     user=Depends(require_auth),
 ):
     """Upload intel for a company. Accepts pdf file, url, or pasted text."""
@@ -450,8 +451,8 @@ async def add_company_intel(
 
 
 class IntelUpdate(BaseModel):
-    source_url: Optional[str] = None
-    label: Optional[str] = None
+    source_url: str | None = None
+    label: str | None = None
 
 
 @router.patch("/{company_id}/intel/{intel_id}")
@@ -843,7 +844,8 @@ def edit_suggestion(company_id: int, suggestion_id: int, data: dict,
              dependencies=[Depends(require_auth)])
 def trigger_intel_processing(company_id: int):
     """Manually trigger intel processing for a specific company."""
-    import subprocess, sys
+    import subprocess
+    import sys
     try:
         proc = subprocess.Popen(
             [sys.executable, "workers/enrichment/process_intel.py"],
@@ -859,11 +861,11 @@ def trigger_intel_processing(company_id: int):
 
 class FundingRoundInput(BaseModel):
     round_type: str
-    amount_usd: Optional[int] = None
-    announced_date: Optional[str] = None
-    investors: Optional[List[str]] = None
-    source: Optional[str] = None
-    valuation_usd: Optional[int] = None
+    amount_usd: int | None = None
+    announced_date: str | None = None
+    investors: list[str] | None = None
+    source: str | None = None
+    valuation_usd: int | None = None
     approximate: bool = False
 
 
@@ -875,8 +877,9 @@ def autofill_funding_round(company_id: int, body: dict, user=Depends(require_aut
         raise HTTPException(status_code=400, detail="Valid URL required")
 
     # Scrape
-    import re as _re
     import html as _html_lib
+    import re as _re
+
     import requests as _req
     try:
         resp = _req.get(url, timeout=12,
@@ -1065,7 +1068,7 @@ def delete_funding_round(company_id: int, round_id: int, user=Depends(require_au
 # ── Per-Company Enrichment Refresh ───────────────────────────────────────────
 
 class RefreshEnrichmentBody(BaseModel):
-    jobs: List[str]  # pipeline steps: "founder", "fourD", "funding", "cases", "industrial", "score"
+    jobs: list[str]  # pipeline steps: "founder", "fourD", "funding", "cases", "industrial", "score"
 
 
 @router.post("/{company_id}/refresh-enrichment")
@@ -1204,25 +1207,25 @@ def refresh_enrichment(company_id: int, body: RefreshEnrichmentBody, user=Depend
 # ── Commercial Deployments ────────────────────────────────────────────────────
 
 class CommercialDeploymentInput(BaseModel):
-    customer_name: Optional[str] = None
+    customer_name: str | None = None
     deployment_type: str
-    contract_value_usd: Optional[int] = None
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
+    contract_value_usd: int | None = None
+    start_date: str | None = None
+    end_date: str | None = None
     stealth: bool = False
-    notes: Optional[str] = None
-    source_url: Optional[str] = None
+    notes: str | None = None
+    source_url: str | None = None
 
 
 class CommercialDeploymentUpdate(BaseModel):
-    customer_name: Optional[str] = None
-    deployment_type: Optional[str] = None
-    contract_value_usd: Optional[int] = None
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
-    stealth: Optional[bool] = None
-    notes: Optional[str] = None
-    source_url: Optional[str] = None
+    customer_name: str | None = None
+    deployment_type: str | None = None
+    contract_value_usd: int | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    stealth: bool | None = None
+    notes: str | None = None
+    source_url: str | None = None
 
 
 @router.get("/{company_id}/commercial-deployments")
@@ -1348,17 +1351,17 @@ def get_company_intros(company_id: int, user=Depends(require_auth)):
 
 class ContactCreate(BaseModel):
     name: str
-    title: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
+    title: str | None = None
+    email: str | None = None
+    phone: str | None = None
     is_primary: bool = False
 
 class ContactUpdate(BaseModel):
-    name: Optional[str] = None
-    title: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    is_primary: Optional[bool] = None
+    name: str | None = None
+    title: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    is_primary: bool | None = None
 
 @router.get("/{company_id}/contacts")
 def list_contacts(company_id: int, user=Depends(require_auth)):

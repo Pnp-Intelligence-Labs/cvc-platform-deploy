@@ -1,17 +1,17 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Query, Depends
-from typing import Optional
-from core.db.connection import get_connection
-from core.storage import storage as _storage
-from psycopg2.extras import RealDictCursor, Json
-from api.routes.auth import require_jwt, UserInfo
-from api.middleware.upload_validator import validate_upload
-from api.middleware.ext_api_log import log_ext_call
 import io
 import json
-import threading
 import re
-from datetime import datetime, date
+import threading
+from datetime import date, datetime
 
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from psycopg2.extras import Json, RealDictCursor
+
+from api.middleware.ext_api_log import log_ext_call
+from api.middleware.upload_validator import validate_upload
+from api.routes.auth import UserInfo, require_jwt
+from core.db.connection import get_connection
+from core.storage import storage as _storage
 
 # Roles that can see all visibility levels (no filtering applied)
 _FULL_ACCESS_ROLES = {"GP", "Principal", "Director"}
@@ -153,8 +153,9 @@ def _analyze_document_bg(doc_id: int, raw_text: str, filename: str, title: str |
 def _analyze_document_vision_bg(doc_id: int, pdf_bytes: bytes, filename: str, title: str | None = None) -> None:
     """Analyze image-based PDF using a vision LLM. Runs in background thread."""
     try:
-        import fitz
         import base64
+
+        import fitz
         import requests as _req
         from cvc_config import OPENROUTER_API_KEY, OPENROUTER_URL
 
@@ -205,9 +206,9 @@ def _analyze_document_vision_bg(doc_id: int, pdf_bytes: bytes, filename: str, ti
 
 @router.get("/")
 def list_partners(
-    q: Optional[str] = Query(None),
-    industry: Optional[str] = Query(None),
-    sector: Optional[str] = Query(None),
+    q: str | None = Query(None),
+    industry: str | None = Query(None),
+    sector: str | None = Query(None),
     user: UserInfo = Depends(require_jwt),
 ):
     with get_connection() as conn:
@@ -230,7 +231,7 @@ def list_partners(
             # PSM: only show partners assigned to them
             if user.role in ("PSM", "Senior PSM"):
                 if user.assigned_partner_ids:
-                    query += f" AND id = ANY(%s)"
+                    query += " AND id = ANY(%s)"
                     params.append(user.assigned_partner_ids)
                 else:
                     # No assignments yet — return empty list
@@ -263,7 +264,7 @@ def create_partner(partner: dict):
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING *
             """, (
-                partner.get("name"), partner.get("industry"), 
+                partner.get("name"), partner.get("industry"),
                 partner.get("contact_name"), partner.get("contact_email"),
                 partner.get("challenge_areas", []), partner.get("sectors_of_interest", []),
                 partner.get("environments", []), partner.get("notes"),
@@ -294,7 +295,7 @@ def get_psm_roster(user: UserInfo = Depends(require_jwt)):
 
 
 @router.get("/issues/all")
-def get_all_issues(severity: Optional[str] = Query(None), resolved: bool = Query(False)):
+def get_all_issues(severity: str | None = Query(None), resolved: bool = Query(False)):
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             query = """
@@ -346,7 +347,7 @@ def get_partner(id: int, user: UserInfo = Depends(require_jwt)):
             partner = cur.fetchone()
             if not partner:
                 raise HTTPException(status_code=404, detail="Partner not found")
-            
+
             # Get matches
             cur.execute("""
                 SELECT m.*, c.name as company_name, c.one_liner
@@ -356,7 +357,7 @@ def get_partner(id: int, user: UserInfo = Depends(require_jwt)):
                 ORDER BY m.match_score DESC
             """, (id,))
             partner["matches"] = cur.fetchall()
-            
+
             # Last contact summary — one-liner shown on main profile (all roles)
             cur.execute("""
                 SELECT note_type, created_by, created_at,
@@ -386,7 +387,7 @@ def update_partner(id: int, partner: dict):
         "salesforce_url", "playbook_url", "monday_item_id",
         "membership_level", "partner_brief", "is_legacy",
     ]
-    
+
     JSONB_FIELDS = {'tech_stack'}
     updates = []
     values = []
@@ -397,16 +398,16 @@ def update_partner(id: int, partner: dict):
             if field in JSONB_FIELDS and isinstance(val, dict):
                 val = Json(val)
             values.append(val)
-    
+
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
-    
+
     values.append(id)
-    
+
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(f"""
-                UPDATE cvc.partners 
+                UPDATE cvc.partners
                 SET {", ".join(updates)}, updated_at = NOW()
                 WHERE id = %s
                 RETURNING *
@@ -519,7 +520,7 @@ def create_contact(id: int, contact: dict):
                 INSERT INTO cvc.partner_contacts (partner_id, name, title, email, phone, is_primary)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING *
-            """, (id, contact.get("name"), contact.get("title"), 
+            """, (id, contact.get("name"), contact.get("title"),
                   contact.get("email"), contact.get("phone"), contact.get("is_primary", False)))
             conn.commit()
             return cur.fetchone()
@@ -556,7 +557,7 @@ def update_contact(id: int, contact_id: int, contact: dict):
 def delete_contact(id: int, contact_id: int):
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM cvc.partner_contacts WHERE id = %s AND partner_id = %s", 
+            cur.execute("DELETE FROM cvc.partner_contacts WHERE id = %s AND partner_id = %s",
                        (contact_id, id))
             conn.commit()
             return {"deleted": True}
@@ -804,7 +805,7 @@ def get_document_text(id: int, doc_id: int):
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
-                SELECT raw_text FROM cvc.partner_documents 
+                SELECT raw_text FROM cvc.partner_documents
                 WHERE id = %s AND partner_id = %s
             """, (doc_id, id))
             result = cur.fetchone()
@@ -1193,7 +1194,7 @@ def create_service(id: int, service: dict):
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
-                INSERT INTO cvc.partner_service_usage 
+                INSERT INTO cvc.partner_service_usage
                 (partner_id, service_name, service_key, quantity_included, quantity_used, notes, year)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING *
@@ -1208,8 +1209,8 @@ def update_service(id: int, svc_id: int, service: dict):
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
-                UPDATE cvc.partner_service_usage 
-                SET service_name = %s, service_key = %s, quantity_included = %s, 
+                UPDATE cvc.partner_service_usage
+                SET service_name = %s, service_key = %s, quantity_included = %s,
                     quantity_used = %s, notes = %s, year = %s, updated_at = NOW()
                 WHERE id = %s AND partner_id = %s
                 RETURNING *
@@ -1226,7 +1227,7 @@ def update_service(id: int, svc_id: int, service: dict):
 def delete_service(id: int, svc_id: int):
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM cvc.partner_service_usage WHERE id = %s AND partner_id = %s", 
+            cur.execute("DELETE FROM cvc.partner_service_usage WHERE id = %s AND partner_id = %s",
                        (svc_id, id))
             conn.commit()
             return {"deleted": True}
@@ -1247,7 +1248,7 @@ def create_issue(id: int, issue: dict):
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
-                INSERT INTO cvc.partner_issues 
+                INSERT INTO cvc.partner_issues
                 (partner_id, title, body, severity, due_date, linked_document_id, resolved)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING *
@@ -1261,8 +1262,8 @@ def update_issue(id: int, issue_id: int, issue: dict):
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
-                UPDATE cvc.partner_issues 
-                SET title = %s, body = %s, severity = %s, due_date = %s, 
+                UPDATE cvc.partner_issues
+                SET title = %s, body = %s, severity = %s, due_date = %s,
                     linked_document_id = %s, resolved = %s, updated_at = NOW()
                 WHERE id = %s AND partner_id = %s
                 RETURNING *
@@ -1279,7 +1280,7 @@ def update_issue(id: int, issue_id: int, issue: dict):
 def delete_issue(id: int, issue_id: int):
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM cvc.partner_issues WHERE id = %s AND partner_id = %s", 
+            cur.execute("DELETE FROM cvc.partner_issues WHERE id = %s AND partner_id = %s",
                        (issue_id, id))
             conn.commit()
             return {"deleted": True}
@@ -1349,7 +1350,7 @@ def create_advisory_log(id: int, log: dict, user: UserInfo = Depends(require_jwt
 def get_compatibility(
     id: int,
     limit: int = Query(100, ge=1, le=500),
-    sector: Optional[str] = Query(None),
+    sector: str | None = Query(None),
     min_score: int = Query(0, ge=0, le=100),
 ):
     with get_connection() as conn:
@@ -1391,9 +1392,12 @@ def get_compatibility(
         return "red"
 
     def _label(score):
-        if score >= 75: return "Tier 1"
-        if score >= 50: return "Tier 2"
-        if score >= 30: return "Watchlist"
+        if score >= 75:
+            return "Tier 1"
+        if score >= 50:
+            return "Tier 2"
+        if score >= 30:
+            return "Watchlist"
         return "Low Fit"
 
     results = []

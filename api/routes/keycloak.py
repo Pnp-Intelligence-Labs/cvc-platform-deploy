@@ -32,7 +32,7 @@ import os
 import secrets
 import threading
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from urllib.parse import urlencode
 
 import requests as http
@@ -40,13 +40,16 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
+from api.middleware.rate_limit import RateLimiter
 from api.routes.auth import (
-    JWT_ALGORITHM, JWT_SECRET,
-    _create_access_token, _create_refresh_token,
-    _log_auth_event, _get_ip,
+    JWT_ALGORITHM,
+    JWT_SECRET,
+    _create_access_token,
+    _create_refresh_token,
+    _get_ip,
+    _log_auth_event,
 )
 from core.db.connection import get_connection
-from api.middleware.rate_limit import RateLimiter
 
 _exchange_limiter = RateLimiter(max_calls=10, period_seconds=60)  # 10 / min per IP
 
@@ -99,6 +102,7 @@ def _get_jwks() -> dict:
             # Bump timestamp so the next retry is 60s away, not immediate
             _jwks_cache_ts = time.time() - _JWKS_TTL + _JWKS_FAILURE_TTL
             raise HTTPException(status_code=502, detail=f"Cannot reach Keycloak JWKS: {e}")
+    assert _jwks_cache is not None
     return _jwks_cache
 
 
@@ -112,7 +116,7 @@ def _make_state(from_path: str = "/") -> str:
         "nonce": secrets.token_hex(16),
         "typ":   "oidc_state",
         "from":  from_path,
-        "exp":   datetime.now(timezone.utc) + timedelta(minutes=10),
+        "exp":   datetime.now(UTC) + timedelta(minutes=10),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 

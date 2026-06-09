@@ -9,12 +9,13 @@ Endpoints:
     PATCH /ventures/assignments/{id}    — update status, assigned_users, notes, priority
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional
-from core.db.connection import get_connection
-from api.routes.auth import require_jwt, UserInfo
+
+from api.routes.auth import UserInfo, require_jwt
 from api.routes.notifications import write_notif
+from core.db.connection import get_connection
 
 router = APIRouter()
 
@@ -25,18 +26,18 @@ _ASSIGNABLE_ROLES = {"GP", "Principal", "Director"}
 
 class AssignmentCreate(BaseModel):
     title:          str
-    notes:          Optional[str] = None
-    partner_id:     Optional[int] = None
-    company_id:     Optional[int] = None
+    notes:          str | None = None
+    partner_id:     int | None = None
+    company_id:     int | None = None
     assigned_users: list[str] = []
     priority:       str = "medium"
 
 
 class AssignmentUpdate(BaseModel):
-    status:         Optional[str] = None
-    assigned_users: Optional[list[str]] = None
-    notes:          Optional[str] = None
-    priority:       Optional[str] = None
+    status:         str | None = None
+    assigned_users: list[str] | None = None
+    notes:          str | None = None
+    priority:       str | None = None
 
 
 @router.get("/assignments")

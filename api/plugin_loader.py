@@ -11,18 +11,16 @@ Import errors are logged but do not crash the server.
 import importlib.util
 import json
 import logging
-import os
 import sys
 from pathlib import Path
-from typing import List
 
-from fastapi import FastAPI, Depends
+from fastapi import Depends, FastAPI
 
 logger = logging.getLogger(__name__)
 
 _PLUGINS_DIR = Path(__file__).resolve().parents[1] / "plugins" / "installed"
 
-_loaded_plugins: List[dict] = []
+_loaded_plugins: list[dict] = []
 
 
 def _load_manifest(plugin_dir: Path) -> dict | None:
@@ -54,6 +52,9 @@ def _load_router(plugin_dir: Path, slug: str):
     try:
         module_name = f"_plugin_{slug.replace('-', '_')}"
         spec = importlib.util.spec_from_file_location(module_name, routes_path)
+        if spec is None or spec.loader is None:
+            logger.warning("Plugin %s could not load spec — skipping", slug)
+            return None
         module = importlib.util.module_from_spec(spec)
         sys.modules[module_name] = module
         spec.loader.exec_module(module)
@@ -67,7 +68,7 @@ def _load_router(plugin_dir: Path, slug: str):
         return None
 
 
-def load_plugins(app: FastAPI, require_auth) -> List[dict]:
+def load_plugins(app: FastAPI, require_auth) -> list[dict]:
     """Scan plugins/installed/, mount valid plugins into the FastAPI app.
 
     Returns list of loaded plugin manifests (for /config/plugins endpoint).
@@ -122,7 +123,7 @@ def load_plugins(app: FastAPI, require_auth) -> List[dict]:
     return _loaded_plugins
 
 
-def get_loaded_plugins() -> List[dict]:
+def get_loaded_plugins() -> list[dict]:
     """Return the list of successfully loaded plugin manifests."""
     return _loaded_plugins
 

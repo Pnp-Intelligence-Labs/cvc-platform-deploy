@@ -28,13 +28,14 @@ Endpoints:
     GET    /sales/leaderboard                    — per-salesperson contracted, stage counts, weekly deltas, stale count
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Query
-from pydantic import BaseModel
-from typing import Optional, List
-from psycopg2.extras import RealDictCursor, Json
-from core.db.connection import get_connection
-from api.routes.auth import require_jwt, UserInfo
 import json
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from psycopg2.extras import Json, RealDictCursor
+from pydantic import BaseModel
+
+from api.routes.auth import UserInfo, require_jwt
+from core.db.connection import get_connection
 
 router = APIRouter()
 
@@ -46,30 +47,30 @@ _ALL_STAGES  = _STAGE_ORDER + ["closed_lost"]
 
 class TargetCreate(BaseModel):
     company_name:   str
-    website:        Optional[str] = None
-    sector:         Optional[str] = None
-    assigned_to:    Optional[str] = None
-    rationale:      Optional[str] = None
-    est_deal_type:  Optional[str] = None
-    est_deal_value: Optional[float] = None
-    target_close_date: Optional[str] = None
+    website:        str | None = None
+    sector:         str | None = None
+    assigned_to:    str | None = None
+    rationale:      str | None = None
+    est_deal_type:  str | None = None
+    est_deal_value: float | None = None
+    target_close_date: str | None = None
 
 
 class TargetUpdate(BaseModel):
-    company_name:         Optional[str]   = None
-    website:              Optional[str]   = None
-    sector:               Optional[str]   = None
-    assigned_to:          Optional[str]   = None
-    rationale:            Optional[str]   = None
-    est_deal_type:        Optional[str]   = None
-    est_deal_value:       Optional[float] = None
-    target_close_date:    Optional[str]   = None
-    signed_date:          Optional[str]   = None
-    contract_value:       Optional[float] = None
-    contract_term_months: Optional[int]   = None
-    proposed_deliverables: Optional[List[str]] = None
-    stage_gate_data:      Optional[dict]  = None
-    stage:                Optional[str]   = None
+    company_name:         str | None   = None
+    website:              str | None   = None
+    sector:               str | None   = None
+    assigned_to:          str | None   = None
+    rationale:            str | None   = None
+    est_deal_type:        str | None   = None
+    est_deal_value:       float | None = None
+    target_close_date:    str | None   = None
+    signed_date:          str | None   = None
+    contract_value:       float | None = None
+    contract_term_months: int | None   = None
+    proposed_deliverables: list[str] | None = None
+    stage_gate_data:      dict | None  = None
+    stage:                str | None   = None
 
 
 class AdvanceBody(BaseModel):
@@ -78,41 +79,41 @@ class AdvanceBody(BaseModel):
 
 class LoseBody(BaseModel):
     reason:  str
-    notes:   Optional[str] = None
+    notes:   str | None = None
 
 
 class ContactCreate(BaseModel):
     full_name:        str
-    title:            Optional[str] = None
-    email:            Optional[str] = None
-    phone:            Optional[str] = None
+    title:            str | None = None
+    email:            str | None = None
+    phone:            str | None = None
     is_decision_maker: bool = False
 
 
 class NoteCreate(BaseModel):
     note_type:             str            = "general"
     body:                  str
-    author:                Optional[str]  = None
+    author:                str | None  = None
     # Structured meeting-note fields (populated when note_type='meeting')
-    meeting_date:          Optional[str]  = None
-    tech_interest:         Optional[str]  = None
-    tech_challenge:        Optional[str]  = None
-    rating_buying_intent:  Optional[int]  = None
-    rating_dm_access:      Optional[int]  = None
-    rating_budget_fit:     Optional[int]  = None
-    rating_strategic_fit:  Optional[int]  = None
-    rating_timeline:       Optional[int]  = None
-    personal_note:         Optional[str]  = None
-    transcript_text:       Optional[str]  = None
+    meeting_date:          str | None  = None
+    tech_interest:         str | None  = None
+    tech_challenge:        str | None  = None
+    rating_buying_intent:  int | None  = None
+    rating_dm_access:      int | None  = None
+    rating_budget_fit:     int | None  = None
+    rating_strategic_fit:  int | None  = None
+    rating_timeline:       int | None  = None
+    personal_note:         str | None  = None
+    transcript_text:       str | None  = None
 
 
 class SkirmishFromTarget(BaseModel):
     title:          str
     service_type:   str = "other"
     priority:       str = "medium"
-    description:    Optional[str] = None
-    service_fields: Optional[dict] = None
-    created_by:     Optional[str] = None
+    description:    str | None = None
+    service_fields: dict | None = None
+    created_by:     str | None = None
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -141,9 +142,9 @@ def _fetch_target(cur, target_id: int) -> dict:
 
 @router.get("/targets")
 def list_targets(
-    stage:       Optional[str] = Query(None),
-    assigned_to: Optional[str] = Query(None),
-    q:           Optional[str] = Query(None),
+    stage:       str | None = Query(None),
+    assigned_to: str | None = Query(None),
+    q:           str | None = Query(None),
     user: UserInfo = Depends(require_jwt),
 ):
     conditions = ["1=1"]
@@ -256,18 +257,30 @@ def get_target(target_id: int, user: UserInfo = Depends(require_jwt)):
 @router.patch("/targets/{target_id}")
 def update_target(target_id: int, body: TargetUpdate, user: UserInfo = Depends(require_jwt)):
     updates: dict = {}
-    if body.company_name         is not None: updates["company_name"]         = body.company_name.strip()
-    if body.website              is not None: updates["website"]              = body.website
-    if body.sector               is not None: updates["sector"]               = body.sector
-    if body.assigned_to          is not None: updates["assigned_to"]          = body.assigned_to
-    if body.rationale            is not None: updates["rationale"]            = body.rationale
-    if body.est_deal_type        is not None: updates["est_deal_type"]        = body.est_deal_type
-    if body.est_deal_value       is not None: updates["est_deal_value"]       = body.est_deal_value
-    if body.target_close_date    is not None: updates["target_close_date"]    = body.target_close_date or None
-    if body.signed_date          is not None: updates["signed_date"]          = body.signed_date or None
-    if body.contract_value       is not None: updates["contract_value"]       = body.contract_value
-    if body.contract_term_months is not None: updates["contract_term_months"] = body.contract_term_months
-    if body.proposed_deliverables is not None: updates["proposed_deliverables"] = body.proposed_deliverables
+    if body.company_name is not None:
+        updates["company_name"] = body.company_name.strip()
+    if body.website is not None:
+        updates["website"] = body.website
+    if body.sector is not None:
+        updates["sector"] = body.sector
+    if body.assigned_to is not None:
+        updates["assigned_to"] = body.assigned_to
+    if body.rationale is not None:
+        updates["rationale"] = body.rationale
+    if body.est_deal_type is not None:
+        updates["est_deal_type"] = body.est_deal_type
+    if body.est_deal_value is not None:
+        updates["est_deal_value"] = body.est_deal_value
+    if body.target_close_date is not None:
+        updates["target_close_date"] = body.target_close_date or None
+    if body.signed_date is not None:
+        updates["signed_date"] = body.signed_date or None
+    if body.contract_value is not None:
+        updates["contract_value"] = body.contract_value
+    if body.contract_term_months is not None:
+        updates["contract_term_months"] = body.contract_term_months
+    if body.proposed_deliverables is not None:
+        updates["proposed_deliverables"] = body.proposed_deliverables
     if body.stage is not None:
         if body.stage not in _ALL_STAGES:
             raise HTTPException(400, f"Invalid stage '{body.stage}'")

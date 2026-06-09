@@ -5,13 +5,13 @@ Tables:
 - cvc.shortlists: id, name, created_at
 - cvc.shortlist_companies: shortlist_id, company_id, added_at
 """
-from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Optional
-from pydantic import BaseModel
 from datetime import datetime
 
-from core.db.connection import get_connection
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+
 from api.auth import require_auth
+from core.db.connection import get_connection
 
 router = APIRouter()
 
@@ -28,14 +28,14 @@ class Shortlist(BaseModel):
     id: int
     name: str
     created_at: datetime
-    company_count: Optional[int] = 0
+    company_count: int | None = 0
 
 
 class ShortlistCompany(BaseModel):
     company_id: int
     company_name: str
-    sector: Optional[str] = None
-    stage: Optional[str] = None
+    sector: str | None = None
+    stage: str | None = None
     added_at: datetime
 
 
@@ -43,7 +43,7 @@ class ShortlistDetail(BaseModel):
     id: int
     name: str
     created_at: datetime
-    companies: List[ShortlistCompany]
+    companies: list[ShortlistCompany]
 
 
 @router.post("/", response_model=Shortlist)
@@ -67,7 +67,7 @@ async def create_shortlist(
             )
 
 
-@router.get("/", response_model=List[Shortlist])
+@router.get("/", response_model=list[Shortlist])
 async def list_shortlists(
     user=Depends(require_auth)
 ):
@@ -75,7 +75,7 @@ async def list_shortlists(
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT 
+                SELECT
                     s.id,
                     s.name,
                     s.created_at,
@@ -112,10 +112,10 @@ async def get_shortlist(
             shortlist = cur.fetchone()
             if not shortlist:
                 raise HTTPException(status_code=404, detail="Shortlist not found")
-            
+
             # Get companies in this shortlist
             cur.execute("""
-                SELECT 
+                SELECT
                     sc.company_id,
                     c.name as company_name,
                     c.sector,
@@ -135,7 +135,7 @@ async def get_shortlist(
                     added_at=r["added_at"]
                 ) for r in cur.fetchall()
             ]
-            
+
             return ShortlistDetail(
                 id=shortlist["id"],
                 name=shortlist["name"],
@@ -157,16 +157,16 @@ async def add_company_to_shortlist(
             cur.execute("SELECT id FROM cvc.shortlists WHERE id = %s", (shortlist_id,))
             if not cur.fetchone():
                 raise HTTPException(status_code=404, detail="Shortlist not found")
-            
+
             # Verify company exists
             cur.execute("SELECT id FROM cvc.companies WHERE id = %s", (data.company_id,))
             if not cur.fetchone():
                 raise HTTPException(status_code=404, detail="Company not found")
-            
+
             # Add company (ignore if already exists)
             try:
                 cur.execute(
-                    """INSERT INTO cvc.shortlist_companies (shortlist_id, company_id) 
+                    """INSERT INTO cvc.shortlist_companies (shortlist_id, company_id)
                        VALUES (%s, %s)""",
                     (shortlist_id, data.company_id)
                 )

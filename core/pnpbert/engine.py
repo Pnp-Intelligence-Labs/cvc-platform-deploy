@@ -18,7 +18,6 @@ at inference time.
 import math
 import re
 from collections import Counter
-from typing import Optional
 
 import numpy as np
 
@@ -103,7 +102,7 @@ class PnPbert:
         self,
         query_texts: list[str],
         documents: list[list[str]],
-        ids: Optional[list] = None,
+        ids: list | None = None,
     ) -> list[tuple]:
         """
         Rank documents against a multi-text query using MaxSim.

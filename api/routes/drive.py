@@ -11,19 +11,19 @@ nonce created when the auth URL was minted.
 """
 
 import shutil
-import uuid
 import urllib.parse
-from pathlib import Path
+import uuid
 from datetime import datetime
+from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
-from api.routes.auth import require_jwt, UserInfo
+from api.routes.auth import UserInfo, require_jwt
 from core.drive import userauth
 from core.drive.browse import build_tree
-from core.drive.pipeline import ingest_file, _DD_PATH
+from core.drive.pipeline import _DD_PATH, ingest_file
 
 router = APIRouter()
 public_router = APIRouter()  # OAuth callback must be reachable without JWT
@@ -71,7 +71,7 @@ def auth_url(return_to: str = "ingest", user: UserInfo = Depends(require_jwt)):
 
 
 @public_router.get("/callback")
-def drive_callback(code: str = None, state: str = None, error: str = None):
+def drive_callback(code: str | None = None, state: str | None = None, error: str | None = None):
     """Google OAuth callback. Saves the token for the user encoded in `state`,
     then redirects back to the page they started from. Must be public."""
     entry = userauth.consume_state(state)

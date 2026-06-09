@@ -17,8 +17,6 @@ Call succeeds even if the DB write fails (never blocks the external call).
 """
 
 import time
-from contextlib import contextmanager
-from typing import Iterator
 
 from core.db.connection import get_connection
 

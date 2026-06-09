@@ -20,15 +20,16 @@ Endpoints:
     GET    /documents/{doc_id}/download        — download uploaded document
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Form
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from typing import Optional
-from psycopg2.extras import Json, RealDictCursor
-from core.db.connection import get_connection
-from api.routes.auth import require_jwt, UserInfo
-from api.routes.notifications import write_notif
 import io
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi.responses import StreamingResponse
+from psycopg2.extras import Json, RealDictCursor
+from pydantic import BaseModel
+
+from api.routes.auth import UserInfo, require_jwt
+from api.routes.notifications import write_notif
+from core.db.connection import get_connection
 
 router = APIRouter()
 
@@ -42,18 +43,18 @@ _VALID_SERVICES    = {"dealflow", "intro", "trend_report", "innovation_day", "ot
 class SkirmishCreate(BaseModel):
     title:          str
     service_type:   str
-    partner_id:     Optional[int]  = None
-    partner_name:   Optional[str]  = None
+    partner_id:     int | None  = None
+    partner_name:   str | None  = None
     priority:       str            = "medium"
     service_fields: dict           = {}
     # Optional: link to the venture_assignment created at the same time
-    venture_assignment_id: Optional[int] = None
+    venture_assignment_id: int | None = None
 
 
 class SkirmishUpdate(BaseModel):
-    title:    Optional[str] = None
-    status:   Optional[str] = None
-    priority: Optional[str] = None
+    title:    str | None = None
+    status:   str | None = None
+    priority: str | None = None
 
 
 class AssigneeAdd(BaseModel):
@@ -66,13 +67,13 @@ class UpdateCreate(BaseModel):
 
 class TaskCreate(BaseModel):
     title:       str
-    assigned_to: Optional[str] = None
+    assigned_to: str | None = None
 
 class TaskUpdate(BaseModel):
-    title:       Optional[str]  = None
-    assigned_to: Optional[str]  = None
-    done:        Optional[bool] = None
-    position:    Optional[int]  = None
+    title:       str | None  = None
+    assigned_to: str | None  = None
+    done:        bool | None = None
+    position:    int | None  = None
 
 class TaskReorder(BaseModel):
     order: list[int]  # list of task IDs in desired order
@@ -102,10 +103,10 @@ def _row_to_dict(r) -> dict:
 
 @router.get("")
 def list_skirmishes(
-    status:       Optional[str] = Query(None),
-    service_type: Optional[str] = Query(None),
-    partner_id:   Optional[int] = Query(None),
-    assignee:     Optional[str] = Query(None),
+    status:       str | None = Query(None),
+    service_type: str | None = Query(None),
+    partner_id:   int | None = Query(None),
+    assignee:     str | None = Query(None),
     user: UserInfo = Depends(require_jwt),
 ):
     conditions = ["s.status != 'cancelled'"]
@@ -201,25 +202,25 @@ def create_skirmish(body: SkirmishCreate, user: UserInfo = Depends(require_jwt))
 
 class ScrumItemCreate(BaseModel):
     title:           str
-    category:        Optional[str] = 'product'
-    overview:        Optional[str] = None
-    owner:           Optional[str] = None
-    target_customer: Optional[str] = None
-    revenue_model:   Optional[str] = None
-    key_features:    Optional[str] = None
-    platform_link:   Optional[str] = None
-    status:          Optional[str] = 'exploring'
+    category:        str | None = 'product'
+    overview:        str | None = None
+    owner:           str | None = None
+    target_customer: str | None = None
+    revenue_model:   str | None = None
+    key_features:    str | None = None
+    platform_link:   str | None = None
+    status:          str | None = 'exploring'
 
 class ScrumItemUpdate(BaseModel):
-    title:           Optional[str] = None
-    category:        Optional[str] = None
-    overview:        Optional[str] = None
-    owner:           Optional[str] = None
-    target_customer: Optional[str] = None
-    revenue_model:   Optional[str] = None
-    key_features:    Optional[str] = None
-    platform_link:   Optional[str] = None
-    status:          Optional[str] = None
+    title:           str | None = None
+    category:        str | None = None
+    overview:        str | None = None
+    owner:           str | None = None
+    target_customer: str | None = None
+    revenue_model:   str | None = None
+    key_features:    str | None = None
+    platform_link:   str | None = None
+    status:          str | None = None
 
 class ScrumUpdateCreate(BaseModel):
     body: str
@@ -343,11 +344,11 @@ def add_scrum_update(item_id: int, body: ScrumUpdateCreate, user: UserInfo = Dep
 
 class ProposalCreate(BaseModel):
     title:               str
-    what_to_build:       Optional[str] = None
-    what_it_does:        Optional[str] = None
-    why_we_want_it:      Optional[str] = None
-    where_it_lives:      Optional[str] = None
-    what_it_connects_to: Optional[str] = None
+    what_to_build:       str | None = None
+    what_it_does:        str | None = None
+    why_we_want_it:      str | None = None
+    where_it_lives:      str | None = None
+    what_it_connects_to: str | None = None
 
 
 @router.get("/scrum/proposals/list", response_model=list)
@@ -485,7 +486,8 @@ def get_skirmish(skirmish_id: int, user: UserInfo = Depends(require_jwt)):
 @router.patch("/{skirmish_id}")
 def update_skirmish(skirmish_id: int, body: SkirmishUpdate, user: UserInfo = Depends(require_jwt)):
     updates: dict = {}
-    if body.title    is not None: updates["title"]    = body.title.strip()
+    if body.title is not None:
+        updates["title"] = body.title.strip()
     if body.status   is not None:
         if body.status not in _VALID_STATUSES:
             raise HTTPException(400, f"Invalid status: {body.status}")
@@ -643,7 +645,7 @@ def add_update(skirmish_id: int, body: UpdateCreate, user: UserInfo = Depends(re
 @router.post("/documents/upload", status_code=201)
 async def upload_document(
     file: UploadFile = File(...),
-    source_label: Optional[str] = Form(None),
+    source_label: str | None = Form(None),
     user: UserInfo = Depends(require_jwt),
 ):
     allowed = (".pdf", ".docx")
@@ -737,19 +739,22 @@ def update_task(request_id: int, task_id: int, body: TaskUpdate, user: UserInfo 
     if body.title is not None:
         if not body.title.strip():
             raise HTTPException(400, "title cannot be empty")
-        set_parts.append("title = %s"); vals.append(body.title.strip())
+        set_parts.append("title = %s")
+        vals.append(body.title.strip())
     if body.assigned_to is not None:
-        set_parts.append("assigned_to = %s"); vals.append(body.assigned_to or None)
+        set_parts.append("assigned_to = %s")
+        vals.append(body.assigned_to or None)
     if body.done is not None:
-        set_parts.append("done = %s"); vals.append(body.done)
+        set_parts.append("done = %s")
+        vals.append(body.done)
     if body.position is not None:
-        set_parts.append("position = %s"); vals.append(body.position)
+        set_parts.append("position = %s")
+        vals.append(body.position)
     if not set_parts:
         raise HTTPException(400, "Nothing to update")
     set_parts.append("updated_at = NOW()")
     vals.extend([request_id, task_id])
-    completed_task = None
-    next_task      = None
+    next_task = None
 
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -763,7 +768,6 @@ def update_task(request_id: int, task_id: int, body: TaskUpdate, user: UserInfo 
 
             # If this update marks the task done, find the next undone task in position order
             if body.done is True:
-                completed_task = dict(row)
                 cur.execute("""
                     SELECT rt.id, rt.title, rt.assigned_to, r.title AS request_title
                     FROM cvc.request_tasks rt

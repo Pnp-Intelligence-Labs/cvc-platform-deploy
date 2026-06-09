@@ -10,15 +10,15 @@ Endpoints:
     POST  /notes/{id}/transcript    — upload transcript file (multipart)
 """
 
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
-from pydantic import BaseModel
-from typing import Optional
-from datetime import date as DateType
 import os
-from psycopg2.extras import RealDictCursor
+from datetime import date as DateType
 
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from psycopg2.extras import RealDictCursor
+from pydantic import BaseModel
+
+from api.routes.auth import UserInfo, require_jwt
 from core.db.connection import get_connection
-from api.routes.auth import require_jwt, UserInfo
 
 router = APIRouter()
 
@@ -29,22 +29,22 @@ _TRANSCRIPT_DIR = os.path.join(
 
 class MeetingNoteIn(BaseModel):
     context_type:       str             = 'ventures'
-    company_id:         Optional[int]   = None
+    company_id:         int | None   = None
     company_name:       str             = ''
-    company_url:        Optional[str]   = None
+    company_url:        str | None   = None
     met_at:             DateType
-    rating_founder:     Optional[int]   = None
-    note_founder:       Optional[str]   = None
-    rating_market:      Optional[int]   = None
-    note_market:        Optional[str]   = None
-    rating_tech:        Optional[int]   = None
-    note_tech:          Optional[str]   = None
-    rating_business:    Optional[int]   = None
-    note_business:      Optional[str]   = None
-    rating_deployment:  Optional[int]   = None
-    note_deployment:    Optional[str]   = None
-    personal_note:      Optional[str]   = None
-    transcript_text:    Optional[str]   = None
+    rating_founder:     int | None   = None
+    note_founder:       str | None   = None
+    rating_market:      int | None   = None
+    note_market:        str | None   = None
+    rating_tech:        int | None   = None
+    note_tech:          str | None   = None
+    rating_business:    int | None   = None
+    note_business:      str | None   = None
+    rating_deployment:  int | None   = None
+    note_deployment:    str | None   = None
+    personal_note:      str | None   = None
+    transcript_text:    str | None   = None
 
 
 def _serialize(row: dict) -> dict:
@@ -126,7 +126,7 @@ def get_my_notes(user: UserInfo = Depends(require_jwt)):
 
 @router.get('')
 def get_notes(
-    company_id: Optional[int] = None,
+    company_id: int | None = None,
     user: UserInfo = Depends(require_jwt),
 ):
     """Notes for a company. personal_note is stripped unless current user submitted it."""

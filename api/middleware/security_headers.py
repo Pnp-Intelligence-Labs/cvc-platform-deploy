@@ -7,6 +7,7 @@ Override individual headers via env vars (e.g. CSP_HEADER) for per-deployment tu
 """
 
 import os
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response

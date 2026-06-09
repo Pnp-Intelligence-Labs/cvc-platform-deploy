@@ -29,7 +29,7 @@ import hashlib
 import os
 import re
 import shutil
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlencode
 from uuid import uuid4
@@ -51,9 +51,10 @@ _ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 
 router = APIRouter()
 
-JWT_SECRET = os.environ.get("JWT_SECRET")
-if not JWT_SECRET:
+_jwt_secret_raw = os.environ.get("JWT_SECRET")
+if not _jwt_secret_raw:
     raise RuntimeError("JWT_SECRET is required. Set it in the environment or local .env file.")
+JWT_SECRET: str = _jwt_secret_raw
 JWT_ALGORITHM = "HS256"
 JWT_ACCESS_MINUTES = 15
 JWT_REFRESH_HOURS = 8
@@ -111,7 +112,7 @@ class UserInfo(BaseModel):
 # ── Token helpers ─────────────────────────────────────────────────────────────
 
 def _create_access_token(user: dict) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return jwt.encode(
         {
             "sub": str(user["id"]),
@@ -130,7 +131,7 @@ def _create_access_token(user: dict) -> str:
 
 
 def _create_refresh_token(user: dict) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return jwt.encode(
         {
             "sub": str(user["id"]),
@@ -149,7 +150,7 @@ _create_token = _create_access_token
 
 
 def _create_mfa_challenge_token(user: dict) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return jwt.encode(
         {
             "sub": str(user["id"]),
@@ -311,8 +312,8 @@ def _check_lockout(user_id: int, conn) -> None:
         return
     locked_until = row["locked_until"]
     if locked_until.tzinfo is None:
-        locked_until = locked_until.replace(tzinfo=timezone.utc)
-    if datetime.now(timezone.utc) < locked_until:
+        locked_until = locked_until.replace(tzinfo=UTC)
+    if datetime.now(UTC) < locked_until:
         raise HTTPException(
             status_code=status.HTTP_423_LOCKED,
             detail=f"Account locked after too many failed attempts. Try again after {locked_until.strftime('%H:%M UTC')}",
@@ -386,14 +387,14 @@ def require_jwt(credentials=Depends(_bearer)) -> UserInfo:
             iat = payload.get("iat")
             if iat is not None:
                 iat_dt = (
-                    iat.replace(tzinfo=timezone.utc)
+                    iat.replace(tzinfo=UTC)
                     if isinstance(iat, datetime) and iat.tzinfo is None
                     else iat
                     if isinstance(iat, datetime)
-                    else datetime.fromtimestamp(iat, tz=timezone.utc)
+                    else datetime.fromtimestamp(iat, tz=UTC)
                 )
                 if invalidated_at.tzinfo is None:
-                    invalidated_at = invalidated_at.replace(tzinfo=timezone.utc)
+                    invalidated_at = invalidated_at.replace(tzinfo=UTC)
                 if iat_dt <= invalidated_at:
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -575,6 +576,7 @@ def mfa_challenge(body: MFAChallengeRequest, request: Request):
 
     try:
         import pyotp
+
         from api.routes.mfa import _decrypt_secret
         secret = _decrypt_secret(user["mfa_secret_enc"])
         if not pyotp.TOTP(secret).verify(body.totp_code.strip(), valid_window=1):
@@ -906,7 +908,7 @@ async def upload_avatar(file: UploadFile = File(...), user: UserInfo = Depends(r
 
 
 @router.post("/refresh", response_model=TokenResponse)
-def refresh_token(user: UserInfo = Depends(require_jwt)):
+def refresh_token_jwt(user: UserInfo = Depends(require_jwt)):
     """Issue a fresh token for the current authenticated user."""
     with get_connection() as conn:
         with conn.cursor() as cur:

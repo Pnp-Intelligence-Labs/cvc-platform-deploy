@@ -13,6 +13,7 @@ Usage:
 
 import os
 import pathlib
+
 import psycopg2
 
 MIGRATIONS_DIR = pathlib.Path(__file__).parent / "migrations"

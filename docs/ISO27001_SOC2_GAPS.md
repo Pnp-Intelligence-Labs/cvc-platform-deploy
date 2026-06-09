@@ -1,5 +1,5 @@
 # ISO 27001 / SOC 2 Readiness Gaps
-_Inferred from repository source code — not a formal audit. Date: 2026-06-09._
+_Inferred from repository source code — not a formal audit. Last updated: 2026-06-09._
 
 ---
 
@@ -23,29 +23,25 @@ _Inferred from repository source code — not a formal audit. Date: 2026-06-09._
 
 ---
 
-## Gaps (prioritised)
+## Closed Gaps
+
+| Gap | Closed | How |
+|-----|--------|-----|
+| G1 · MFA not enforced globally | 2026-06-09 | `.env.example` default → `MFA_REQUIRED_ROLES=GP,PSM,Ventures`; `docker_entrypoint.sh` warns at startup if unset; `GOLIVE_CHECKLIST.md` updated |
+| G2 · No TLS config in repo | 2026-06-09 | `infra/tls/Caddyfile.example` + `infra/tls/nginx.conf.example` added; `SETUP_GUIDE.md` + `GOLIVE_CHECKLIST.md` reference them |
+| G3 · MinIO default secret `platform_local` | 2026-06-09 | `.env.example` default → `MINIO_SECRET_KEY=CHANGE_ME`; `install.sh` auto-generates 32-char hex key; `docker_entrypoint.sh` fatal-exits if default detected in production; `README.md` marks it Required |
+| G5 · No dependency / CVE scanning | 2026-06-09 | `.github/dependabot.yml` (weekly pip + npm); `.github/workflows/security.yml` runs `uv lock --check` + `pip-audit` + `npm audit` on every PR |
+| G8 · No secrets scanning in CI | 2026-06-09 | `.pre-commit-config.yaml` + `.gitleaks.toml` added; gitleaks runs on every commit with fixture allowlist |
+
+---
+
+## Open Gaps (prioritised)
 
 ### P1 — High: exploitable or blocks certification
-
-**G1 · MFA not enforced globally**
-`MFA_REQUIRED_ROLES` defaults to empty string — no user is required to use MFA unless the env var is set. A VC platform with deal terms and cap-table data should mandate MFA for all roles with write access.
-_Ref: ISO A.8.5 / SOC CC6.1_
-
-**G2 · No TLS configuration in repo**
-HSTS header is sent, but there is no TLS termination config in `docker-compose.yml` or any reverse-proxy config. Deployers may run HTTP-only. Minimum: document HTTPS requirement; better: provide Caddy/nginx TLS config.
-_Ref: ISO A.8.24 / SOC CC6.7_
-
-**G3 · MinIO default secret key is `platform_local`**
-`docker-compose.yml` line: `MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-platform_local}`. Any deployment that omits `MINIO_SECRET_KEY` ships with a known credential for object storage.
-_Ref: ISO A.8.24 / SOC CC6.1_
 
 **G4 · No secret rotation mechanism**
 `JWT_SECRET`, DB credentials, and API keys (Brave, Proxycurl, OpenRouter) are plain env vars with no rotation tooling, no Vault/KMS integration, and no documented rotation procedure.
 _Ref: ISO A.8.24 / SOC CC6.3_
-
-**G5 · No dependency / CVE scanning**
-No Dependabot config, no Snyk/OWASP Dependency-Check, no GitHub Actions workflow. The `requirements.txt` / `pyproject.toml` lock over 30 transitive packages with no automated vulnerability alerting.
-_Ref: ISO A.8.8 / SOC CC7.1_
 
 ---
 
@@ -58,10 +54,6 @@ _Ref: ISO A.8.12 / SOC CC6.8_
 **G7 · Audit log retention policy undefined**
 `cvc.auth_events` and request logs are written but no retention period is configured, no purge job exists, and no policy document states how long logs must be kept (NIST recommends 90 days minimum; SOC 2 auditors expect ≥1 year for production).
 _Ref: ISO A.8.15 / SOC CC7.2_
-
-**G8 · No secrets scanning in CI**
-No `.gitleaks.toml`, no `detect-secrets` pre-commit hook, no CI step to prevent accidental credential commits. The codebase currently has no hardcoded secrets, but there is no enforcement.
-_Ref: ISO A.8.12 / SOC CC6.3_
 
 **G9 · Rate limiting only on `/auth/login`**
 Admin and data endpoints (`/companies`, `/portfolio`, `/admin/...`) have no rate limiting, enabling enumeration of company records or brute-forcing filter parameters.
@@ -99,11 +91,10 @@ _Ref: ISO A.8.20 / SOC CC6.6_
 
 ## Recommended Next Actions
 
-1. **Immediate**: Set `MFA_REQUIRED_ROLES=GP,PSM,Ventures` in all deployments (G1).
-2. **Immediate**: Rotate default MinIO secret key; add `MINIO_SECRET_KEY` to required env var checklist (G3).
-3. **Short-term**: Add Dependabot or `uv lock --check` in CI; add `gitleaks` pre-commit hook (G5, G8).
-4. **Short-term**: Document and enforce TLS via provided Caddy/nginx example config (G2).
-5. **Medium-term**: Define log retention policy; add purge job for `cvc.auth_events` > 365 days (G7).
-6. **Medium-term**: Enable ClamAV by default in docker-compose; document opt-out procedure (G6).
-7. **Longer-term**: Integrate Vault or AWS Secrets Manager for secret rotation (G4).
-8. **Longer-term**: Write incident response runbook and DR procedure in `docs/compliance/` (G13, G14).
+1. **Immediate**: Enable ClamAV by default in docker-compose; document opt-out (G6).
+2. **Short-term**: Define log retention policy; add purge job for `cvc.auth_events` > 365 days (G7).
+3. **Short-term**: Add rate limiting to admin + data endpoints (G9); audit `RequestLoggingMiddleware` for body capture on sensitive routes (G10).
+4. **Medium-term**: Integrate Vault or AWS Secrets Manager for secret rotation (G4).
+5. **Medium-term**: Build access review workflow + stale-account detection (G11).
+6. **Longer-term**: Write incident response runbook and DR procedure in `docs/compliance/` (G13, G14).
+7. **Longer-term**: Add explicit Docker network segmentation (G15); define data classification scheme (G12).

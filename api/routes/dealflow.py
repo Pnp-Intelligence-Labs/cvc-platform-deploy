@@ -1,52 +1,52 @@
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
-from pydantic import BaseModel
-from typing import Optional, List
 import os
 
-from core.db.connection import get_connection
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from pydantic import BaseModel
+
 from api.auth import require_auth
+from core.db.connection import get_connection
 
 router = APIRouter()
 
 
 class StatusUpdateRequest(BaseModel):
     status: str
-    reason: Optional[str] = None
+    reason: str | None = None
 
 
 class TermSheetRequest(BaseModel):
-    investment_type: Optional[str] = None        # SAFE, convertible_note, equity, warrant
-    round_type: Optional[str] = None
-    check_size_usd: Optional[int] = None
-    pre_money_valuation_usd: Optional[int] = None
-    post_money_valuation_usd: Optional[int] = None
-    round_size_usd: Optional[int] = None
-    shares_purchased: Optional[int] = None
-    pps_usd: Optional[float] = None
-    stage_at_investment: Optional[str] = None
-    lead_investor: Optional[str] = None
-    revenue_at_investment_usd: Optional[int] = None
-    fmv_usd: Optional[float] = None
-    moic: Optional[float] = None
-    fund: Optional[str] = None
+    investment_type: str | None = None        # SAFE, convertible_note, equity, warrant
+    round_type: str | None = None
+    check_size_usd: int | None = None
+    pre_money_valuation_usd: int | None = None
+    post_money_valuation_usd: int | None = None
+    round_size_usd: int | None = None
+    shares_purchased: int | None = None
+    pps_usd: float | None = None
+    stage_at_investment: str | None = None
+    lead_investor: str | None = None
+    revenue_at_investment_usd: int | None = None
+    fmv_usd: float | None = None
+    moic: float | None = None
+    fund: str | None = None
     is_lead_investor: bool = False
-    co_investors: Optional[List[str]] = None
+    co_investors: list[str] | None = None
     board_seat: bool = False
     pro_rata_rights: bool = False
-    close_date: Optional[str] = None             # YYYY-MM-DD
-    lead_attorney: Optional[str] = None
-    notes: Optional[str] = None
+    close_date: str | None = None             # YYYY-MM-DD
+    lead_attorney: str | None = None
+    notes: str | None = None
 
 
 class DealIntake(BaseModel):
     name: str
-    company_id: Optional[int] = None   # if provided, skip name lookup and use this ID directly
-    website: Optional[str] = None
-    one_liner: Optional[str] = None
-    sector: Optional[str] = None
-    stage: Optional[str] = None
+    company_id: int | None = None   # if provided, skip name lookup and use this ID directly
+    website: str | None = None
+    one_liner: str | None = None
+    sector: str | None = None
+    stage: str | None = None
     pipeline_status: str = "discovered"
-    notes: Optional[str] = None
+    notes: str | None = None
     start_dd: bool = False
 
 
@@ -139,10 +139,18 @@ def intake_deal(data: DealIntake, user=Depends(require_auth)):
                 company_id = row["id"]
                 # Update any provided fields
                 updates, vals = [], []
-                if data.website:   updates.append("website = %s");   vals.append(data.website.strip())
-                if data.one_liner: updates.append("one_liner = %s"); vals.append(data.one_liner.strip())
-                if data.sector:    updates.append("sector = %s");    vals.append(data.sector)
-                if data.stage:     updates.append("stage = %s");     vals.append(data.stage)
+                if data.website:
+                    updates.append("website = %s")
+                    vals.append(data.website.strip())
+                if data.one_liner:
+                    updates.append("one_liner = %s")
+                    vals.append(data.one_liner.strip())
+                if data.sector:
+                    updates.append("sector = %s")
+                    vals.append(data.sector)
+                if data.stage:
+                    updates.append("stage = %s")
+                    vals.append(data.stage)
                 if updates:
                     vals.append(company_id)
                     cur.execute(f"UPDATE cvc.companies SET {', '.join(updates)} WHERE id = %s", vals)
@@ -182,7 +190,7 @@ def intake_deal(data: DealIntake, user=Depends(require_auth)):
 @router.post("/upload/{company_id}")
 async def upload_dataroom_files(
     company_id: int,
-    files: List[UploadFile] = File(...),
+    files: list[UploadFile] = File(...),
     user=Depends(require_auth),
 ):
     """Write uploaded dataroom files to a staging directory on the server for DD processing."""

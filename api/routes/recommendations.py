@@ -8,8 +8,7 @@ Each startup / feed item is represented as a set of semantic facet vectors.
 Relevance is the MaxSim late-interaction score across those vector sets.
 """
 import json
-from datetime import datetime, timezone, timedelta
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
@@ -43,27 +42,27 @@ def warm_engine() -> None:
 class RankedStartup(BaseModel):
     id: int
     name: str
-    sector: Optional[str] = None
-    subsector: Optional[str] = None
-    stage: Optional[str] = None
-    location: Optional[str] = None
-    one_liner: Optional[str] = None
-    score_composite: Optional[float] = None
+    sector: str | None = None
+    subsector: str | None = None
+    stage: str | None = None
+    location: str | None = None
+    one_liner: str | None = None
+    score_composite: float | None = None
     pnpbert_score: float
     intro_count: int = 0
     intro_partners: list[str] = []
-    is_portfolio: Optional[bool] = None
+    is_portfolio: bool | None = None
 
 
 class RankedFeedItem(BaseModel):
     item_type: str            # "news" | "briefing" | "activity"
     title: str
-    body: Optional[str] = None
-    company_id: Optional[int] = None
-    company_name: Optional[str] = None
-    sector: Optional[str] = None
-    source_url: Optional[str] = None
-    occurred_at: Optional[str] = None
+    body: str | None = None
+    company_id: int | None = None
+    company_name: str | None = None
+    sector: str | None = None
+    source_url: str | None = None
+    occurred_at: str | None = None
     pnpbert_score: float
 
 
@@ -159,7 +158,7 @@ def _startup_doc(row: dict) -> list[str]:
     return facets
 
 
-def _news_doc(title: str, snippet: Optional[str], sector: Optional[str]) -> list[str]:
+def _news_doc(title: str, snippet: str | None, sector: str | None) -> list[str]:
     facets = [title]
     if snippet:
         facets.append(snippet[:200])
@@ -168,14 +167,14 @@ def _news_doc(title: str, snippet: Optional[str], sector: Optional[str]) -> list
     return facets
 
 
-def _briefing_doc(insight: str, sector: Optional[str]) -> list[str]:
+def _briefing_doc(insight: str, sector: str | None) -> list[str]:
     facets = [insight[:300]]
     if sector:
         facets.append(f"{sector} market signal intelligence")
     return facets
 
 
-def _activity_doc(company_name: str, sector: Optional[str], field_name: Optional[str], new_value: Optional[str]) -> list[str]:
+def _activity_doc(company_name: str, sector: str | None, field_name: str | None, new_value: str | None) -> list[str]:
     facets = [f"{company_name} company update"]
     if sector:
         facets.append(f"{sector} startup activity change")
@@ -275,7 +274,7 @@ async def recommend_feed(
     Return the most relevant recent news, briefing insights, and company activity
     ranked by PnPbert relevance to the current user.
     """
-    since = datetime.now(timezone.utc) - timedelta(days=days_back)
+    since = datetime.now(UTC) - timedelta(days=days_back)
 
     with get_connection() as conn:
         query_vectors = _build_user_query(user, conn)

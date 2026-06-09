@@ -3,14 +3,15 @@ api/routes/portfolio.py — CVC portfolio company endpoints.
 
 Serves only companies where is_portfolio = TRUE.
 """
-from fastapi import APIRouter, Query, Depends, HTTPException
-from typing import Optional, List
-from pydantic import BaseModel
-from core.db.connection import get_connection
-from api.auth import require_auth
-import re, datetime as _dt
+import datetime as _dt
+import re
 from urllib.parse import urlparse as _urlparse
 
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+
+from api.auth import require_auth
+from core.db.connection import get_connection
 
 # ── News article helpers ──────────────────────────────────────────────────────
 
@@ -216,52 +217,52 @@ def _fmt_raised(amount):
 class PortfolioCompany(BaseModel):
     id: int
     name: str
-    one_liner: Optional[str] = None
-    description: Optional[str] = None
-    sector: Optional[str] = None
-    stage: Optional[str] = None
-    location: Optional[str] = None
-    hq_city: Optional[str] = None
-    country: Optional[str] = None
-    website: Optional[str] = None
-    founded: Optional[int] = None
-    employee_count: Optional[int] = None
-    total_raised_usd: Optional[int] = None
-    raised: Optional[str] = None
-    investors: List[str] = []
-    tags: List[str] = []
+    one_liner: str | None = None
+    description: str | None = None
+    sector: str | None = None
+    stage: str | None = None
+    location: str | None = None
+    hq_city: str | None = None
+    country: str | None = None
+    website: str | None = None
+    founded: int | None = None
+    employee_count: int | None = None
+    total_raised_usd: int | None = None
+    raised: str | None = None
+    investors: list[str] = []
+    tags: list[str] = []
     intro_count: int = 0
-    intro_partners: List[str] = []
-    last_intro_date: Optional[str] = None
-    latest_investment_date: Optional[str] = None
-    case_study: Optional[str] = None
-    competitive_advantage: Optional[str] = None
-    score: Optional[float] = None
-    fund: Optional[str] = None
+    intro_partners: list[str] = []
+    last_intro_date: str | None = None
+    latest_investment_date: str | None = None
+    case_study: str | None = None
+    competitive_advantage: str | None = None
+    score: float | None = None
+    fund: str | None = None
 
 
 class PortfolioStats(BaseModel):
     total_companies: int
     total_raised_usd: int
-    avg_founded_year: Optional[float]
+    avg_founded_year: float | None
     sector_distribution: list
     stage_distribution: list
-    top_by_intros: List[PortfolioCompany]
-    recent_introductions: List[PortfolioCompany]
-    cvc_deployed_capital: Optional[int] = None
-    cvc_committed_capital: Optional[int] = None
-    cvc_nav: Optional[int] = None
-    cvc_tvpi: Optional[float] = None
-    total_deployed_usd: Optional[int] = None  # sum across Fund I + Family Office term_sheets
-    fund_i_deployed_usd: Optional[int] = None
-    family_office_deployed_usd: Optional[int] = None
+    top_by_intros: list[PortfolioCompany]
+    recent_introductions: list[PortfolioCompany]
+    cvc_deployed_capital: int | None = None
+    cvc_committed_capital: int | None = None
+    cvc_nav: int | None = None
+    cvc_tvpi: float | None = None
+    total_deployed_usd: int | None = None  # sum across Fund I + Family Office term_sheets
+    fund_i_deployed_usd: int | None = None
+    family_office_deployed_usd: int | None = None
 
 
-@router.get("/", response_model=List[PortfolioCompany])
+@router.get("/", response_model=list[PortfolioCompany])
 def list_portfolio(
-    q: Optional[str] = Query(None),
-    sector: Optional[str] = Query(None),
-    stage: Optional[str] = Query(None),
+    q: str | None = Query(None),
+    sector: str | None = Query(None),
+    stage: str | None = Query(None),
     user=Depends(require_auth),
 ):
     conditions = ["is_portfolio = TRUE"]
@@ -489,20 +490,20 @@ def portfolio_stats(user=Depends(require_auth)):
 class AnnouncementCreate(BaseModel):
     company_id: int
     title: str
-    body: Optional[str] = None
+    body: str | None = None
     announcement_type: str = "general"
     is_public: bool = False
-    source_url: Optional[str] = None
-    announced_date: Optional[str] = None  # YYYY-MM-DD
+    source_url: str | None = None
+    announced_date: str | None = None  # YYYY-MM-DD
 
 
 class AnnouncementUpdate(BaseModel):
-    title: Optional[str] = None
-    body: Optional[str] = None
-    announcement_type: Optional[str] = None
-    is_public: Optional[bool] = None
-    source_url: Optional[str] = None
-    announced_date: Optional[str] = None
+    title: str | None = None
+    body: str | None = None
+    announcement_type: str | None = None
+    is_public: bool | None = None
+    source_url: str | None = None
+    announced_date: str | None = None
 
 
 @router.get("/news")

@@ -1,12 +1,12 @@
 """
 api/routes/sourcing.py — Startup sourcing endpoint with advanced filters.
 """
-from fastapi import APIRouter, Query, Depends
-from typing import Optional, List
+
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
-from core.db.connection import get_connection
 from api.auth import require_auth
+from core.db.connection import get_connection
 
 router = APIRouter()
 
@@ -24,13 +24,13 @@ _STAGE_NORM = {
     "n/a": "Undisclosed",
 }
 
-def _norm_stage(s: Optional[str]) -> Optional[str]:
+def _norm_stage(s: str | None) -> str | None:
     if not s:
         return None
     return _STAGE_NORM.get(s.lower().strip(), s)
 
 
-def _format_raised(amount: Optional[int]) -> Optional[str]:
+def _format_raised(amount: int | None) -> str | None:
     if not amount:
         return None
     if amount >= 1_000_000_000:
@@ -43,42 +43,42 @@ def _format_raised(amount: Optional[int]) -> Optional[str]:
 class SourcingCompany(BaseModel):
     id: int
     name: str
-    sector: Optional[str] = None
-    stage: Optional[str] = None
-    location: Optional[str] = None
-    raised: Optional[str] = None
-    one_liner: Optional[str] = None
-    description: Optional[str] = None
-    signal_score: Optional[float] = None
-    founded: Optional[int] = None
-    total_raised_usd: Optional[int] = None
-    is_hardware: Optional[bool] = None
-    is_software: Optional[bool] = None
-    subsector: Optional[str] = None
+    sector: str | None = None
+    stage: str | None = None
+    location: str | None = None
+    raised: str | None = None
+    one_liner: str | None = None
+    description: str | None = None
+    signal_score: float | None = None
+    founded: int | None = None
+    total_raised_usd: int | None = None
+    is_hardware: bool | None = None
+    is_software: bool | None = None
+    subsector: str | None = None
     intro_count: int = 0
-    intro_partners: List[str] = []
-    last_intro_date: Optional[str] = None
+    intro_partners: list[str] = []
+    last_intro_date: str | None = None
     has_case_study: bool = False
-    investor_tier: Optional[str] = None
-    is_portfolio: Optional[bool] = None
-    fund: Optional[str] = None
+    investor_tier: str | None = None
+    is_portfolio: bool | None = None
+    fund: str | None = None
 
 
 @router.get("/")
 async def list_sourcing_companies(
-    q: Optional[str] = Query(None),
-    sector: Optional[str] = Query(None),
-    stage: Optional[str] = Query(None),
-    subsector: Optional[str] = Query(None),
-    is_hardware: Optional[bool] = Query(None),
-    is_software: Optional[bool] = Query(None),
-    founded_after: Optional[int] = Query(None),
-    founded_before: Optional[int] = Query(None),
-    raised_min: Optional[int] = Query(None),
-    raised_max: Optional[int] = Query(None),
-    min_intros: Optional[int] = Query(None, description="Minimum number of partner introductions"),
-    has_case_study: Optional[bool] = Query(None, description="Only companies with a case study"),
-    investor_tier: Optional[str] = Query(None, description="top_tier | mid_tier | emerging"),
+    q: str | None = Query(None),
+    sector: str | None = Query(None),
+    stage: str | None = Query(None),
+    subsector: str | None = Query(None),
+    is_hardware: bool | None = Query(None),
+    is_software: bool | None = Query(None),
+    founded_after: int | None = Query(None),
+    founded_before: int | None = Query(None),
+    raised_min: int | None = Query(None),
+    raised_max: int | None = Query(None),
+    min_intros: int | None = Query(None, description="Minimum number of partner introductions"),
+    has_case_study: bool | None = Query(None, description="Only companies with a case study"),
+    investor_tier: str | None = Query(None, description="top_tier | mid_tier | emerging"),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     user=Depends(require_auth)
@@ -91,50 +91,50 @@ async def list_sourcing_companies(
         with conn.cursor() as cur:
             conditions = []
             params = []
-            
+
             # Text search across name, one_liner, description
             if q:
                 conditions.append("(name ILIKE %s OR one_liner ILIKE %s OR description ILIKE %s)")
                 params.extend([f"%{q}%", f"%{q}%", f"%{q}%"])
-            
+
             # Sector filter
             if sector:
                 conditions.append("sector = %s")
                 params.append(sector)
-            
+
             # Stage filter — normalise so both "series_a" and "Series A" work
             if stage:
                 conditions.append("stage = %s")
                 params.append(_norm_stage(stage))
-            
+
             # Subsector filter
             if subsector:
                 conditions.append("subsector = %s")
                 params.append(subsector)
-            
+
             # Hardware/software flags
             if is_hardware is not None:
                 conditions.append("is_hardware = %s")
                 params.append(is_hardware)
-            
+
             if is_software is not None:
                 conditions.append("is_software = %s")
                 params.append(is_software)
-            
+
             # Founded year range
             if founded_after is not None:
                 conditions.append("founded >= %s")
                 params.append(founded_after)
-            
+
             if founded_before is not None:
                 conditions.append("founded <= %s")
                 params.append(founded_before)
-            
+
             # Funding range
             if raised_min is not None:
                 conditions.append("total_raised_usd >= %s")
                 params.append(raised_min)
-            
+
             if raised_max is not None:
                 conditions.append("total_raised_usd <= %s")
                 params.append(raised_max)
@@ -152,7 +152,7 @@ async def list_sourcing_companies(
 
             # Build WHERE clause
             where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
-            
+
             # Get total count for pagination
             count_query = f"SELECT COUNT(*) as total FROM cvc.companies {where_clause}"
             cur.execute(count_query, params)

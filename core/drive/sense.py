@@ -8,9 +8,9 @@ Uses OpenRouter when OPENROUTER_API_KEY is set (richer output). Falls back to a
 fully offline extractive method otherwise, so the feature works out of the box.
 """
 
+import json
 import os
 import re
-import json
 
 _OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 _MODEL = os.environ.get("OPENROUTER_MODEL", "qwen/qwen3-235b-a22b-2507")

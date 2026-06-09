@@ -11,8 +11,9 @@ Assignment/tag notifications are written directly by route handlers via write_no
 """
 
 from fastapi import APIRouter, Depends
+
+from api.routes.auth import UserInfo, require_jwt
 from core.db.connection import get_connection
-from api.routes.auth import require_jwt, UserInfo
 
 router = APIRouter()
 
@@ -95,7 +96,7 @@ async def get_notifications(user: UserInfo = Depends(require_jwt)):
                         'agent_update'                  AS type,
                         INITCAP(REPLACE(agent, 'bigclaw', 'BigClaw')) || ' — ' ||
                             REPLACE(entry_type, '_', ' ')   AS title,
-                        LEFT(REGEXP_REPLACE(content, '^[\n\r\s\-#]+', ''), 200) AS body,
+                        LEFT(REGEXP_REPLACE(content, '^[\n\r\\s\\-#]+', ''), 200) AS body,
                         agent                           AS source,
                         NULL::text                      AS link,
                         NULL::integer                   AS reference_id,

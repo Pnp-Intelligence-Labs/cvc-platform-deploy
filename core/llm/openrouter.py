@@ -30,9 +30,10 @@ from cvc_config import OPENROUTER_API_KEY, OPENROUTER_URL
 def _log_usage(activity: str, model: str, prompt_tokens: int, completion_tokens: int, cost: float) -> None:
     """Write LLM call metrics to cvc.llm_usage_log. Fire-and-forget — never raises."""
     try:
+        import os
+
         import psycopg2
         import psycopg2.extras
-        import os
         conn = psycopg2.connect(
             host=os.getenv("CVC_DB_HOST", "100.83.104.117"),
             port=int(os.getenv("CVC_DB_PORT", "5432")),

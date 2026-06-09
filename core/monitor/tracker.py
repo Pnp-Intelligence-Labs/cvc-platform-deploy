@@ -8,10 +8,11 @@ Stored in SQLite at ~/.cvc-skills/metrics.db — queryable at any time.
 Use monitor/report.py to see which skills are underperforming.
 """
 
+import functools
 import sqlite3
 import time
-import functools
 from datetime import datetime
+
 from cvc_config import MONITOR_DB
 
 
@@ -42,10 +43,10 @@ def log_call(
     status: str,           # "ok" | "empty" | "error" | "timeout"
     result_count: int = 0,
     latency_ms: int = 0,
-    pipeline: str = None,
-    agent: str = None,
-    error: str = None,
-    notes: str = None,
+    pipeline: str | None = None,
+    agent: str | None = None,
+    error: str | None = None,
+    notes: str | None = None,
 ):
     """Log a single skill call to the metrics DB."""
     try:
@@ -69,7 +70,7 @@ def log_call(
         pass  # never let monitoring break the pipeline
 
 
-def track(skill_name: str, pipeline: str = None, agent: str = None):
+def track(skill_name: str, pipeline: str | None = None, agent: str | None = None):
     """
     Decorator that automatically tracks any skill function.
 

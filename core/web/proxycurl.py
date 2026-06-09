@@ -6,16 +6,17 @@ Cost: ~$0.01 per profile lookup.
 
 Usage:
     from web.proxycurl import get_profile, search_profile
-    
+
     # Lookup by LinkedIn URL
     profile = get_profile("https://www.linkedin.com/in/williamhgates/")
-    
+
     # Search by name + company
     profile = search_profile("Satya Nadella", company="Microsoft")
 """
 
-import requests
 import time
+
+import requests
 from cvc_config import PROXYCURL_API_KEY, PROXYCURL_URL
 from monitor.tracker import track
 
@@ -25,7 +26,7 @@ _profile_cache = {}
 _RETRY_DELAYS = [2, 5, 10]
 
 
-def _extract_linkedin_id(url: str) -> str:
+def _extract_linkedin_id(url: str) -> str | None:
     """Extract LinkedIn ID from various URL formats."""
     url = url.strip().rstrip('/')
     # Handle linkedin.com/in/username and linkedin.com/in/username/detail
@@ -40,11 +41,11 @@ def _extract_linkedin_id(url: str) -> str:
 def get_profile(linkedin_url: str, use_cache: bool = True) -> dict:
     """
     Fetch LinkedIn profile by URL via Proxycurl.
-    
+
     Args:
         linkedin_url: Full LinkedIn URL or just the username
         use_cache: Use in-memory cache to avoid re-fetching
-        
+
     Returns:
         dict with profile data or error info:
         {
@@ -56,12 +57,12 @@ def get_profile(linkedin_url: str, use_cache: bool = True) -> dict:
         }
     """
     cache_key = linkedin_url.lower().strip()
-    
+
     if use_cache and cache_key in _profile_cache:
         return _profile_cache[cache_key]
-    
+
     linkedin_id = _extract_linkedin_id(linkedin_url) or linkedin_url
-    
+
     # Build API URL
     url = f"{PROXYCURL_URL}/v2/linkedin"
     headers = {"Authorization": f"Bearer {PROXYCURL_API_KEY}"}
@@ -71,10 +72,10 @@ def get_profile(linkedin_url: str, use_cache: bool = True) -> dict:
     for attempt, delay in enumerate([0] + _RETRY_DELAYS):
         if delay:
             time.sleep(delay)
-            
+
         try:
             resp = requests.get(url, headers=headers, params=params, timeout=30)
-            
+
             if resp.status_code == 200:
                 data = resp.json()
                 result = {
@@ -87,7 +88,7 @@ def get_profile(linkedin_url: str, use_cache: bool = True) -> dict:
                 if use_cache:
                     _profile_cache[cache_key] = result
                 return result
-                
+
             elif resp.status_code == 404:
                 result = {
                     "found": False,
@@ -99,18 +100,18 @@ def get_profile(linkedin_url: str, use_cache: bool = True) -> dict:
                 if use_cache:
                     _profile_cache[cache_key] = result
                 return result
-                
+
             elif resp.status_code == 429:
                 # Rate limited, retry
                 continue
             else:
                 error_msg = f"HTTP {resp.status_code}: {resp.text[:200]}"
-                
+
         except requests.Timeout:
             error_msg = "Request timeout"
         except Exception as e:
             error_msg = f"Error: {str(e)}"
-    
+
     # All retries exhausted
     result = {
         "found": False,
@@ -130,7 +131,7 @@ def search_profile(name: str, company: str = None, title: str = None) -> dict:
     """
     url = f"{PROXYCURL_URL}/v2/linkedin/profile/resolve"
     headers = {"Authorization": f"Bearer {PROXYCURL_API_KEY}"}
-    
+
     name_parts = name.split()
     if not name_parts:
         return {
@@ -147,10 +148,10 @@ def search_profile(name: str, company: str = None, title: str = None) -> dict:
         params["company_domain"] = company  # Proxycurl prefers domain
     if title:
         params["title"] = title
-        
+
     try:
         resp = requests.get(url, headers=headers, params=params, timeout=30)
-        
+
         if resp.status_code == 200:
             data = resp.json()
             if data.get("linkedin_profile_url"):
@@ -172,7 +173,7 @@ def search_profile(name: str, company: str = None, title: str = None) -> dict:
                 "search_params": params,
                 "cost_incurred": 0
             }
-            
+
     except Exception as e:
         return {
             "found": False,
@@ -203,21 +204,21 @@ def format_profile_for_llm(profile: dict) -> str:
     """Convert Proxycurl profile to text format for LLM consumption."""
     if not profile:
         return ""
-    
+
     parts = []
-    
+
     # Basic info
     full_name = profile.get("full_name", "Unknown")
     headline = profile.get("headline", "")
     parts.append(f"Name: {full_name}")
     if headline:
         parts.append(f"Headline: {headline}")
-    
+
     # Current role
     occupation = profile.get("occupation", "")
     if occupation:
         parts.append(f"Current: {occupation}")
-    
+
     # Experience
     experiences = profile.get("experiences", [])
     if experiences:
@@ -227,13 +228,13 @@ def format_profile_for_llm(profile: dict) -> str:
             title = exp.get("title", "")
             start = exp.get("starts_at", {})
             end = exp.get("ends_at") or {}
-            
+
             start_str = f"{start.get('month', '?')}/{start.get('year', '?')}" if start else "?"
             end_str = f"{end.get('month', '?')}/{end.get('year', '?')}" if end else "Present"
-            
+
             if company and title:
                 parts.append(f"  • {title} at {company} ({start_str} - {end_str})")
-    
+
     # Education
     education = profile.get("education", [])
     if education:
@@ -249,5 +250,5 @@ def format_profile_for_llm(profile: dict) -> str:
                 if field:
                     edu_str += f" ({field})"
                 parts.append(edu_str)
-    
+
     return "\n".join(parts)
