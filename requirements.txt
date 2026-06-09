@@ -10,6 +10,7 @@ psycopg2-binary==2.9.9
 # Auth
 python-jose[cryptography]==3.5.0
 bcrypt==3.2.2
+pyotp>=2.9.0
 
 # HTTP
 requests==2.31.0
