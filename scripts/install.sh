@@ -78,17 +78,20 @@ if [[ -f "$REPO/.env" ]]; then
 else
     cp "$REPO/.env.example" "$REPO/.env"
 
-    # Generate a random JWT secret
+    # Generate random secrets
     JWT_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+    MINIO_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
 
     # Inject into .env (GNU sed vs BSD/macOS sed)
     if sed --version 2>/dev/null | grep -q GNU; then
         sed -i "s|^JWT_SECRET=.*|JWT_SECRET=${JWT_SECRET}|" "$REPO/.env"
+        sed -i "s|^MINIO_SECRET_KEY=.*|MINIO_SECRET_KEY=${MINIO_SECRET}|" "$REPO/.env"
     else
         sed -i '' "s|^JWT_SECRET=.*|JWT_SECRET=${JWT_SECRET}|" "$REPO/.env"
+        sed -i '' "s|^MINIO_SECRET_KEY=.*|MINIO_SECRET_KEY=${MINIO_SECRET}|" "$REPO/.env"
     fi
 
-    ok ".env created with random JWT_SECRET"
+    ok ".env created with random JWT_SECRET and MINIO_SECRET_KEY"
 fi
 
 # Load .env

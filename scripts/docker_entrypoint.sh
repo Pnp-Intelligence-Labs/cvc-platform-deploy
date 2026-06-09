@@ -21,6 +21,15 @@ if [ "${ENVIRONMENT}" = "production" ]; then
         echo "[entrypoint] FATAL: DB_PASSWORD must be set in production."
         exit 1
     fi
+    if [ -z "${MINIO_SECRET_KEY:-}" ] || [ "${MINIO_SECRET_KEY}" = "CHANGE_ME" ] || [ "${MINIO_SECRET_KEY}" = "platform_local" ]; then
+        echo "[entrypoint] FATAL: MINIO_SECRET_KEY must be set to a unique secret in production (not default)."
+        exit 1
+    fi
+fi
+
+# Warn if MFA is not enforced for any role
+if [ -z "${MFA_REQUIRED_ROLES:-}" ]; then
+    echo "[entrypoint] WARN: MFA_REQUIRED_ROLES is not set — MFA will not be required for any role. Recommended: set MFA_REQUIRED_ROLES=GP,PSM,Ventures in .env."
 fi
 # ─────────────────────────────────────────────────────────────────────────────
 

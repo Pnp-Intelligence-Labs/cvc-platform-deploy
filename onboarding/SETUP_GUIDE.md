@@ -359,10 +359,25 @@ cd designs/figma-dashboard && npm run build
 ALLOWED_ORIGINS=https://your-domain.com,http://your-server-ip:8002
 ```
 
-**4. Put it behind a reverse proxy (recommended):**
+**4. Put it behind a reverse proxy (required for production):**
 
 Use nginx or Caddy to terminate TLS and proxy to port 8002.
-This gives you HTTPS and hides the port number.
+Working example configs are in `infra/tls/`:
+
+- **Caddy** (recommended — auto-HTTPS via Let's Encrypt):
+  ```bash
+  sudo cp infra/tls/Caddyfile.example /etc/caddy/Caddyfile
+  # Edit: replace your-domain.com with your actual domain
+  sudo systemctl reload caddy
+  ```
+
+- **nginx** (manual cert with certbot):
+  ```bash
+  sudo cp infra/tls/nginx.conf.example /etc/nginx/sites-available/platform
+  sudo ln -s /etc/nginx/sites-available/platform /etc/nginx/sites-enabled/
+  sudo certbot --nginx -d your-domain.com
+  sudo systemctl reload nginx
+  ```
 
 ---
 

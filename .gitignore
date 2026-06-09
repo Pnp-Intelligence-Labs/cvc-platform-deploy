@@ -64,3 +64,10 @@ tests/e2e/report/
 test-results/
 node_modules/
 .vercel
+
+# Test data archives — large, rebuild from source
+cvc_test_data/
+cvc_test_data.zip
+
+# Sensitive documents — partner contracts and confidential dataroom files
+workers/rm/

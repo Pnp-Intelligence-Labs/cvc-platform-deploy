@@ -30,6 +30,22 @@ Each item takes 1–5 minutes. The whole checklist takes under 30 minutes.
   Default for local dev is `platform_local`. Change it for any
   server that is reachable from outside your local machine.
 
+- [ ] **Rotate the MinIO secret key**
+  The installer generates one automatically. Verify `MINIO_SECRET_KEY` in `.env` is
+  not `platform_local` or `CHANGE_ME`. If needed, regenerate:
+  ```bash
+  python3 -c "import secrets; print(secrets.token_hex(32))"
+  ```
+  Update `MINIO_SECRET_KEY` in `.env` and restart the stack.
+
+- [ ] **Enforce MFA for privileged roles**
+  Set `MFA_REQUIRED_ROLES` in `.env` to require MFA for users with sensitive access:
+  ```env
+  MFA_REQUIRED_ROLES=GP,PSM,Ventures
+  ```
+  Users in these roles are blocked from logging in until they enroll a TOTP app
+  (Google Authenticator, Authy, etc.). Enrollment is self-service on first login.
+
 - [ ] **Firewall the DB port**
   PostgreSQL (port 5432) should not be exposed to the internet.
   Only the API (port 8002) needs to be reachable — and ideally
@@ -108,16 +124,13 @@ Each item takes 1–5 minutes. The whole checklist takes under 30 minutes.
   ```
   Make sure `/opt/backups/` exists and is writable. Test it once manually.
 
-- [ ] **Put the API behind a reverse proxy (recommended)**
+- [ ] **Put the API behind a reverse proxy (required for production)**
   Use nginx or Caddy to serve HTTPS on port 443 and proxy to port 8002.
-  This gives you a clean URL and valid SSL. Caddy handles certificates automatically.
+  Working example configs are in `infra/tls/`:
+  - **Caddy** (auto-HTTPS, recommended): copy `infra/tls/Caddyfile.example` → `/etc/caddy/Caddyfile`
+  - **nginx**: copy `infra/tls/nginx.conf.example` → `/etc/nginx/sites-available/platform`
 
-  Minimal Caddy config:
-  ```
-  your-domain.com {
-      reverse_proxy localhost:8002
-  }
-  ```
+  Caddy handles certificate provisioning automatically via Let's Encrypt.
 
 ---
 

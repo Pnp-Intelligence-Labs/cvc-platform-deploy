@@ -1,0 +1,24 @@
+[extend]
+# Extend default ruleset
+useDefault = true
+
+[allowlist]
+description = "Allowlist for fixture/example/dev-only values"
+paths = [
+    # Demo and sample data — not real credentials
+    "onboarding/sample_companies.csv",
+    "onboarding/sample_partners.csv",
+    "data/demo_data.sql",
+    "cvc_test_data/",
+    # Local dev defaults documented explicitly in .env.example comments
+    ".env.example",
+    # Docker dev compose — uses ${VAR:-dev_default} pattern, not hardcoded secrets
+    "docker-compose.dev.yml",
+]
+
+regexes = [
+    # Allow the literal placeholder strings used in .env.example / docs
+    "CHANGE_ME",
+    "platform_local",
+    "changeme",
+]

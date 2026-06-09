@@ -4,6 +4,26 @@ Running log of work done in this repo. Newest entries at the top. Per project ru
 
 Format: `YYYY-MM-DD — short title` followed by what changed and why.
 
+## 2026-06-09 — security hardening: MFA enforcement, MinIO secret rotation, CI, TLS, folder cleanup
+
+Closed gaps G1, G2, G3, G5, G8 from `docs/ISO27001_SOC2_GAPS.md`.
+
+- `.env.example`: `MFA_REQUIRED_ROLES` default → `GP,PSM,Ventures`; `MINIO_SECRET_KEY` default → `CHANGE_ME`
+- `scripts/install.sh`: auto-generate `MINIO_SECRET_KEY` (32-char hex) alongside `JWT_SECRET`
+- `scripts/docker_entrypoint.sh`: fatal if `MINIO_SECRET_KEY` is default in production; warn if `MFA_REQUIRED_ROLES` unset
+- `README.md`: mark `MINIO_SECRET_KEY` as Required in env var table
+- `onboarding/GOLIVE_CHECKLIST.md`: add MinIO key rotation + MFA enforcement checklist items; TLS section now references `infra/tls/` examples
+- `onboarding/SETUP_GUIDE.md`: expand TLS section with Caddy + nginx instructions referencing `infra/tls/`
+- `.github/dependabot.yml`: weekly Dependabot for pip + npm (G5)
+- `.github/workflows/security.yml`: CI — `uv lock --check` + `pip-audit` + `npm audit` (G5)
+- `.pre-commit-config.yaml` + `.gitleaks.toml`: gitleaks pre-commit hook with fixture allowlist (G8)
+- `infra/tls/Caddyfile.example` + `infra/tls/nginx.conf.example`: working TLS reverse proxy configs (G2)
+- `.gitignore`: add `cvc_test_data/`, `cvc_test_data.zip`, `workers/rm/` (real signed partner contracts — confidential)
+- `backend/DEPRECATED.md`: mark Django backend as deprecated in favour of FastAPI `api/`
+- `integrations/README.md`: document google-drive connector's relationship to `core/drive/`
+- `core/README.md`: full module map
+- `scripts/README.md`: script index
+
 ## 2026-06-08 — full mobile + tablet responsive pass
 
 - `tokens.ts`: `pageTitle`/`reportTitle` → `text-2xl md:text-3xl` (shrinks h1 on mobile across all 17 pages)
@@ -396,3 +416,11 @@ Each new change appends an entry under today's date with:
 - Requires BRAVE_API_KEY in .env to fetch news articles into companies.news_articles
 - Requires briefing worker run to populate weekly_signals + briefing_insights tables
 - Traction scoring code is correct — needs partner_intros data (real usage or import)
+
+## 2026-06-09 — Linting, type-checking, unit tests, compliance gaps report
+- Auto-fixed 514 ruff errors; manually fixed 58 remaining (W291/W293 trailing whitespace, E701/E702 multi-statement lines, F841 unused vars, F601 dup dict keys, F811 duplicate refresh_token fn, UP045 Optional→X|None, F401 unused import, E402 mis-placed import, noqa directive)
+- Fixed real type errors: JWT_SECRET type narrowing (auth.py, drive.py callback params), tracker.py str|None params, proxycurl.py return type, plugin_loader.py None guard, keycloak.py JWKS assert, terminal.py + userauth.py return annotations
+- Updated pyproject.toml basedpyright: added venvPath/venv, suppressed psycopg2 RealDictCursor stubs false positives (reportCallIssue, reportArgumentType, reportOptionalSubscript, reportMissingImports)
+- Added 42 pytest unit tests in tests/test_core_features.py covering: RateLimiter, upload_validator, config_loader, JWT helpers, password policy, home pure helpers, security headers
+- Added conftest.py (sys.path fix for pytest), installed pytest 9.0.3 as dev dep
+- Produced docs/ISO27001_SOC2_GAPS.md: 15 gaps across P1/P2/P3 priority tiers with ISO/SOC 2 control references

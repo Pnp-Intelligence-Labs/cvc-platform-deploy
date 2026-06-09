@@ -1,0 +1,15 @@
+# Caddyfile.example — copy to /etc/caddy/Caddyfile and replace your-domain.com
+#
+# Caddy auto-provisions TLS certificates via Let's Encrypt.
+# Requirements: domain DNS must point to this server, port 80+443 open.
+#
+# Install: https://caddyserver.com/docs/install
+# Reload:  sudo systemctl reload caddy
+
+your-domain.com {
+    reverse_proxy localhost:8002
+
+    # Optional: redirect www → apex
+    # @www host www.your-domain.com
+    # redir @www https://your-domain.com{uri} permanent
+}
