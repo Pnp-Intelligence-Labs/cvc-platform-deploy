@@ -450,3 +450,14 @@ Each new change appends an entry under today's date with:
 - Added 42 pytest unit tests in tests/test_core_features.py covering: RateLimiter, upload_validator, config_loader, JWT helpers, password policy, home pure helpers, security headers
 - Added conftest.py (sys.path fix for pytest), installed pytest 9.0.3 as dev dep
 - Produced docs/ISO27001_SOC2_GAPS.md: 15 gaps across P1/P2/P3 priority tiers with ISO/SOC 2 control references
+
+## 2026-06-09 — Folder reorganization + STRUCTURE.md
+
+**Changes:**
+- Deleted `cvc_test_data/` (identical duplicate of `data/test_data/`)
+- Moved `cvc_test_data.zip` → `data/`
+- Moved `sql/verify_portfolio_status.sql` → `data/sql/`
+- Moved `manifests/Q2-2026.json` → `config/manifests/`
+- Moved `static/css/dashboard-theme.css` → `api/static/css/`
+- Moved `mcp/cvc_api_server.py` → `integrations/mcp/`
+- Created `STRUCTURE.md` — full nested folder chart with descriptions for every folder and file
