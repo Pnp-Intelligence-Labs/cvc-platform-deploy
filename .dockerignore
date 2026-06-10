@@ -25,9 +25,6 @@ designs/figma-dashboard/
 tests/
 test-results/
 
-# Plugins managed outside git — mounted at runtime
-plugins/installed/
-
 # Docs
 *.md
 docs/

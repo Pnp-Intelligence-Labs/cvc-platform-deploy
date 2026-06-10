@@ -1,0 +1,27 @@
+{
+  "slug": "industrial-matrix",
+  "name": "Industrial Matrix",
+  "version": "1.0.0",
+  "description": "Pilot-to-Production scatter matrix scoring industrial companies on readiness, sovereignty, and integration friction. Pulls sectors from team config.",
+  "routes": {
+    "prefix": "/industrial",
+    "tag": "industrial-matrix"
+  },
+  "nav": {
+    "label": "Industrial Matrix",
+    "path": "/industrial",
+    "icon": "Cpu",
+    "roles": [
+      "GP",
+      "Principal",
+      "Director",
+      "Ventures"
+    ]
+  },
+  "nav_enabled": false,
+  "requires_tables": [
+    "companies",
+    "funding_rounds"
+  ],
+  "config_schema": {}
+}

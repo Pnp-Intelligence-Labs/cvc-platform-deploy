@@ -1,0 +1,15 @@
+{
+  "slug": "news-feed",
+  "name": "News Feed",
+  "version": "1.0.0",
+  "routes": {
+    "prefix": "/news",
+    "tag": "news-feed"
+  },
+  "nav": null,
+  "requires_tables": [
+    "news_watch_companies",
+    "category_news"
+  ],
+  "config_schema": {}
+}

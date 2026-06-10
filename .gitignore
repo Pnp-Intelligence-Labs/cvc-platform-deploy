@@ -48,9 +48,7 @@ graphify-out/
 memory/
 .enrichment_progress.json
 
-# Installed plugins — managed outside git, installed via install_plugin.sh
-plugins/installed/*
-!plugins/installed/.gitkeep
+# Installed plugins are tracked so managed deploys (Railway) ship with features enabled
 
 # React frontend source — track src, ignore build artifacts
 # designs/figma-export/ is Figma-only; figma-dashboard/ is production source
