@@ -525,3 +525,11 @@ Each new change appends an entry under today's date with:
 - Added `.vercelignore` at repo root — excludes `api/`, `.venv/`, `workers/`, `*.py`, etc.
 - Build verified locally: succeeds in 3.78s, outputs to `dist/app/`
 - **Next step**: In Vercel dashboard → `verticalos` project → Settings → Git → Root Directory → clear to blank (`.`)
+
+## 2026-06-10 — Repo transferred to Pnp-Intelligence-Labs org + Vercel fixes
+
+- Repo moved from `harshalpathak97/cvc-platform-deploy` to `Pnp-Intelligence-Labs/cvc-platform-deploy`
+- Updated git remote to SSH: `git@github.com:Pnp-Intelligence-Labs/cvc-platform-deploy.git` (HTTPS returns 404 on this org)
+- Fixed `.vercelignore`: anchored all paths with `/` prefix so patterns only match root-level dirs. Without `/`, `api/` was deleting `designs/figma-dashboard/src/app/api/` (frontend API client) — caused `Could not resolve "../api/client"` build error.
+- Vercel buildCommand already uses `npx vite build` (PATH fix from earlier)
+- **Vercel project action needed**: update Git repo to `Pnp-Intelligence-Labs/cvc-platform-deploy` in project settings

@@ -68,7 +68,7 @@ DB password on Whip Claw: `platform_local` (matches run_local.sh hardcoded defau
 
 ## Git
 
-- Remote: `https://github.com/harshalpathak97/cvc-platform-deploy`
+- Remote: `git@github.com:Pnp-Intelligence-Labs/cvc-platform-deploy.git` (SSH — HTTPS returns 404 on this org)
 - Always pull before starting: `git pull origin main`
 - Push here only: `git push origin main`
 
