@@ -35,8 +35,9 @@ plugins/installed/
         └── forge.py
 ```
 
-`plugins/installed/` is in `.gitignore`. It is never committed to the core repo.
-The private plugin registry manages packaging and versioning.
+`plugins/installed/` is tracked in git so managed deploys (Railway) ship with the
+bundled plugins enabled. For installs that pull plugins from the private registry
+instead, re-add `plugins/installed/*` to `.gitignore` and use `install_plugin.sh`.
 
 ---
 

@@ -12,7 +12,7 @@ A clean, generalizable version of CVC Intelligence where we:
 - Keep architecture clean per `docs/PHASE1_BUILD_PLAN.md` and `docs/DECISIONS.md`
 
 **Production repo (do not touch from here):** `~/repos/cvc-intelligence` → `natelouie11-tech/NEW-CVC-REPO`
-**This repo:** `~/repos/cvc-platform-deploy` → `natelouie11-tech/cvc-platform-deploy`
+**This repo:** `~/Downloads/Coding Projects/cvc-platform-deploy` → `harshalpathak97/cvc-platform-deploy`
 
 ## Ground Rules
 
@@ -68,9 +68,17 @@ DB password on Whip Claw: `platform_local` (matches run_local.sh hardcoded defau
 
 ## Git
 
-- Remote: `https://github.com/natelouie11-tech/cvc-platform-deploy`
+- Remote: `https://github.com/harshalpathak97/cvc-platform-deploy`
 - Always pull before starting: `git pull origin main`
 - Push here only: `git push origin main`
+
+## Managed Deploy (live)
+
+Platform is live on managed infra (see `docs/DEPLOY_RAILWAY.md`, `ACTIVITY_LOG.md`):
+- **Frontend (Vercel):** `pnpverticalos.vercel.app` — project `verticalos`, root dir `designs/figma-dashboard`, auto-deploys on push to `main`.
+- **Backend (Railway):** `cvc-api-production.up.railway.app` — Docker build, deployed via `railway up` (no git connection). Ships `plugins/installed/` so all 7 plugins are active.
+- **Database (Supabase):** Postgres via `DATABASE_URL` (session pooler). Pre-migrated; `RUN_MIGRATIONS=false` on Railway.
+- Backend is **not** deployed on Vercel — `vercel.json` only proxies API routes to Railway. Ignore/disable any Vercel project that auto-detects the FastAPI `api/` folder at repo root.
 
 ## graphify
 

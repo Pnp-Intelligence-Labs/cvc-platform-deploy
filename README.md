@@ -39,7 +39,7 @@ Install any combination during setup or later. Each plugin ships with its own DB
 ## Quick Start
 
 ```bash
-git clone https://github.com/natelouie11-tech/cvc-platform-deploy
+git clone https://github.com/harshalpathak97/cvc-platform-deploy
 cd cvc-platform-deploy
 bash scripts/install.sh
 ```

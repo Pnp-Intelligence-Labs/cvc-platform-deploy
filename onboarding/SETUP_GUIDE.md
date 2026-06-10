@@ -39,7 +39,7 @@ Inbound: only your team needs to reach it — a firewall or VPN is fine.
 ## Step 1 — Clone the Repo
 
 ```bash
-git clone https://github.com/natelouie11-tech/cvc-platform-deploy.git
+git clone https://github.com/harshalpathak97/cvc-platform-deploy.git
 cd cvc-platform-deploy
 ```
 
