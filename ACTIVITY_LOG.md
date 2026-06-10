@@ -4,6 +4,27 @@ Running log of work done in this repo. Newest entries at the top. Per project ru
 
 Format: `YYYY-MM-DD — short title` followed by what changed and why.
 
+## 2026-06-09 — Production deploy: Supabase DB + Railway backend + Vercel frontend
+
+Wired the platform end-to-end on managed infra. Database on **Supabase**, FastAPI backend on **Railway**, React SPA on **Vercel** (`pnpverticalos.vercel.app`).
+
+**Database (Supabase):**
+- Added `DATABASE_URL` support (single URI, SSL) to `core/db/connection.py`, `core/db/migrate.py`, and `scripts/migrate.sh`; falls back to individual `DB_*` vars for local dev. `scripts/migrate.sh` also falls back to the Python runner when `psql` isn't on PATH.
+- Ran all 137 migrations against Supabase via the **session pooler** (`aws-1-us-west-2.pooler.supabase.com:5432` — session mode preserves the `SET search_path`/`SET app.audit_source` the app sets per connection; the direct host is IPv6-only and unreachable from IPv4 networks). 98 tables in `cvc` schema, admin user seeded.
+
+**Backend (Railway):**
+- `scripts/docker_entrypoint.sh`: accept `DATABASE_URL` in the prod safety check + DB-wait loop (was `DB_PASSWORD`-only); added `RUN_MIGRATIONS` toggle (set `false` on Railway since Supabase is pre-migrated — `migrate.sh` uses `ON_ERROR_STOP=1` and aborts on a fully-migrated DB).
+- `Dockerfile`: put the uv venv on `PATH` (`ENV PATH="/app/.venv/bin:$PATH"`) so the entrypoint's bare `python`/`uvicorn` find deps. Latent bug — Docker path was never exercised (local uses `uv run`).
+- `railway.toml`: healthcheck timeout 30s → 120s. Service `cvc-api` → `https://cvc-api-production.up.railway.app`.
+- `config/railway.env.example` + `docs/DEPLOY_RAILWAY.md`: documented the Supabase setup.
+
+**Frontend (Vercel):**
+- `designs/figma-dashboard/vercel.json`: build to `dist/app` so the SPA (vite `base: '/app/'`) is served at `/app/` with an SPA fallback rewrite; consolidated API rewrites to also match bare trailing-slash collection routes (`/dealflow/`, `/partners/`, etc.) the frontend calls via direct `fetch()`. Pointed all rewrites at the Railway domain.
+
+**Verified:** login + `/auth/me` + `/companies` + `/partners/` + `/dealflow/` + `/portfolio/` + `/shortlists/` all return 200 through Vercel → Railway → Supabase; SPA + assets load at `/app/`.
+
+**Security follow-ups (deferred, by user choice):** MFA disabled (`MFA_REQUIRED_ROLES` unset) and object storage skipped (no R2) for fastest bring-up — both should be enabled for real production use.
+
 ## 2026-06-09 — CVE dependency fixes (requests, pdfminer-six, python-multipart)
 
 6 known vulnerabilities across 3 packages — all resolved by version bumps.
