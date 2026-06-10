@@ -14,9 +14,13 @@ Deployed Railway backend was running with **zero plugins**: `plugins/installed/`
 - Vercel rewrites already proxy all 7 plugin prefixes (`/explore /enrichment /industrial /intel /lp /news /reports`); `/recommendations` deliberately not added (frontend never calls it directly)
 - Redeployed Railway backend via `railway up`
 
-**Google OAuth status:** backend (`/auth/google` + callback), frontend (LoginPage Google button), and DB (migration 137 `google_sub`) all in place. Still needs on Railway: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_BASE_URL=https://pnpverticalos.vercel.app`, plus redirect URI `https://pnpverticalos.vercel.app/auth/google/callback` whitelisted in Google Cloud Console. Permission-gated — left to user (see session notes).
+**Google OAuth status:** backend (`/auth/google` + callback), frontend (LoginPage Google button), DB (migration 137 `google_sub`) all in place. `APP_BASE_URL=https://pnpverticalos.vercel.app` set on Railway + redeployed. Still needed (user): `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` on Railway, and redirect URI `https://pnpverticalos.vercel.app/auth/google/callback` whitelisted in Google Cloud Console. Until then `/auth/google` returns 501.
 
-**Auto-deploy on git push:** Vercel `git connect` and Railway repo connect are permission-gated / dashboard actions — documented for user.
+**Data import to Supabase:** companies table was empty — the earlier import only hit local Postgres. Ran `scripts/import_test_data.py data/test_data` against Supabase (via Railway `DATABASE_URL`, user-approved): 2315 companies, 45 partners, 1630 funding rounds, 89 portfolio lifecycle entries. Verified live: `/explore/sector-overview` returns sector aggregates through Vercel.
+
+**Auto-deploy on git push:** Vercel project `verticalos` already connected to `harshalpathak97/cvc-platform-deploy` (root dir `designs/figma-dashboard`) — both pushes today auto-built and went Ready. Railway `cvc-api` has **no repo connected** (CLI deploys only via `railway up`); connecting it is a Railway-dashboard action (Service → Settings → Connect Repo). Note: actual git remote is `harshalpathak97/cvc-platform-deploy`, not `natelouie11-tech/...` as CLAUDE.md states.
+
+**Verified live (through Vercel → Railway → Supabase):** all 7 plugins in `/config/plugins`; `/explore/sector-overview`, `/reports/`, `/news/`, `/intel/llm-usage`, `/lp/overview`, `/industrial/matrix`, `/enrichment/requests` all auth-gated 401 anonymous / 200 with admin JWT; SPA at `/app/` 200.
 
 ## 2026-06-09 — Production deploy: Supabase DB + Railway backend + Vercel frontend
 
