@@ -515,3 +515,13 @@ Each new change appends an entry under today's date with:
 - Added `designs/figma-dashboard/.npmrc` with `legacy-peer-deps=true` as defensive measure.
 - Moved `react`/`react-dom` from optional peerDependencies to devDependencies — guarantees install during Vercel build.
 - Pushed `480c429` — Vercel auto-deploy should now succeed on next push.
+
+## 2026-06-10 — Move Vercel config to repo root
+
+- Moved `vercel.json` from `designs/figma-dashboard/` to repo root
+- `buildCommand` now explicit: `cd designs/figma-dashboard && npm ci && vite build --outDir dist/app`
+- `outputDirectory`: `designs/figma-dashboard/dist` (path relative to repo root)
+- `framework: null` — prevents Vercel from auto-detecting FastAPI `api/main.py` as serverless
+- Added `.vercelignore` at repo root — excludes `api/`, `.venv/`, `workers/`, `*.py`, etc.
+- Build verified locally: succeeds in 3.78s, outputs to `dist/app/`
+- **Next step**: In Vercel dashboard → `verticalos` project → Settings → Git → Root Directory → clear to blank (`.`)
