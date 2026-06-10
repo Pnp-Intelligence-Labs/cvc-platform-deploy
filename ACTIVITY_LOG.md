@@ -4,6 +4,20 @@ Running log of work done in this repo. Newest entries at the top. Per project ru
 
 Format: `YYYY-MM-DD — short title` followed by what changed and why.
 
+## 2026-06-09 — Ship plugins to managed deploy (Data Explorer + 6 more) + Google OAuth wiring
+
+Deployed Railway backend was running with **zero plugins**: `plugins/installed/` was excluded by both `.gitignore` and `.dockerignore`, so the Docker image never contained them. Data Explorer, Enrichment, Industrial Matrix, Intelligence Feed, LP Portal, News Feed, Trend Reports were all missing from `pnpverticalos.vercel.app`.
+
+- `.gitignore`: stopped ignoring `plugins/installed/*` — 7 plugins (24 files) now tracked in git
+- `.dockerignore`: removed `plugins/installed/` exclusion so `COPY . .` ships them in the Railway image
+- Verified all plugin `requires_tables` already exist in Supabase via core migrations (122_trend_reports, 099_news_fetcher, 033/082 fund metrics/NAV, 058 term_sheets, 044/054/059, 004, 047, 045) — no DB changes needed
+- Vercel rewrites already proxy all 7 plugin prefixes (`/explore /enrichment /industrial /intel /lp /news /reports`); `/recommendations` deliberately not added (frontend never calls it directly)
+- Redeployed Railway backend via `railway up`
+
+**Google OAuth status:** backend (`/auth/google` + callback), frontend (LoginPage Google button), and DB (migration 137 `google_sub`) all in place. Still needs on Railway: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_BASE_URL=https://pnpverticalos.vercel.app`, plus redirect URI `https://pnpverticalos.vercel.app/auth/google/callback` whitelisted in Google Cloud Console. Permission-gated — left to user (see session notes).
+
+**Auto-deploy on git push:** Vercel `git connect` and Railway repo connect are permission-gated / dashboard actions — documented for user.
+
 ## 2026-06-09 — Production deploy: Supabase DB + Railway backend + Vercel frontend
 
 Wired the platform end-to-end on managed infra. Database on **Supabase**, FastAPI backend on **Railway**, React SPA on **Vercel** (`pnpverticalos.vercel.app`).
