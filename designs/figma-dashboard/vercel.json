@@ -1,0 +1,8 @@
+{
+  "buildCommand": "vite build --outDir dist",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "redirects": [
+    { "source": "/", "destination": "/app/", "permanent": false }
+  ]
+}
