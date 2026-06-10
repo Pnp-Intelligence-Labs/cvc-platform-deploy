@@ -45,10 +45,12 @@ def status(user: UserInfo = Depends(require_jwt)):
 
 
 @router.get("/auth-url")
-def auth_url(user: UserInfo = Depends(require_jwt)):
-    """Return the Google consent URL for this user. Frontend navigates to it."""
+def auth_url(return_to: str = "terminal", user: UserInfo = Depends(require_jwt)):
+    """Return the Google consent URL for this user. Frontend navigates to it.
+    Pass ?return_to= to control where the OAuth callback redirects after success
+    (e.g. "" for home page, "terminal" for standalone terminal page)."""
     try:
-        return {"url": userauth.create_auth_url(user.user_id, return_to="terminal")}
+        return {"url": userauth.create_auth_url(user.user_id, return_to=return_to)}
     except FileNotFoundError as e:
         raise HTTPException(status_code=503, detail=str(e))
 

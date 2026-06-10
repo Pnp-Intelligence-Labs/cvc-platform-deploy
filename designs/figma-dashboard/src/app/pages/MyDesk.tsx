@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import {
   User, ClipboardList, Building2, Handshake,
-  HardDrive, ChevronDown, Loader2,
+  HardDrive, ChevronDown, Loader2, Sparkles,
 } from 'lucide-react';
 import { AUTH_HEADER as AUTH } from '../api/client';
 import { api } from '../api/client';
@@ -219,25 +219,69 @@ function PartnerHealthCard({ p }: { p: PartnerHealth }) {
 }
 
 function DriveSection() {
-  const [open, setOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const driveConnected = searchParams.get('drive_connected') === '1';
+  const driveError     = searchParams.get('drive_error');
+
+  // Default open so ingestion is well-portrayed on home; auto-open on OAuth return
+  const [open, setOpen] = useState(true);
+
+  useEffect(() => {
+    if (driveConnected || driveError) setOpen(true);
+  }, [driveConnected, driveError]);
+
   return (
-    <div className="bg-white border border-slate-200 rounded overflow-hidden">
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center gap-3 px-5 py-4 hover:bg-[#f8fafc] transition-colors text-left"
-      >
-        <div className="w-8 h-8 rounded bg-[#ede8d7] flex items-center justify-center shrink-0">
-          <HardDrive className="w-4 h-4 text-[#8a7200]" />
+    <div>
+      {/* Section header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-[#ede8d7] flex items-center justify-center shrink-0">
+            <HardDrive className="w-3.5 h-3.5 text-[#8a7200]" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-[#33322c] flex items-center gap-2">
+              My Terminal
+              <span className="text-[10px] font-medium text-[#8a7200] bg-[#F0E545]/25 px-2 py-0.5 rounded-full hidden sm:inline">
+                Drive-powered
+              </span>
+            </h3>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-[#33322c]">My Terminal</p>
-          <p className="text-xs text-[#787569]">Google Drive browser, document ingestion &amp; Q&amp;A</p>
-        </div>
-        <ChevronDown className={`w-4 h-4 text-[#787569] transition-transform shrink-0 ${open ? 'rotate-180' : ''}`} />
-      </button>
+        <button
+          onClick={() => setOpen(v => !v)}
+          className="flex items-center gap-1 text-xs text-[#787569] hover:text-[#33322c] transition-colors"
+        >
+          {open ? 'Collapse' : 'Expand'}
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+
+      {/* Collapsed preview card */}
+      {!open && (
+        <button
+          onClick={() => setOpen(true)}
+          className="w-full bg-white border border-slate-200 rounded-xl px-5 py-4 flex items-center gap-4 hover:border-slate-300 hover:shadow-sm transition-all text-left group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ede8d7] to-[#e5dfc8] flex items-center justify-center shrink-0">
+            <HardDrive className="w-5 h-5 text-[#8a7200]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-[#1e293b]">Connect Google Drive &amp; ingest documents</p>
+            <p className="text-xs text-[#787569] mt-0.5">Browse files, run DD pipeline, ask questions</p>
+          </div>
+          <ChevronDown className="w-4 h-4 text-[#787569] shrink-0" />
+        </button>
+      )}
+
+      {/* Expanded terminal panel */}
       {open && (
-        <div className="border-t border-slate-100 p-5">
-          <TerminalPanel />
+        <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5">
+          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+            <Sparkles className="w-4 h-4 text-[#787569]" />
+            <p className="text-sm font-semibold text-[#1e293b]">My Terminal</p>
+            <p className="text-xs text-[#787569] hidden sm:block">— personal workspace, powered by your Google Drive</p>
+          </div>
+          <TerminalPanel returnTo="" showHeader={false} />
         </div>
       )}
     </div>

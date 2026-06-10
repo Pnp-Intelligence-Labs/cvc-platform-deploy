@@ -150,46 +150,60 @@ function DocModal({ doc, onClose }: { doc: DocDetail; onClose: () => void }) {
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Main panel ─────────────────────────────────────────────────────────────────
 
-export function TerminalPanel() {
+interface TerminalPanelProps {
+  /** After OAuth, where to redirect back. "" = home (/app/), "terminal" = /app/terminal. */
+  returnTo?: string;
+  /** Whether to render the h1/description header row. False when embedded in MyDesk. */
+  showHeader?: boolean;
+}
+
+export function TerminalPanel({ returnTo = 'terminal', showHeader = true }: TerminalPanelProps) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [auth, setAuth]         = useState<{ authenticated: boolean; google_email?: string } | null>(null);
-  const [tree, setTree]         = useState<DriveTree | null>(null);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState<string | null>(null);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [auth, setAuth]           = useState<{ authenticated: boolean; google_email?: string } | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [tree, setTree]           = useState<DriveTree | null>(null);
+  const [loading, setLoading]     = useState(false);
+  const [browseError, setBrowseError] = useState<string | null>(null);
+  const [connectError, setConnectError] = useState<string | null>(null);
+  const [selected, setSelected]   = useState<Set<string>>(new Set());
   const [ingesting, setIngesting] = useState(false);
   const [ingestProgress, setIngestProgress] = useState<{ progress: number; total: number } | null>(null);
-  const [docs, setDocs]         = useState<TermDoc[]>([]);
-  const [detail, setDetail]     = useState<DocDetail | null>(null);
+  const [docs, setDocs]           = useState<TermDoc[]>([]);
+  const [detail, setDetail]       = useState<DocDetail | null>(null);
   const [connecting, setConnecting] = useState(false);
 
-  // Ask
-  const [question, setQuestion] = useState('');
-  const [asking, setAsking]     = useState(false);
-  const [answer, setAnswer]     = useState<{ answer: string; sources: AskSource[] } | null>(null);
+  const [question, setQuestion]   = useState('');
+  const [asking, setAsking]       = useState(false);
+  const [answer, setAnswer]       = useState<{ answer: string; sources: AskSource[] } | null>(null);
 
-  const connected = searchParams.get('drive_connected') === '1';
+  const connected  = searchParams.get('drive_connected') === '1';
   const oauthError = searchParams.get('drive_error');
 
   const checkStatus = useCallback(async () => {
+    setAuthLoading(true);
     try {
       const res = await fetch('/terminal/status', { headers: AUTH_HEADER });
       if (res.ok) {
         const s = await res.json();
         setAuth({ authenticated: !!s.connected, google_email: s.google_email });
+      } else {
+        setAuth({ authenticated: false });
       }
-    } catch {}
+    } catch {
+      setAuth({ authenticated: false });
+    }
+    setAuthLoading(false);
   }, []);
 
   const fetchTree = useCallback(async () => {
-    setLoading(true); setError(null); setTree(null);
+    setLoading(true); setBrowseError(null); setTree(null);
     try {
       const res = await fetch('/terminal/browse', { headers: AUTH_HEADER });
-      if (!res.ok) { const b = await res.json().catch(() => ({})); setError(b.detail ?? `Error ${res.status}`); }
+      if (!res.ok) { const b = await res.json().catch(() => ({})); setBrowseError(b.detail ?? `Error ${res.status}`); }
       else setTree(await res.json());
-    } catch (e) { setError(`Network error: ${e}`); }
+    } catch (e) { setBrowseError(`Network error: ${e}`); }
     setLoading(false);
   }, []);
 
@@ -203,19 +217,37 @@ export function TerminalPanel() {
   useEffect(() => {
     checkStatus();
     fetchDocs();
-    if (connected || oauthError) setSearchParams({}, { replace: true });
+    if (connected || oauthError) {
+      // Only clear the drive OAuth params, preserve everything else (e.g. as_user)
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.delete('drive_connected');
+        next.delete('drive_error');
+        return next;
+      }, { replace: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => { if (auth?.authenticated) fetchTree(); }, [auth?.authenticated, fetchTree]);
 
   async function connectDrive() {
     setConnecting(true);
+    setConnectError(null);
     try {
-      const res = await fetch('/terminal/auth-url', { headers: AUTH_HEADER });
+      const encodedReturn = encodeURIComponent(returnTo);
+      const res = await fetch(`/terminal/auth-url?return_to=${encodedReturn}`, { headers: AUTH_HEADER });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else { setError(data.detail ?? 'Could not start Google sign-in'); setConnecting(false); }
-    } catch (e) { setError(`Network error: ${e}`); setConnecting(false); }
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setConnectError(data.detail ?? 'Could not start Google sign-in. Check Drive credentials are configured.');
+        setConnecting(false);
+      }
+    } catch (e) {
+      setConnectError(`Network error: ${e}`);
+      setConnecting(false);
+    }
   }
 
   async function disconnect() {
@@ -234,7 +266,7 @@ export function TerminalPanel() {
 
   async function runIngest() {
     if (selected.size === 0) return;
-    setIngesting(true); setError(null); setIngestProgress(null);
+    setIngesting(true); setBrowseError(null); setIngestProgress(null);
     try {
       const res = await fetch('/terminal/ingest', {
         method: 'POST', headers: { ...AUTH_HEADER, 'Content-Type': 'application/json' },
@@ -242,13 +274,12 @@ export function TerminalPanel() {
       });
       if (!res.ok) {
         const b = await res.json().catch(() => ({}));
-        setError(b.detail ?? `Error ${res.status}`);
+        setBrowseError(b.detail ?? `Error ${res.status}`);
         setIngesting(false);
         return;
       }
       const { job_id, total } = await res.json();
       setIngestProgress({ progress: 0, total });
-      // Poll until done
       while (true) {
         await new Promise(r => setTimeout(r, 2000));
         const sr = await fetch(`/terminal/ingest/${job_id}`, { headers: AUTH_HEADER });
@@ -259,7 +290,7 @@ export function TerminalPanel() {
       }
       setSelected(new Set());
       fetchDocs();
-    } catch (e) { setError(`Network error: ${e}`); }
+    } catch (e) { setBrowseError(`Network error: ${e}`); }
     setIngesting(false);
     setIngestProgress(null);
   }
@@ -294,55 +325,90 @@ export function TerminalPanel() {
   return (
     <div className="space-y-4">
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
+      {/* Header row — optional */}
+      {showHeader && (
+        <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
-            <Sparkles className="w-5 h-5 text-[#787569]" />
+            <Sparkles className="w-5 h-5 text-[#787569] shrink-0" />
             <div>
               <h1 className="text-lg font-bold text-[#1e293b]">My Terminal</h1>
               <p className="text-xs text-[#787569]">Your personal workspace, powered by your own Google Drive. Connect, ingest, and ask.</p>
             </div>
           </div>
           {auth?.authenticated && (
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-[#787569]">{auth.google_email}</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              {auth.google_email && <span className="text-[11px] text-[#787569]">{auth.google_email}</span>}
               <button onClick={disconnect} className="text-[10px] text-red-500 hover:text-red-700 border border-red-200 rounded px-2 py-1">Disconnect</button>
             </div>
           )}
         </div>
+      )}
 
-        {connected && (
-          <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded p-3">
-            <CheckCircle2 className="w-4 h-4 shrink-0" /> Google Drive connected.
-          </div>
-        )}
-        {oauthError && (
-          <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3">
-            <AlertCircle className="w-4 h-4 shrink-0" /> Google OAuth error: {oauthError}.
-          </div>
-        )}
+      {/* Disconnect button when header hidden (embedded mode) */}
+      {!showHeader && auth?.authenticated && (
+        <div className="flex items-center justify-end gap-2">
+          {auth.google_email && <span className="text-[11px] text-[#787569]">{auth.google_email}</span>}
+          <button onClick={disconnect} className="text-[10px] text-red-500 hover:text-red-700 border border-red-200 rounded px-2 py-1">Disconnect</button>
+        </div>
+      )}
 
-        {/* Connect gate */}
-        {auth && !auth.authenticated && (
-          <div className="flex flex-col items-center justify-center gap-4 py-16 border border-dashed border-slate-200 rounded bg-white">
-            <HardDrive className="w-10 h-10 text-slate-300" />
-            <div className="text-center">
-              <p className="text-sm font-semibold text-[#1e293b]">Connect your Google Drive</p>
-              <p className="text-xs text-[#787569] mt-1">Authorize your own account. Only you can see what you ingest here.</p>
+      {/* OAuth success banner */}
+      {connected && (
+        <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          Google Drive connected successfully.
+        </div>
+      )}
+      {oauthError && (
+        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          Google OAuth error: {oauthError}. Please try again.
+        </div>
+      )}
+
+      {/* Loading auth status */}
+      {authLoading && (
+        <div className="flex items-center justify-center py-10">
+          <Loader2 className="w-5 h-5 animate-spin text-[#787569]" />
+          <span className="ml-2 text-sm text-[#787569]">Checking Drive connection…</span>
+        </div>
+      )}
+
+      {/* Connect gate */}
+      {!authLoading && auth && !auth.authenticated && (
+        <div className="flex flex-col items-center justify-center gap-5 py-10 sm:py-14 rounded-xl bg-gradient-to-br from-[#f8f6f0] to-[#f0ede6] border border-[#e8e2d6]">
+          <div className="w-14 h-14 rounded-2xl bg-white shadow-sm border border-[#e8e2d6] flex items-center justify-center">
+            <HardDrive className="w-7 h-7 text-[#8a7200]" />
+          </div>
+          <div className="text-center px-4 max-w-xs">
+            <p className="text-base font-bold text-[#1e293b]">Connect your Google Drive</p>
+            <p className="text-sm text-[#787569] mt-1.5 leading-relaxed">
+              Authorize once. Ingest pitch decks, financials &amp; more — only you see what you add here.
+            </p>
+          </div>
+          {connectError && (
+            <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3 max-w-sm mx-4 text-center">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{connectError}</span>
             </div>
-            <button onClick={connectDrive} disabled={connecting}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#1e293b] text-[#f59e0b] text-sm font-semibold rounded hover:bg-[#334155] disabled:opacity-50 transition-colors">
-              {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plug className="w-4 h-4" />}
-              Connect Google Drive
-            </button>
-          </div>
-        )}
+          )}
+          <button
+            onClick={connectDrive}
+            disabled={connecting}
+            className="flex items-center gap-2.5 px-5 py-2.5 bg-[#1e293b] text-[#f59e0b] text-sm font-bold rounded-lg hover:bg-[#334155] disabled:opacity-50 transition-colors shadow-sm"
+          >
+            {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plug className="w-4 h-4" />}
+            {connecting ? 'Opening Google…' : 'Connect with Google Drive'}
+          </button>
+        </div>
+      )}
 
-        {auth?.authenticated && (
-        <div className="flex gap-4 items-start">
+      {/* Authenticated workspace */}
+      {!authLoading && auth?.authenticated && (
+        <div className="flex flex-col lg:flex-row gap-4 items-start">
 
           {/* Left: Drive browser */}
-          <div className="flex-1 min-w-0 border border-slate-200 rounded bg-white overflow-hidden">
+          <div className="flex-1 min-w-0 border border-slate-200 rounded-lg bg-white overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-[#f8fafc]">
               <div className="flex items-center gap-2">
                 <HardDrive className="w-3.5 h-3.5 text-[#787569]" />
@@ -358,52 +424,81 @@ export function TerminalPanel() {
                 )}
                 <button onClick={fetchTree} disabled={loading}
                   className="flex items-center gap-1 text-[10px] text-[#545249] hover:text-[#1e293b] border border-slate-200 rounded px-2 py-1 disabled:opacity-40">
-                  <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />{loading ? 'Loading...' : 'Refresh'}
+                  <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />{loading ? 'Loading…' : 'Refresh'}
                 </button>
               </div>
             </div>
-            <div className="p-3 max-h-[420px] overflow-y-auto">
-              {loading && <div className="flex items-center justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-[#787569]" /><span className="ml-2 text-sm text-[#787569]">Loading Drive...</span></div>}
-              {error && <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3"><AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /><div className="text-xs">{error}</div></div>}
+
+            <div className="p-3 max-h-[380px] sm:max-h-[420px] overflow-y-auto">
+              {loading && (
+                <div className="flex items-center justify-center py-14">
+                  <Loader2 className="w-5 h-5 animate-spin text-[#787569]" />
+                  <span className="ml-2 text-sm text-[#787569]">Loading Drive…</span>
+                </div>
+              )}
+              {browseError && (
+                <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <div className="text-xs">{browseError}</div>
+                </div>
+              )}
               {tree && (
                 <div className="space-y-0.5">
                   {tree.files.map(f => <FileRow key={f.id} file={f} selected={selected.has(f.id)} onToggle={toggle} />)}
                   {tree.folders.map(folder => <FolderNode key={folder.id} folder={folder} selected={selected} onToggle={toggle} />)}
-                  {tree.folders.length === 0 && tree.files.length === 0 && <p className="text-sm text-[#787569] text-center py-8">Drive is empty or nothing accessible.</p>}
+                  {tree.folders.length === 0 && tree.files.length === 0 && (
+                    <p className="text-sm text-[#787569] text-center py-8">Drive is empty or nothing accessible.</p>
+                  )}
                 </div>
               )}
             </div>
+
             <div className="px-4 py-3 border-t border-slate-100 bg-[#f8fafc]">
-              <button onClick={runIngest} disabled={ingesting || selected.size === 0}
-                className="w-full flex items-center justify-center gap-2 text-xs bg-[#1e293b] text-[#f59e0b] rounded px-3 py-2.5 font-semibold disabled:opacity-40 hover:bg-[#334155] transition-colors">
+              <button
+                onClick={runIngest}
+                disabled={ingesting || selected.size === 0}
+                className="w-full flex items-center justify-center gap-2 text-xs bg-[#1e293b] text-[#f59e0b] rounded-lg px-3 py-2.5 font-bold disabled:opacity-40 hover:bg-[#334155] transition-colors"
+              >
                 {ingesting
-                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {ingestProgress ? `${ingestProgress.progress}/${ingestProgress.total} files...` : 'Starting...'}</>
-                  : <><CloudDownload className="w-3.5 h-3.5" /> Ingest {selected.size > 0 ? `${selected.size} file${selected.size !== 1 ? 's' : ''}` : 'selected'}</>}
+                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {ingestProgress ? `${ingestProgress.progress}/${ingestProgress.total} files…` : 'Starting…'}</>
+                  : <><CloudDownload className="w-3.5 h-3.5" /> Ingest {selected.size > 0 ? `${selected.size} file${selected.size !== 1 ? 's' : ''}` : 'selected'}</>
+                }
               </button>
             </div>
           </div>
 
           {/* Right: Ask + documents */}
-          <div className="w-[26rem] shrink-0 space-y-3">
+          <div className="w-full lg:w-96 shrink-0 space-y-3">
 
             {/* Ask */}
-            <div className="border border-slate-200 rounded bg-white p-4 space-y-3">
-              <p className="text-xs font-bold uppercase tracking-widest text-[#787569] flex items-center gap-1.5"><Sparkles className="w-3 h-3" /> Ask your documents</p>
+            <div className="border border-slate-200 rounded-lg bg-white p-4 space-y-3">
+              <p className="text-xs font-bold uppercase tracking-widest text-[#787569] flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3" /> Ask your documents
+              </p>
               <div className="flex gap-2">
-                <input value={question} onChange={e => setQuestion(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') ask(); }}
+                <input
+                  value={question}
+                  onChange={e => setQuestion(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') ask(); }}
                   placeholder="e.g. What is the revenue projection?"
-                  className="flex-1 text-xs border border-slate-200 rounded px-2.5 py-2 bg-[#ede8d7] focus:outline-none focus:border-slate-400" />
-                <button onClick={ask} disabled={asking || !question.trim()}
-                  className="flex items-center justify-center bg-[#1e293b] text-[#f59e0b] rounded px-3 disabled:opacity-40 hover:bg-[#334155]">
+                  className="flex-1 text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-[#ede8d7] focus:outline-none focus:border-slate-400"
+                />
+                <button
+                  onClick={ask}
+                  disabled={asking || !question.trim()}
+                  className="flex items-center justify-center bg-[#1e293b] text-[#f59e0b] rounded-lg px-3 disabled:opacity-40 hover:bg-[#334155]"
+                >
                   {asking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                 </button>
               </div>
               {answer && (
-                <div className="text-xs text-[#33322c] bg-[#f8fafc] border border-slate-100 rounded p-3 whitespace-pre-wrap">
+                <div className="text-xs text-[#33322c] bg-[#f8fafc] border border-slate-100 rounded-lg p-3 whitespace-pre-wrap">
                   {answer.answer}
                   {answer.sources?.length > 0 && (
                     <div className="mt-2 pt-2 border-t border-slate-100 flex flex-wrap gap-1">
-                      {answer.sources.map(s => <span key={s.id} className="text-[10px] text-[#787569] bg-slate-100 rounded px-1.5 py-0.5">{s.filename}</span>)}
+                      {answer.sources.map(s => (
+                        <span key={s.id} className="text-[10px] text-[#787569] bg-slate-100 rounded px-1.5 py-0.5">{s.filename}</span>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -411,13 +506,15 @@ export function TerminalPanel() {
             </div>
 
             {/* Documents */}
-            <div className="border border-slate-200 rounded bg-white overflow-hidden">
+            <div className="border border-slate-200 rounded-lg bg-white overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 bg-[#f8fafc] border-b border-slate-100">
                 <p className="text-xs font-bold uppercase tracking-widest text-[#787569]">My Documents</p>
                 <span className="text-[10px] bg-slate-100 text-[#545249] rounded px-1.5 py-0.5 font-mono">{docs.length}</span>
               </div>
-              <div className="divide-y divide-slate-50 max-h-[420px] overflow-y-auto">
-                {docs.length === 0 && <p className="text-xs text-[#787569] text-center py-8">Nothing ingested yet. Select files and ingest.</p>}
+              <div className="divide-y divide-slate-50 max-h-[380px] sm:max-h-[420px] overflow-y-auto">
+                {docs.length === 0 && (
+                  <p className="text-xs text-[#787569] text-center py-8">Nothing ingested yet. Select files and ingest.</p>
+                )}
                 {docs.map(d => (
                   <div key={d.id} className="px-4 py-3 hover:bg-slate-50 group">
                     <div className="flex items-start justify-between gap-2">
@@ -429,7 +526,10 @@ export function TerminalPanel() {
                         <p className="text-[11px] text-[#787569] mt-1 line-clamp-2 leading-snug">{d.summary}</p>
                         <span className="text-[9px] font-medium text-emerald-700 bg-emerald-100 border border-emerald-200 rounded px-1 py-0.5 mt-1 inline-block">{docLabel(d.doc_type)}</span>
                       </button>
-                      <button onClick={() => removeDoc(d.id)} className="shrink-0 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => removeDoc(d.id)}
+                        className="shrink-0 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -439,7 +539,8 @@ export function TerminalPanel() {
             </div>
           </div>
         </div>
-        )}
+      )}
+
       {detail && <DocModal doc={detail} onClose={() => setDetail(null)} />}
     </div>
   );
@@ -449,7 +550,7 @@ export default function TerminalPage() {
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
       <CVCNavbar />
-      <div className="max-w-screen-xl mx-auto px-6 py-8">
+      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <TerminalPanel />
       </div>
     </div>

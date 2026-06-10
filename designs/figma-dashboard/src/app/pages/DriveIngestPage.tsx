@@ -196,6 +196,9 @@ function FileRow({
 export default function DriveIngestPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [driveAuth, setDriveAuth]       = useState<{ authenticated: boolean; reason?: string } | null>(null);
+  const [authLoading, setAuthLoading]   = useState(true);
+  const [connectError, setConnectError] = useState<string | null>(null);
+  const [connecting, setConnecting]     = useState(false);
   const [tree, setTree]               = useState<DriveTree | null>(null);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState<string | null>(null);
@@ -213,10 +216,15 @@ export default function DriveIngestPage() {
   const driveOAuthError = searchParams.get('drive_error');
 
   const checkAuthStatus = useCallback(async () => {
+    setAuthLoading(true);
     try {
       const res = await fetch('/drive/auth-status', { headers: AUTH_HEADER });
       if (res.ok) setDriveAuth(await res.json());
-    } catch {}
+      else setDriveAuth({ authenticated: false });
+    } catch {
+      setDriveAuth({ authenticated: false });
+    }
+    setAuthLoading(false);
   }, []);
 
   const fetchTree = useCallback(async () => {
@@ -246,10 +254,15 @@ export default function DriveIngestPage() {
 
   useEffect(() => {
     checkAuthStatus();
-    // Clear URL params after reading them
     if (driveConnected || driveOAuthError) {
-      setSearchParams({}, { replace: true });
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.delete('drive_connected');
+        next.delete('drive_error');
+        return next;
+      }, { replace: true });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -326,63 +339,94 @@ export default function DriveIngestPage() {
 
   const allIds = tree ? collectFileIds(tree) : [];
 
+  async function connectDrive() {
+    setConnecting(true);
+    setConnectError(null);
+    try {
+      const res = await fetch('/drive/auth-url?return_to=ingest', { headers: AUTH_HEADER });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setConnectError(data.detail ?? 'Could not start Google sign-in. Check Drive credentials are configured.');
+        setConnecting(false);
+      }
+    } catch (e) {
+      setConnectError(`Network error: ${e}`);
+      setConnecting(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
       <CVCNavbar />
-      <div className="max-w-screen-xl mx-auto px-6 py-8 space-y-4">
+      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-4">
 
         {/* Header */}
         <div className="flex items-center gap-3">
           <HardDrive className="w-5 h-5 text-[#787569]" />
           <div>
             <h1 className="text-lg font-bold text-[#1e293b]">Drive Ingestion</h1>
-            <p className="text-xs text-[#787569]">Browse your entire Google Drive, select files, and ingest them into the DD pipeline.</p>
+            <p className="text-xs text-[#787569]">Browse your Google Drive, select files, and ingest them into the DD pipeline.</p>
           </div>
         </div>
 
         {/* OAuth success / error banners */}
         {driveConnected && (
-          <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded p-3">
+          <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             Google Drive connected successfully.
           </div>
         )}
         {driveOAuthError && (
-          <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3">
+          <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
             <AlertCircle className="w-4 h-4 shrink-0" />
             Google OAuth error: {driveOAuthError}. Try connecting again.
           </div>
         )}
 
+        {/* Auth loading */}
+        {authLoading && (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-5 h-5 animate-spin text-[#787569]" />
+            <span className="ml-2 text-sm text-[#787569]">Checking Drive connection…</span>
+          </div>
+        )}
+
         {/* Not authenticated — show connect gate */}
-        {driveAuth && !driveAuth.authenticated && (
-          <div className="flex flex-col items-center justify-center gap-4 py-16 border border-dashed border-slate-200 rounded bg-white">
-            <HardDrive className="w-10 h-10 text-slate-300" />
-            <div className="text-center">
-              <p className="text-sm font-semibold text-[#1e293b]">Google Drive not connected</p>
-              <p className="text-xs text-[#787569] mt-1">
-                Authenticate once to browse and ingest files from Drive.
+        {!authLoading && driveAuth && !driveAuth.authenticated && (
+          <div className="flex flex-col items-center justify-center gap-5 py-12 sm:py-16 rounded-xl bg-gradient-to-br from-[#f8f6f0] to-[#f0ede6] border border-[#e8e2d6]">
+            <div className="w-14 h-14 rounded-2xl bg-white shadow-sm border border-[#e8e2d6] flex items-center justify-center">
+              <HardDrive className="w-7 h-7 text-[#8a7200]" />
+            </div>
+            <div className="text-center px-4 max-w-xs">
+              <p className="text-base font-bold text-[#1e293b]">Google Drive not connected</p>
+              <p className="text-sm text-[#787569] mt-1.5 leading-relaxed">
+                Authenticate once to browse and ingest files from your Drive.
               </p>
             </div>
+            {connectError && (
+              <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3 max-w-sm mx-4">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{connectError}</span>
+              </div>
+            )}
             <button
-              onClick={async () => {
-                try {
-                  const res = await fetch('/drive/auth-url?return_to=ingest', { headers: AUTH_HEADER });
-                  const data = await res.json();
-                  if (data.url) window.location.href = data.url;
-                } catch {}
-              }}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#1e293b] text-[#f59e0b] text-sm font-semibold rounded hover:bg-[#334155] transition-colors"
+              onClick={connectDrive}
+              disabled={connecting}
+              className="flex items-center gap-2.5 px-5 py-2.5 bg-[#1e293b] text-[#f59e0b] text-sm font-bold rounded-lg hover:bg-[#334155] disabled:opacity-50 transition-colors shadow-sm"
             >
-              <ExternalLink className="w-4 h-4" />
-              Connect Google Drive
+              {connecting
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <ExternalLink className="w-4 h-4" />}
+              {connecting ? 'Opening Google…' : 'Connect Google Drive'}
             </button>
           </div>
         )}
 
         {/* Drive is authenticated — show browser + ingest UI */}
-        {(!driveAuth || driveAuth.authenticated) && (
-        <div className="flex gap-4 items-start">
+        {!authLoading && driveAuth?.authenticated && (
+        <div className="flex flex-col lg:flex-row gap-4 items-start">
 
           {/* Left: Drive browser */}
           <div className="flex-1 min-w-0 border border-slate-200 rounded bg-white overflow-hidden">
@@ -461,7 +505,7 @@ export default function DriveIngestPage() {
           </div>
 
           {/* Right: Ingest panel + results */}
-          <div className="w-80 shrink-0 space-y-3">
+          <div className="w-full lg:w-80 shrink-0 space-y-3">
 
             {/* Ingest controls */}
             <div className="border border-slate-200 rounded bg-white p-4 space-y-3">
