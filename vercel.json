@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd designs/figma-dashboard && npm ci && vite build --outDir dist/app",
+  "buildCommand": "cd designs/figma-dashboard && npm ci && npx vite build --outDir dist/app",
   "outputDirectory": "designs/figma-dashboard/dist",
   "framework": null,
   "redirects": [
