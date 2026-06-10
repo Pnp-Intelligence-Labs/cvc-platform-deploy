@@ -20,6 +20,10 @@ MIGRATIONS_DIR = pathlib.Path(__file__).parent / "migrations"
 
 
 def _conn_params() -> dict:
+    url = os.environ.get("DATABASE_URL")
+    if url:
+        import psycopg2.extensions
+        return psycopg2.extensions.parse_dsn(url)
     return {
         "host": os.environ.get("DB_HOST", "localhost"),
         "port": int(os.environ.get("DB_PORT", 5432)),
@@ -31,10 +35,8 @@ def _conn_params() -> dict:
 
 def run_migrations() -> None:
     params = _conn_params()
-    print(
-        f"Running migrations against "
-        f"{params['dbname']}@{params['host']}:{params['port']} ..."
-    )
+    target = params.get("host", "localhost")
+    print(f"Running migrations against {params.get('dbname', '?')}@{target} ...")
 
     sql_files = sorted(MIGRATIONS_DIR.glob("*.sql"))
     if not sql_files:

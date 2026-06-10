@@ -52,6 +52,11 @@ def _required_env(name: str) -> str:
 
 
 def _config() -> dict:
+    url = os.getenv("DATABASE_URL")
+    if url:
+        # Supabase/Railway provide a full URI including sslmode=require.
+        # parse_dsn() extracts host, port, dbname, user, password, sslmode, etc.
+        return psycopg2.extensions.parse_dsn(url)
     return {
         "host":     os.getenv("DB_HOST",     _DEFAULTS["host"]),
         "port":     int(os.getenv("DB_PORT", _DEFAULTS["port"])),

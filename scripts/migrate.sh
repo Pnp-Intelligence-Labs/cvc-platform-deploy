@@ -17,19 +17,32 @@ if [[ -f "$REPO/.env" ]]; then
     set -a; source "$REPO/.env"; set +a
 fi
 
-DB_HOST="${DB_HOST:-localhost}"
-DB_PORT="${DB_PORT:-5432}"
-DB_NAME="${DB_NAME:-platform_db}"
-DB_USER="${DB_USER:-platform}"
-export PGPASSWORD="${DB_PASSWORD:-platform_local}"
+if ! command -v psql &>/dev/null; then
+    # psql not in PATH — use the Python runner (psycopg2-based, no CLI dependency).
+    # Supports DATABASE_URL and individual DB_* vars identically to the psql path.
+    echo "psql not found — using Python migration runner..."
+    cd "$REPO" && python -m core.db.migrate
+    echo "Done."
+    exit 0
+fi
 
-run_sql() {
-    local file="$1"
-    psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
-         -v ON_ERROR_STOP=1 -f "$file"
-}
-
-echo "Running migrations against $DB_NAME@$DB_HOST:$DB_PORT..."
+if [[ -n "${DATABASE_URL:-}" ]]; then
+    # Supabase / Railway: full URI with sslmode embedded — pass directly to psql.
+    run_sql() { psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$1"; }
+    echo "Running migrations via DATABASE_URL..."
+else
+    DB_HOST="${DB_HOST:-localhost}"
+    DB_PORT="${DB_PORT:-5432}"
+    DB_NAME="${DB_NAME:-platform_db}"
+    DB_USER="${DB_USER:-platform}"
+    export PGPASSWORD="${DB_PASSWORD:-platform_local}"
+    run_sql() {
+        local file="$1"
+        psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
+             -v ON_ERROR_STOP=1 -f "$file"
+    }
+    echo "Running migrations against $DB_NAME@$DB_HOST:$DB_PORT..."
+fi
 
 # ── 1. Core migrations ────────────────────────────────────────────────────────
 echo ""

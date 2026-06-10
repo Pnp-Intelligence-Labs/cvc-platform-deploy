@@ -17,8 +17,8 @@ if [ "${ENVIRONMENT}" = "production" ]; then
         echo "[entrypoint] FATAL: JWT_SECRET must be set in production."
         exit 1
     fi
-    if [ -z "${DB_PASSWORD:-}" ]; then
-        echo "[entrypoint] FATAL: DB_PASSWORD must be set in production."
+    if [ -z "${DATABASE_URL:-}" ] && [ -z "${DB_PASSWORD:-}" ]; then
+        echo "[entrypoint] FATAL: Either DATABASE_URL or DB_PASSWORD must be set in production."
         exit 1
     fi
     if [ -z "${MINIO_SECRET_KEY:-}" ] || [ "${MINIO_SECRET_KEY}" = "CHANGE_ME" ] || [ "${MINIO_SECRET_KEY}" = "platform_local" ]; then
@@ -39,22 +39,30 @@ DB_NAME="${DB_NAME:-platform_db}"
 DB_USER="${DB_USER:-platform}"
 DB_PASSWORD="${DB_PASSWORD:-}"
 
-echo "[entrypoint] Waiting for database at ${DB_HOST}:${DB_PORT} ..."
+if [ -n "${DATABASE_URL:-}" ]; then
+    echo "[entrypoint] Waiting for database (DATABASE_URL) ..."
+else
+    echo "[entrypoint] Waiting for database at ${DB_HOST}:${DB_PORT} ..."
+fi
 
 MAX_WAIT=30
 ELAPSED=0
 
 until python -c "
-import psycopg2, sys
+import os, psycopg2, psycopg2.extensions, sys
+url = os.environ.get('DATABASE_URL')
 try:
-    psycopg2.connect(
-        host='${DB_HOST}',
-        port=${DB_PORT},
-        dbname='${DB_NAME}',
-        user='${DB_USER}',
-        password='${DB_PASSWORD}'
-    ).close()
-except Exception as e:
+    if url:
+        psycopg2.connect(**psycopg2.extensions.parse_dsn(url)).close()
+    else:
+        psycopg2.connect(
+            host='${DB_HOST}',
+            port=${DB_PORT},
+            dbname='${DB_NAME}',
+            user='${DB_USER}',
+            password='${DB_PASSWORD}'
+        ).close()
+except Exception:
     sys.exit(1)
 " 2>/dev/null; do
     if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
@@ -74,5 +82,5 @@ bash /app/scripts/migrate.sh
 echo "[entrypoint] Starting API server ..."
 exec python -m uvicorn api.main:app \
     --host 0.0.0.0 \
-    --port 8002 \
+    --port "${PORT:-8002}" \
     --workers 2
