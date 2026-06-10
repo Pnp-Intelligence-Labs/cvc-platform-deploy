@@ -4,5 +4,32 @@
   "framework": "vite",
   "redirects": [
     { "source": "/", "destination": "/app/", "permanent": false }
+  ],
+  "rewrites": [
+    { "source": "/auth/:path*",          "destination": "http://100.74.101.77:8002/auth/:path*" },
+    { "source": "/companies/:path*",     "destination": "http://100.74.101.77:8002/companies/:path*" },
+    { "source": "/sourcing/:path*",      "destination": "http://100.74.101.77:8002/sourcing/:path*" },
+    { "source": "/shortlists/:path*",    "destination": "http://100.74.101.77:8002/shortlists/:path*" },
+    { "source": "/dealflow/:path*",      "destination": "http://100.74.101.77:8002/dealflow/:path*" },
+    { "source": "/partners/:path*",      "destination": "http://100.74.101.77:8002/partners/:path*" },
+    { "source": "/portfolio/:path*",     "destination": "http://100.74.101.77:8002/portfolio/:path*" },
+    { "source": "/home/:path*",          "destination": "http://100.74.101.77:8002/home/:path*" },
+    { "source": "/admin/:path*",         "destination": "http://100.74.101.77:8002/admin/:path*" },
+    { "source": "/notifications/:path*", "destination": "http://100.74.101.77:8002/notifications/:path*" },
+    { "source": "/ventures/:path*",      "destination": "http://100.74.101.77:8002/ventures/:path*" },
+    { "source": "/requests/:path*",      "destination": "http://100.74.101.77:8002/requests/:path*" },
+    { "source": "/sales/:path*",         "destination": "http://100.74.101.77:8002/sales/:path*" },
+    { "source": "/notes/:path*",         "destination": "http://100.74.101.77:8002/notes/:path*" },
+    { "source": "/health/:path*",        "destination": "http://100.74.101.77:8002/health/:path*" },
+    { "source": "/drive/:path*",         "destination": "http://100.74.101.77:8002/drive/:path*" },
+    { "source": "/terminal/:path*",      "destination": "http://100.74.101.77:8002/terminal/:path*" },
+    { "source": "/config/:path*",        "destination": "http://100.74.101.77:8002/config/:path*" },
+    { "source": "/explore/:path*",       "destination": "http://100.74.101.77:8002/explore/:path*" },
+    { "source": "/enrichment/:path*",    "destination": "http://100.74.101.77:8002/enrichment/:path*" },
+    { "source": "/industrial/:path*",    "destination": "http://100.74.101.77:8002/industrial/:path*" },
+    { "source": "/intel/:path*",         "destination": "http://100.74.101.77:8002/intel/:path*" },
+    { "source": "/lp/:path*",            "destination": "http://100.74.101.77:8002/lp/:path*" },
+    { "source": "/news/:path*",          "destination": "http://100.74.101.77:8002/news/:path*" },
+    { "source": "/reports/:path*",       "destination": "http://100.74.101.77:8002/reports/:path*" }
   ]
 }
