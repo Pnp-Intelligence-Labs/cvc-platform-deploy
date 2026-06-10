@@ -6,7 +6,7 @@
     { "source": "/", "destination": "/app/", "permanent": false }
   ],
   "rewrites": [
-    { "source": "/:section(auth|companies|sourcing|shortlists|dealflow|partners|portfolio|home|admin|notifications|ventures|requests|sales|notes|health|drive|terminal|config|explore|enrichment|industrial|intel|lp|news|reports)/:path*", "destination": "https://cvc-api-production.up.railway.app/:section/:path*" },
+    { "source": "/:section(auth|companies|sourcing|shortlists|dealflow|partners|portfolio|home|admin|notifications|ventures|requests|sales|notes|health|drive|terminal|config|explore|enrichment|industrial|intel|lp|news|reports)/:path+", "destination": "https://cvc-api-production.up.railway.app/:section/:path+" },
     { "source": "/:section(auth|companies|sourcing|shortlists|dealflow|partners|portfolio|home|admin|notifications|ventures|requests|sales|notes|health|drive|terminal|config|explore|enrichment|industrial|intel|lp|news|reports)/", "destination": "https://cvc-api-production.up.railway.app/:section/" },
     { "source": "/:section(auth|companies|sourcing|shortlists|dealflow|partners|portfolio|home|admin|notifications|ventures|requests|sales|notes|health|drive|terminal|config|explore|enrichment|industrial|intel|lp|news|reports)", "destination": "https://cvc-api-production.up.railway.app/:section" },
     { "source": "/app/:path*", "destination": "/app/index.html" }
