@@ -507,3 +507,11 @@ Each new change appends an entry under today's date with:
 - Moved `static/css/dashboard-theme.css` → `api/static/css/`
 - Moved `mcp/cvc_api_server.py` → `integrations/mcp/`
 - Created `STRUCTURE.md` — full nested folder chart with descriptions for every folder and file
+
+## 2026-06-10 — Fix Vercel build: MUI peer dep conflict
+
+- Root cause: Dependabot PR #8 bumped `@mui/icons-material` to `9.1.0` but left `@mui/material` at `7.3.5` — incompatible peer deps, breaking every Vercel build.
+- Fix: pinned `@mui/icons-material` back to `7.3.5` in package.json to match `@mui/material`.
+- Added `designs/figma-dashboard/.npmrc` with `legacy-peer-deps=true` as defensive measure.
+- Moved `react`/`react-dom` from optional peerDependencies to devDependencies — guarantees install during Vercel build.
+- Pushed `480c429` — Vercel auto-deploy should now succeed on next push.
