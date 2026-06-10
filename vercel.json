@@ -1,7 +1,7 @@
 {
-  "buildCommand": "vite build --outDir dist/app",
-  "outputDirectory": "dist",
-  "framework": "vite",
+  "buildCommand": "cd designs/figma-dashboard && npm ci && vite build --outDir dist/app",
+  "outputDirectory": "designs/figma-dashboard/dist",
+  "framework": null,
   "redirects": [
     { "source": "/", "destination": "/app/", "permanent": false }
   ],
