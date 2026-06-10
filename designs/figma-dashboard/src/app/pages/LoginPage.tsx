@@ -15,9 +15,11 @@ export default function LoginPage() {
   const [password, setPassword]       = useState('');
   const [error, setError]             = useState('');
   const [loading, setLoading]         = useState(false);
-  const [ssoLoading, setSsoLoading]   = useState(false);
-  const [kcEnabled, setKcEnabled]     = useState<boolean | null>(null);
-  const [showLocal, setShowLocal]     = useState(false);
+  const [ssoLoading, setSsoLoading]       = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [kcEnabled, setKcEnabled]         = useState<boolean | null>(null);
+  const [googleEnabled, setGoogleEnabled] = useState<boolean | null>(null);
+  const [showLocal, setShowLocal]         = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -50,6 +52,13 @@ export default function LoginPage() {
       .finally(() => clearTimeout(timer));
   }, []);
 
+  useEffect(() => {
+    fetch('/auth/google/config')
+      .then(r => r.ok ? r.json() : { enabled: false })
+      .then(data => setGoogleEnabled(data.enabled))
+      .catch(() => setGoogleEnabled(false));
+  }, []);
+
   const handleSSOLogin = async () => {
     setSsoLoading(true);
     setError('');
@@ -62,6 +71,11 @@ export default function LoginPage() {
       setError('Could not reach identity provider. Try local login below.');
       setSsoLoading(false);
     }
+  };
+
+  const handleGoogleLogin = () => {
+    setGoogleLoading(true);
+    window.location.href = '/auth/google';
   };
 
   const handleLocalLogin = async (e: FormEvent) => {
@@ -261,6 +275,42 @@ export default function LoginPage() {
           </div>
         )}
 
+        {/* Direct Google OAuth button — shown when GOOGLE_CLIENT_ID is configured */}
+        {googleEnabled && (
+          <div style={{ marginBottom: '1.25rem' }}>
+            <button
+              onClick={handleGoogleLogin}
+              disabled={googleLoading}
+              style={{
+                width: '100%',
+                padding: '11px',
+                backgroundColor: 'white',
+                color: '#374151',
+                border: '1px solid #d1d5db',
+                borderRadius: 6,
+                fontSize: '1rem',
+                fontFamily: 'inherit',
+                fontWeight: 600,
+                cursor: googleLoading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+              }}
+            >
+              {!googleLoading && (
+                <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+                  <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+                  <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                  <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+                </svg>
+              )}
+              {googleLoading ? 'Redirecting…' : 'Sign in with Google'}
+            </button>
+          </div>
+        )}
+
         {/* Loading state while checking KC */}
         {kcEnabled === null && (
           <div style={{ textAlign: 'center', color: '#9ca3af', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
@@ -282,8 +332,8 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* Separator when both modes available */}
-        {kcEnabled && (
+        {/* Separator when any SSO mode available */}
+        {(kcEnabled || googleEnabled) && (
           <div style={{ position: 'relative', textAlign: 'center', marginBottom: '1rem' }}>
             <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb' }} />
             <span style={{
@@ -301,8 +351,8 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* Local login — always shown when KC disabled; collapsible when KC enabled */}
-        {kcEnabled === false ? (
+        {/* Local login — always shown when no SSO; collapsible when any SSO is active */}
+        {(!kcEnabled && !googleEnabled) ? (
           <form onSubmit={handleLocalLogin}>
             <LocalForm
               username={username} setUsername={setUsername}
@@ -310,7 +360,7 @@ export default function LoginPage() {
               loading={loading} inputStyle={inputStyle}
             />
           </form>
-        ) : kcEnabled === true ? (
+        ) : (kcEnabled || googleEnabled) ? (
           <>
             <button
               type="button"

@@ -938,6 +938,12 @@ _GOOGLE_TOKEN_URL    = "https://oauth2.googleapis.com/token"
 _GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
 
 
+@router.get("/google/config")
+def google_config():
+    """Return whether Google OAuth is configured. Safe to call unauthenticated."""
+    return {"enabled": bool(os.environ.get("GOOGLE_CLIENT_ID", ""))}
+
+
 @router.get("/google")
 def google_login():
     """Redirect browser to Google's OAuth consent screen."""
