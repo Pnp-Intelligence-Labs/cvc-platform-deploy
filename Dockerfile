@@ -17,6 +17,11 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 
+# Put the uv-managed venv on PATH so bare `python`/`uvicorn` (used by
+# docker_entrypoint.sh) resolve to the venv interpreter with all deps.
+# Without this, `python` is the system interpreter and imports fail.
+ENV PATH="/app/.venv/bin:$PATH"
+
 # Copy source (respects .dockerignore)
 COPY . .
 
