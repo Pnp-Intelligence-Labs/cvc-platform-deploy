@@ -76,8 +76,15 @@ done
 
 echo "[entrypoint] Database is ready."
 
-echo "[entrypoint] Running migrations ..."
-bash /app/scripts/migrate.sh
+# Skip migrations when the DB is managed externally (e.g. already migrated on a
+# managed Postgres like Supabase/Neon). migrate.sh uses ON_ERROR_STOP=1, which
+# aborts on the "already exists" errors a fully-migrated DB raises on re-run.
+if [ "${RUN_MIGRATIONS:-true}" = "false" ]; then
+    echo "[entrypoint] RUN_MIGRATIONS=false — skipping migrations (DB managed externally)."
+else
+    echo "[entrypoint] Running migrations ..."
+    bash /app/scripts/migrate.sh
+fi
 
 echo "[entrypoint] Starting API server ..."
 exec python -m uvicorn api.main:app \
