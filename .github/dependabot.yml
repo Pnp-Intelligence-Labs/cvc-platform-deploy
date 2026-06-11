@@ -11,3 +11,8 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # icons-material majors must move in lockstep with @mui/material —
+      # standalone bumps break the peer dep and every Vercel build (see 06-10/06-11 log)
+      - dependency-name: "@mui/icons-material"
+        update-types: ["version-update:semver-major"]

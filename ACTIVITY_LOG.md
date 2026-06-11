@@ -564,3 +564,8 @@ Audited git history vs this log; these shipped earlier but were never recorded:
 - **Verified:** py_compile clean; 42/42 unit tests pass; TestClient end-to-end on local DB — login → `/terminal/status` → `/terminal/auth-url` (real consent URL from env client) → `/terminal/documents` → `/terminal/ask` all 200; classifier + tagger smoke-tested; vite build OK.
 - **Action needed (deploy):** apply migration 142 to Supabase (additive, `IF NOT EXISTS`); on Railway set `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (+ optional `GOOGLE_ALLOWED_DOMAIN`, `GOOGLE_AUTO_PROVISION`, `GOOGLE_DEFAULT_ROLE`); whitelist `/drive/callback` redirect URI in Google Cloud Console; `railway up` to redeploy.
 - **`uv.lock` regenerated:** Dependabot PRs (06-10) bumped `bcrypt` 5.0.0 / `fastapi` 0.136.3 / `pydantic` 2.13.4 in pyproject without re-locking — Docker's `uv sync --frozen` would have failed the next Railway build. Re-locked; full test suite passes on the new versions.
+
+## 2026-06-11 — Re-pin @mui/icons-material 7.3.5 (Dependabot regression) + dependabot ignore rule
+- PR #15 (merged upstream today) re-bumped `@mui/icons-material` to 9.1.0 — the exact peer-dep conflict with `@mui/material` 7.3.5 that broke every Vercel build on 06-10 (fixed then in `480c429`).
+- Re-pinned to 7.3.5, regenerated package-lock, build verified.
+- Added a Dependabot `ignore` rule for `@mui/icons-material` major bumps so this stops recurring — it must move in lockstep with `@mui/material`.
