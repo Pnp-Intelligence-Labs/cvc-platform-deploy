@@ -23,7 +23,7 @@ dependencies = [
     # Object storage
     "minio==7.2.20",
     # ML / recommendations
-    "numpy>=1.26.0",
+    "numpy>=2.4.6",
     "sentence-transformers>=3.0.0",
     # MFA (TOTP / RFC 6238)
     "pyotp>=2.9.0",
