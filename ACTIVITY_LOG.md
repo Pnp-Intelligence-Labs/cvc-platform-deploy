@@ -569,3 +569,4 @@ Audited git history vs this log; these shipped earlier but were never recorded:
 - PR #15 (merged upstream today) re-bumped `@mui/icons-material` to 9.1.0 — the exact peer-dep conflict with `@mui/material` 7.3.5 that broke every Vercel build on 06-10 (fixed then in `480c429`).
 - Re-pinned to 7.3.5, regenerated package-lock, build verified.
 - Added a Dependabot `ignore` rule for `@mui/icons-material` major bumps so this stops recurring — it must move in lockstep with `@mui/material`.
+- **Second Dependabot regression same day:** PR #12 bumped `lucide-react` 0.487.0 → 1.17.0, which removed brand icons — `Linkedin` import in `CompanyProfile.tsx` broke the build (caught locally; my previous push's build check was masked by a shell pipe — build re-verified green now). Re-pinned lucide-react 0.487.0, added Dependabot ignore for its majors too. `date-fns` 3→4 and `@radix-ui/react-accordion` bumps kept (build-compatible).

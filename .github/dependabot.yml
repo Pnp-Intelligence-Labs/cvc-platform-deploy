@@ -16,3 +16,6 @@ updates:
       # standalone bumps break the peer dep and every Vercel build (see 06-10/06-11 log)
       - dependency-name: "@mui/icons-material"
         update-types: ["version-update:semver-major"]
+      # lucide-react 1.x removed brand icons (Linkedin etc.) the app uses
+      - dependency-name: "lucide-react"
+        update-types: ["version-update:semver-major"]
