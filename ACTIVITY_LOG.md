@@ -570,3 +570,15 @@ Audited git history vs this log; these shipped earlier but were never recorded:
 - Re-pinned to 7.3.5, regenerated package-lock, build verified.
 - Added a Dependabot `ignore` rule for `@mui/icons-material` major bumps so this stops recurring — it must move in lockstep with `@mui/material`.
 - **Second Dependabot regression same day:** PR #12 bumped `lucide-react` 0.487.0 → 1.17.0, which removed brand icons — `Linkedin` import in `CompanyProfile.tsx` broke the build (caught locally; my previous push's build check was masked by a shell pipe — build re-verified green now). Re-pinned lucide-react 0.487.0, added Dependabot ignore for its majors too. `date-fns` 3→4 and `@radix-ui/react-accordion` bumps kept (build-compatible).
+
+## 2026-06-11 — Google OAuth wired to prod (user-approved deploy)
+- User supplied OAuth client (project `vertical-os`, client `962909194589-...mf`)
+- Local `.env`: GOOGLE_CLIENT_ID/SECRET + APP_BASE_URL=http://localhost:8002 set; verified locally — `/auth/google/config` enabled, login redirect + Drive consent URL both mint with real client
+- Railway `cvc-api`: set GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET (APP_BASE_URL was already set)
+- Supabase: applied migration 142 (content_text, target_tab/confidence/reason verified present)
+- Redeployed backend via `railway up`
+- **Action needed (Google Cloud Console — only manual step left):** add redirect URIs to the OAuth client:
+  - `https://cvc-api-production.up.railway.app/auth/google/callback` (Google login, prod)
+  - `https://cvc-api-production.up.railway.app/drive/callback` (Drive ingest, prod)
+  - `http://localhost:8002/drive/callback` (Drive ingest, local dev)
+  (localhost auth callback already registered)
