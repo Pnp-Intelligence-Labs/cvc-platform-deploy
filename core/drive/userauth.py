@@ -6,9 +6,10 @@ user_id in cvc.user_drive_tokens. The OAuth callback is shared (one registered
 redirect URI), so we route it back to the right user via a server-side `state`
 nonce that maps to (user_id, return_to).
 
-Credentials file (the OAuth client) is shared and configured via
-GDRIVE_CREDS_PATH (default ~/producer/gdrive_credentials.json). The per-user
-*token* is what makes each connection individual.
+The OAuth client (the app owner's key) comes from GOOGLE_CLIENT_ID +
+GOOGLE_CLIENT_SECRET env vars — same client as the Google login flow — with
+GDRIVE_CREDS_PATH (a client_secret.json file) as a local-dev fallback. The
+per-user *token* is what makes each connection individual.
 """
 
 import os
@@ -20,7 +21,7 @@ from core.db.connection import get_connection
 
 # Shared OAuth client (the app's Google Cloud credentials), not per-user.
 CREDS_PATH = Path(os.environ.get("GDRIVE_CREDS_PATH", str(Path.home() / "producer" / "gdrive_credentials.json")))
-BASE_URL   = os.environ.get("PLATFORM_BASE_URL", "http://localhost:8002").rstrip("/")
+BASE_URL   = (os.environ.get("APP_BASE_URL") or os.environ.get("PLATFORM_BASE_URL") or "http://localhost:8002").rstrip("/")
 
 # Full drive scope — matches the already-registered OAuth consent + lets us read
 # everything in the user's Drive for ingestion.
@@ -41,21 +42,42 @@ def _purge_states() -> None:
         _states.pop(k, None)
 
 
-def create_auth_url(user_id: int, return_to: str = "terminal") -> str:
-    """Build a Google consent URL for this specific user. Raises if the OAuth
-    client credentials file is missing."""
-    if not CREDS_PATH.exists():
-        raise FileNotFoundError(
-            f"OAuth client credentials not found at {CREDS_PATH}. "
-            "Set GDRIVE_CREDS_PATH to your Google client_secret.json."
-        )
+def _build_flow():
+    """Build an OAuth Flow from env vars (GOOGLE_CLIENT_ID/SECRET — the app
+    owner's key) or, failing that, the GDRIVE_CREDS_PATH client_secret.json.
+    Raises FileNotFoundError if neither is configured."""
     from google_auth_oauthlib.flow import Flow
 
+    client_id = os.environ.get("GOOGLE_CLIENT_ID", "")
+    client_secret = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+    if client_id and client_secret:
+        client_config = {
+            "web": {
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "redirect_uris": [REDIRECT_URI],
+            }
+        }
+        return Flow.from_client_config(client_config, scopes=SCOPES, redirect_uri=REDIRECT_URI)
+
+    if not CREDS_PATH.exists():
+        raise FileNotFoundError(
+            "Google OAuth client not configured. Set GOOGLE_CLIENT_ID + "
+            f"GOOGLE_CLIENT_SECRET, or GDRIVE_CREDS_PATH to a client_secret.json (looked at {CREDS_PATH})."
+        )
+    return Flow.from_client_secrets_file(str(CREDS_PATH), scopes=SCOPES, redirect_uri=REDIRECT_URI)
+
+
+def create_auth_url(user_id: int, return_to: str = "terminal") -> str:
+    """Build a Google consent URL for this specific user. Raises if the OAuth
+    client is not configured."""
     _purge_states()
     state = secrets.token_urlsafe(32)
     _states[state] = {"user_id": user_id, "return_to": return_to, "ts": time.time()}
 
-    flow = Flow.from_client_secrets_file(str(CREDS_PATH), scopes=SCOPES, redirect_uri=REDIRECT_URI)
+    flow = _build_flow()
     auth_url, _ = flow.authorization_url(
         access_type="offline",
         include_granted_scopes="true",
@@ -78,9 +100,7 @@ def consume_state(state: str | None) -> dict | None:
 def exchange_and_save(user_id: int, code: str) -> str:
     """Exchange an auth code for tokens, persist them for the user, return the
     connected Google email."""
-    from google_auth_oauthlib.flow import Flow
-
-    flow = Flow.from_client_secrets_file(str(CREDS_PATH), scopes=SCOPES, redirect_uri=REDIRECT_URI)
+    flow = _build_flow()
     flow.fetch_token(code=code)
     creds = flow.credentials
 

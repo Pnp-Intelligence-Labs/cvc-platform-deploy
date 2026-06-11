@@ -24,6 +24,9 @@ interface TermDoc {
   summary: string;
   key_points: string[];
   ingested_at: string;
+  target_tab?: string;
+  target_confidence?: string;
+  target_reason?: string;
 }
 
 interface DocDetail extends TermDoc { text: string; }
@@ -33,11 +36,29 @@ interface AskSource { id: number; filename: string; doc_type: string; }
 
 const DOC_LABEL: Record<string, string> = {
   pitch_deck: 'Pitch Deck', financial_model: 'Financial Model', financial_statement: 'Financials',
-  cap_table: 'Cap Table', customer_contract: 'Contract', investor_qa: 'Investor Q&A',
-  team_bio: 'Team', legal_terms: 'Legal Terms', patent_ip: 'IP / Patent',
-  legal_formation: 'Formation', unknown: 'Document',
+  financials: 'Financials', cap_table: 'Cap Table', customer_contract: 'Contract', investor_qa: 'Investor Q&A',
+  team_bio: 'Team', legal_terms: 'Legal Terms', legal: 'Legal', patent_ip: 'IP / Patent',
+  legal_formation: 'Formation', memo: 'Memo', report: 'Report', meeting_notes: 'Meeting Notes',
+  metrics: 'Metrics', other: 'Document', unknown: 'Document',
 };
 const docLabel = (t: string) => DOC_LABEL[t] ?? t;
+
+// Where the data lives — tab assigned by the ingestion classifier.
+const TAB_LABEL: Record<string, string> = {
+  home: 'Home / My Desk', ventures: 'Ventures', partners: 'Partners', sales: 'Sales', requests: 'Requests',
+};
+const tabLabel = (t?: string) => (t ? TAB_LABEL[t] ?? t : null);
+
+function TabBadge({ tab, reason }: { tab?: string; reason?: string }) {
+  const label = tabLabel(tab);
+  if (!label) return null;
+  return (
+    <span title={reason || undefined}
+      className="text-[9px] font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded px-1 py-0.5 mt-1 ml-1 inline-block">
+      → {label}
+    </span>
+  );
+}
 
 function mimeIcon(mime: string) {
   if (mime.includes('pdf')) return '📄';
@@ -122,6 +143,7 @@ function DocModal({ doc, onClose }: { doc: DocDetail; onClose: () => void }) {
           <div className="min-w-0">
             <p className="text-sm font-bold text-[#1e293b] truncate">{doc.filename}</p>
             <span className="text-[10px] font-medium text-emerald-700 bg-emerald-100 border border-emerald-200 rounded px-1.5 py-0.5 mt-1 inline-block">{docLabel(doc.doc_type)}</span>
+            <TabBadge tab={doc.target_tab} reason={doc.target_reason} />
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 shrink-0"><X className="w-4 h-4" /></button>
         </div>
@@ -525,6 +547,7 @@ export function TerminalPanel({ returnTo = 'terminal', showHeader = true }: Term
                         </div>
                         <p className="text-[11px] text-[#787569] mt-1 line-clamp-2 leading-snug">{d.summary}</p>
                         <span className="text-[9px] font-medium text-emerald-700 bg-emerald-100 border border-emerald-200 rounded px-1 py-0.5 mt-1 inline-block">{docLabel(d.doc_type)}</span>
+                        <TabBadge tab={d.target_tab} reason={d.target_reason} />
                       </button>
                       <button
                         onClick={() => removeDoc(d.id)}

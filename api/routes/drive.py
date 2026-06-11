@@ -23,12 +23,12 @@ from pydantic import BaseModel
 from api.routes.auth import UserInfo, require_jwt
 from core.drive import userauth
 from core.drive.browse import build_tree
-from core.drive.pipeline import _DD_PATH, ingest_file
+from core.drive.pipeline import WORK_ROOT, ingest_file
 
 router = APIRouter()
 public_router = APIRouter()  # OAuth callback must be reachable without JWT
 
-_WORKDIR = _DD_PATH / "workdir"
+_WORKDIR = WORK_ROOT / "team"
 
 # In-memory job state: job_id -> {status, progress, total, results}
 _jobs: dict[str, dict] = {}

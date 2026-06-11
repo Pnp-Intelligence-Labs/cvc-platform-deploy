@@ -21,12 +21,13 @@ from api.routes.auth import UserInfo, require_jwt
 from core.db.connection import get_connection
 from core.drive import userauth
 from core.drive.browse import build_tree
-from core.drive.pipeline import _DD_PATH, ingest_file
+from core.drive.classifier import classify
+from core.drive.pipeline import WORK_ROOT, ingest_file
 from core.drive.sense import answer_question, make_sense
 
 router = APIRouter()
 
-_TERMINAL_ROOT = _DD_PATH / "workdir" / "terminal"
+_TERMINAL_ROOT = WORK_ROOT / "terminal"
 
 # In-memory job state: job_id -> {status, progress, total, results}
 _jobs: dict[str, dict] = {}
@@ -121,7 +122,8 @@ def _run_ingest(job_id: str, svc, file_ids: list, user_id: int, dest_dir: Path):
                 sense = (make_sense(doc["filename"], doc["doc_type"], doc["text"])
                          if doc["conversion"] in ("ok", "truncated")
                          else {"summary": f"File {doc['conversion']} — no text extracted.", "key_points": []})
-                row = _store_document(user_id, doc, sense)
+                target = classify(doc["filename"], doc["doc_type"], doc["text"])
+                row = _store_document(user_id, doc, sense, target)
                 entry = {
                     "id": row["id"] if row else None,
                     "filename": doc["filename"],
@@ -129,6 +131,8 @@ def _run_ingest(job_id: str, svc, file_ids: list, user_id: int, dest_dir: Path):
                     "chars": doc["chars"],
                     "conversion": doc["conversion"],
                     "summary": sense["summary"],
+                    "target_tab": target["tab"],
+                    "target_label": target["label"],
                 }
             except Exception as e:
                 entry["summary"] = f"Error: {e}"
@@ -140,15 +144,16 @@ def _run_ingest(job_id: str, svc, file_ids: list, user_id: int, dest_dir: Path):
         job["error"] = str(e)
 
 
-def _store_document(user_id: int, doc: dict, sense: dict):
+def _store_document(user_id: int, doc: dict, sense: dict, target: dict):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
                 INSERT INTO cvc.drive_documents
                     (user_id, drive_file_id, filename, mime_type, doc_type, chars,
-                     conversion, text_path, summary, key_points)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                     conversion, text_path, content_text, summary, key_points,
+                     target_tab, target_confidence, target_reason)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (user_id, drive_file_id) DO UPDATE SET
                     filename = EXCLUDED.filename,
                     mime_type = EXCLUDED.mime_type,
@@ -156,14 +161,19 @@ def _store_document(user_id: int, doc: dict, sense: dict):
                     chars = EXCLUDED.chars,
                     conversion = EXCLUDED.conversion,
                     text_path = EXCLUDED.text_path,
+                    content_text = EXCLUDED.content_text,
                     summary = EXCLUDED.summary,
                     key_points = EXCLUDED.key_points,
+                    target_tab = EXCLUDED.target_tab,
+                    target_confidence = EXCLUDED.target_confidence,
+                    target_reason = EXCLUDED.target_reason,
                     ingested_at = NOW()
                 RETURNING id
                 """,
                 (user_id, doc["drive_file_id"], doc["filename"], doc["mime_type"],
                  doc["doc_type"], doc["chars"], doc["conversion"], doc["text_path"],
-                 sense["summary"], json.dumps(sense["key_points"])),
+                 doc["text"], sense["summary"], json.dumps(sense["key_points"]),
+                 target["tab"], target["confidence"], target["reason"]),
             )
             return cur.fetchone()
 
@@ -178,7 +188,8 @@ def list_documents(user: UserInfo = Depends(require_jwt)):
             cur.execute(
                 """
                 SELECT id, filename, mime_type, doc_type, chars, conversion,
-                       summary, key_points, drive_file_id, ingested_at
+                       summary, key_points, drive_file_id, ingested_at,
+                       target_tab, target_confidence, target_reason
                 FROM cvc.drive_documents
                 WHERE user_id = %s
                 ORDER BY ingested_at DESC
@@ -196,7 +207,8 @@ def get_document(doc_id: int, user: UserInfo = Depends(require_jwt)):
             cur.execute(
                 """
                 SELECT id, filename, mime_type, doc_type, chars, conversion,
-                       summary, key_points, text_path, ingested_at
+                       summary, key_points, text_path, content_text, ingested_at,
+                       target_tab, target_confidence, target_reason
                 FROM cvc.drive_documents
                 WHERE id = %s AND user_id = %s
                 """,
@@ -207,8 +219,9 @@ def get_document(doc_id: int, user: UserInfo = Depends(require_jwt)):
         raise HTTPException(status_code=404, detail="Document not found")
 
     row = dict(row)
-    text = ""
-    if row.get("text_path"):
+    # Text lives in the DB; text_path is a legacy fallback for pre-142 rows.
+    text = row.pop("content_text", None) or ""
+    if not text and row.get("text_path"):
         p = Path(row["text_path"])
         if p.exists():
             text = p.read_text(encoding="utf-8", errors="replace")
@@ -249,7 +262,7 @@ def ask(req: AskRequest, user: UserInfo = Depends(require_jwt)):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, filename, doc_type, summary, text_path FROM cvc.drive_documents "
+                "SELECT id, filename, doc_type, summary, text_path, content_text FROM cvc.drive_documents "
                 "WHERE user_id = %s ORDER BY ingested_at DESC LIMIT 50",
                 (user.user_id,),
             )
@@ -257,8 +270,8 @@ def ask(req: AskRequest, user: UserInfo = Depends(require_jwt)):
 
     docs = []
     for r in rows:
-        text = ""
-        if r.get("text_path"):
+        text = r.get("content_text") or ""
+        if not text and r.get("text_path"):
             p = Path(r["text_path"])
             if p.exists():
                 text = p.read_text(encoding="utf-8", errors="replace")

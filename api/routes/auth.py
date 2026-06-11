@@ -992,6 +992,7 @@ def google_callback(code: str = None, error: str = None):
     info        = info_resp.json()
     google_sub  = str(info.get("id", ""))
     email       = info.get("email", "")
+    full_name   = info.get("name", "") or email.split("@")[0]
 
     # Optional domain restriction
     allowed_domain = os.environ.get("GOOGLE_ALLOWED_DOMAIN", "")
@@ -1018,6 +1019,31 @@ def google_callback(code: str = None, error: str = None):
                 if user:
                     cur.execute("UPDATE cvc.users SET google_sub = %s WHERE id = %s", [google_sub, user["id"]])
                     conn.commit()
+
+            if not user:
+                # 3. Auto-provision (access control): only when explicitly enabled
+                #    AND a domain allowlist is configured AND the email matches it.
+                auto = os.environ.get("GOOGLE_AUTO_PROVISION", "").lower() in ("1", "true", "yes")
+                if auto and allowed_domain:
+                    default_role = os.environ.get("GOOGLE_DEFAULT_ROLE", "Ventures")
+                    if default_role not in {"GP", "Principal", "Director", "Ventures", "PSM", "Senior PSM"}:
+                        default_role = "Ventures"
+                    username = re.sub(r"[^a-z0-9_.-]", "", email.split("@")[0].lower()) or f"google_{google_sub[:8]}"
+                    cur.execute("SELECT 1 FROM cvc.users WHERE username = %s", [username])
+                    if cur.fetchone():
+                        username = f"{username}_{google_sub[:6]}"
+                    cur.execute(
+                        """
+                        INSERT INTO cvc.users (username, password_hash, role, full_name, email, google_sub)
+                        VALUES (%s, NULL, %s, %s, %s, %s)
+                        RETURNING id, username, role, full_name, assigned_partner_ids, is_active
+                        """,
+                        [username, default_role, full_name, email, google_sub],
+                    )
+                    user = cur.fetchone()
+                    conn.commit()
+                    _log_auth_event("sso_provisioned", user_id=user["id"], username=username,
+                                    success=True, detail=f"google:{email}")
 
             if not user or not user["is_active"]:
                 return RedirectResponse(f"{app_login}?error=no_account")

@@ -533,3 +533,34 @@ Each new change appends an entry under today's date with:
 - Fixed `.vercelignore`: anchored all paths with `/` prefix so patterns only match root-level dirs. Without `/`, `api/` was deleting `designs/figma-dashboard/src/app/api/` (frontend API client) — caused `Could not resolve "../api/client"` build error.
 - Vercel buildCommand already uses `npx vite build` (PATH fix from earlier)
 - **Vercel project action needed**: update Git repo to `Pnp-Intelligence-Labs/cvc-platform-deploy` in project settings
+
+## 2026-06-10
+- **Restored direct Google OAuth login button** (`feat(auth): restore direct Google OAuth login button`)
+- Root cause: Keycloak SSO commit (`b9c2bcc`) replaced Google button with one gated on `kcEnabled`. No Keycloak env vars set on Railway → button hidden, only local login showed.
+- Fix: added `GET /auth/google/config` endpoint (returns `{enabled: bool(GOOGLE_CLIENT_ID)}`); LoginPage now independently checks this and shows "Sign in with Google" button when enabled.
+- **Action needed on Railway**: set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_BASE_URL=https://cvc-api-production.up.railway.app` in Railway env vars to activate the Google button.
+
+## 2026-06-11 — Backfill: features missing from this log (audit)
+Audited git history vs this log; these shipped earlier but were never recorded:
+- **2026-06-08**: My Desk tab on Homepage + nav reduction (`589d873`); TerminalPanel embedded in My Desk (`f6ab3c4`); DriveSection replaced DriveCard in My Desk (`0374473`) — **Home and My Terminal are merged**: Homepage renders MyDesk, which embeds TerminalPanel + DriveSection. Standalone `/terminal` route kept as deep link.
+- **2026-06-08**: Google OAuth login alongside username/password (`a830e60`); my-desk 404 fix (`4d2d501`); per-user authorization system on Admin page (`782b3ec`); PersonCard customGrants fix (`742bd59`).
+- **2026-06-08**: proprietary plugin source removed from this public-facing repo (`ffd56c9`) — enrichment/industrial-matrix/lp-portal/intelligence-feed/news-feed/trend-reports `_staging` sources + their frontend pages deleted; **also silently removed the dd ingestion worker source** (see 2026-06-11 entry below).
+- **2026-06-09**: Drive OAuth redirect fix, surfaced connect errors, redesigned home ingestion UI (`3d8f9c7`).
+- Verified today: Data Explorer plugin installed, `nav_enabled: true`, `/explore` route + page present.
+
+## 2026-06-11 — Drive ingestion rebuilt + tab classifier + DB-backed storage + Google login auto-provision
+
+**Broken dependency found:** `core/drive/pipeline.py` imported `ingestion.{converter,drive,tagger}` from `plugins/_staging/workers/dd/` — but that source was deleted in `ffd56c9` (only a stale Python-3.12 `__pycache__` remained, untracked in git). Terminal/Drive ingest was an ImportError everywhere (local runs Python 3.11; Railway never had the files).
+
+- **`core/drive/ingestion.py` (new, tracked):** clean reimplementation — `download_file` (Drive export/get_media), `convert_file` (markitdown → pdfplumber fallback, 400k char cap), `tag_document` (keyword doc-type tagger: pitch_deck, financials, cap_table, legal, memo, report, meeting_notes, metrics).
+- **`core/drive/classifier.py` (new):** ingestion classifier that routes each doc to the platform tab where that data lives. `TAB_REGISTRY` = single source of truth (home, ventures, partners, sales, requests — each with path + backing tables + description). LLM via OPENROUTER_API_KEY when set, keyword heuristic fallback (works offline).
+- **`core/drive/pipeline.py`:** drops dd sys.path shim; staging dir now `WORK_ROOT` (env `DRIVE_WORKDIR`, default `<repo>/workdir/drive`, gitignored). Disk is cache only.
+- **Migration 142 (`142_drive_documents_storage.sql`):** `cvc.drive_documents` + `content_text` (extracted text now lives in the DB — survives Railway redeploys; `text_path` kept as legacy fallback), `target_tab`/`target_confidence`/`target_reason` (classifier output), index on `target_tab`. Applied to local Docker DB.
+- **`api/routes/terminal.py`:** stores `content_text` + classifier output on ingest; `/documents`, `/documents/{id}`, `/ask` read text DB-first (disk fallback for pre-142 rows); ingest results include `target_tab`.
+- **`core/drive/userauth.py`:** per-user Drive OAuth client now built from `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` env vars (same key as Google login) — no more `gdrive_credentials.json` file requirement (kept as `GDRIVE_CREDS_PATH` fallback). Base URL honors `APP_BASE_URL` (falls back to `PLATFORM_BASE_URL`).
+- **Access control (`api/routes/auth.py`):** Google login can now auto-provision accounts — gated on `GOOGLE_AUTO_PROVISION=true` AND `GOOGLE_ALLOWED_DOMAIN` match; role from `GOOGLE_DEFAULT_ROLE` (default Ventures, validated); username derived from email (deduped); logs `sso_provisioned` auth event. Default remains: no account → no access.
+- **Frontend (`TerminalPage.tsx`):** "→ Ventures"-style tab badge (classifier output, reason on hover) on ingested docs in My Desk panel + doc modal; doc-type labels updated for new tagger vocabulary. Rebuilt to `api/static/app/`.
+- **`.env.example`:** documented `GOOGLE_AUTO_PROVISION`, `GOOGLE_DEFAULT_ROLE`, `DRIVE_WORKDIR`, and that BOTH redirect URIs (`/auth/google/callback`, `/drive/callback`) must be whitelisted in Google Cloud Console.
+- **Verified:** py_compile clean; 42/42 unit tests pass; TestClient end-to-end on local DB — login → `/terminal/status` → `/terminal/auth-url` (real consent URL from env client) → `/terminal/documents` → `/terminal/ask` all 200; classifier + tagger smoke-tested; vite build OK.
+- **Action needed (deploy):** apply migration 142 to Supabase (additive, `IF NOT EXISTS`); on Railway set `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (+ optional `GOOGLE_ALLOWED_DOMAIN`, `GOOGLE_AUTO_PROVISION`, `GOOGLE_DEFAULT_ROLE`); whitelist `/drive/callback` redirect URI in Google Cloud Console; `railway up` to redeploy.
+- **`uv.lock` regenerated:** Dependabot PRs (06-10) bumped `bcrypt` 5.0.0 / `fastapi` 0.136.3 / `pydantic` 2.13.4 in pyproject without re-locking — Docker's `uv sync --frozen` would have failed the next Railway build. Re-locked; full test suite passes on the new versions.

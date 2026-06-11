@@ -69,3 +69,6 @@ cvc_test_data.zip
 
 # Sensitive documents — partner contracts and confidential dataroom files
 workers/rm/
+
+# Drive ingestion staging cache (text persisted to DB)
+/workdir/

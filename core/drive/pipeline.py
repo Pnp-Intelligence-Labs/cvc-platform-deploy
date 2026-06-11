@@ -1,22 +1,21 @@
 """
 core/drive/pipeline.py — Download → convert → tag a single Drive file.
 
-Wraps the existing DD ingestion helpers (download_file, convert_file,
-tag_document) so callers don't have to manage the sys.path shim.
+Uses core.drive.ingestion (tracked in this repo). Files are staged under
+WORK_ROOT (env DRIVE_WORKDIR, default <repo>/workdir/drive). The extracted
+text is returned to callers, who persist it to the database — disk is only a
+staging/cache area, so ephemeral filesystems (Railway) are fine.
 """
 
-import sys
+import os
 from pathlib import Path
 
 from core.drive.browse import EXPORT_MIME
+from core.drive.ingestion import convert_file, download_file, tag_document
 
-_DD_PATH = Path(__file__).resolve().parents[2] / "plugins" / "_staging" / "workers" / "dd"
-
-
-def _ensure_dd_on_path():
-    p = str(_DD_PATH)
-    if p not in sys.path:
-        sys.path.insert(0, p)
+WORK_ROOT = Path(
+    os.environ.get("DRIVE_WORKDIR", str(Path(__file__).resolve().parents[2] / "workdir" / "drive"))
+)
 
 
 def ingest_file(svc, file_id: str, dest_dir: Path) -> dict:
@@ -26,11 +25,6 @@ def ingest_file(svc, file_id: str, dest_dir: Path) -> dict:
               text, text_path}. `conversion` is ok | truncated | skipped |
               failed | download_failed.
     """
-    _ensure_dd_on_path()
-    from ingestion.converter import convert_file
-    from ingestion.drive import download_file
-    from ingestion.tagger import tag_document
-
     dest_dir.mkdir(parents=True, exist_ok=True)
     raw_dir = dest_dir / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
