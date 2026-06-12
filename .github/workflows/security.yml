@@ -25,7 +25,10 @@ jobs:
         run: |
           uv export --no-dev --format requirements-txt > /tmp/requirements.txt
           pip install --quiet pip-audit
-          pip-audit --requirement /tmp/requirements.txt --format=columns
+          # --ignore-vuln: CVE-2025-3000 (torch 2.12.0) has no fixed release yet;
+          # remove this flag once torch publishes a fix version
+          pip-audit --requirement /tmp/requirements.txt --format=columns \
+            --ignore-vuln CVE-2025-3000
 
   node-security:
     name: Node dependency audit
