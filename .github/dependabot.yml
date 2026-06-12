@@ -5,6 +5,13 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # PnPBERT embedding stack — majors here change model behavior/cached
+      # vectors; migrate deliberately, not via bot bump
+      - dependency-name: "numpy"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "sentence-transformers"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: "/designs/figma-dashboard"
@@ -18,4 +25,9 @@ updates:
         update-types: ["version-update:semver-major"]
       # lucide-react 1.x removed brand icons (Linkedin etc.) the app uses
       - dependency-name: "lucide-react"
+        update-types: ["version-update:semver-major"]
+      # react majors need a coordinated migration (MUI/radix peer deps), not a bot bump
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
         update-types: ["version-update:semver-major"]
