@@ -35,14 +35,16 @@ _STATE_TTL_MINUTES = 10
 
 
 def _purge_states() -> None:
-    """Delete expired state nonces from DB (called opportunistically on create)."""
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "DELETE FROM cvc.drive_oauth_states "
-                "WHERE created_at < NOW() - INTERVAL '%s minutes'",
-                (_STATE_TTL_MINUTES,),
-            )
+    """Delete expired state nonces from DB. Non-fatal — never blocks auth-url."""
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM cvc.drive_oauth_states "
+                    "WHERE created_at < NOW() - INTERVAL '10 minutes'"
+                )
+    except Exception:
+        pass
 
 
 def _build_flow():
