@@ -14,7 +14,6 @@ per-user *token* is what makes each connection individual.
 
 import os
 import secrets
-import time
 from pathlib import Path
 
 from core.db.connection import get_connection
@@ -31,15 +30,19 @@ SCOPES = ["https://www.googleapis.com/auth/drive"]
 # reuse it for the per-user flow rather than registering a new redirect URI.
 REDIRECT_URI = f"{BASE_URL}/drive/callback"
 
-# CSRF/routing state: nonce -> {"user_id", "return_to", "ts"}. 10-min TTL.
-_states: dict[str, dict] = {}
-_STATE_TTL = 600
+# State TTL in minutes (matches prior in-memory 600s window)
+_STATE_TTL_MINUTES = 10
 
 
 def _purge_states() -> None:
-    now = time.time()
-    for k in [k for k, v in _states.items() if now - v["ts"] > _STATE_TTL]:
-        _states.pop(k, None)
+    """Delete expired state nonces from DB (called opportunistically on create)."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM cvc.drive_oauth_states "
+                "WHERE created_at < NOW() - INTERVAL '%s minutes'",
+                (_STATE_TTL_MINUTES,),
+            )
 
 
 def _build_flow():
@@ -75,7 +78,13 @@ def create_auth_url(user_id: int, return_to: str = "terminal") -> str:
     client is not configured."""
     _purge_states()
     state = secrets.token_urlsafe(32)
-    _states[state] = {"user_id": user_id, "return_to": return_to, "ts": time.time()}
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO cvc.drive_oauth_states (state, user_id, return_to) "
+                "VALUES (%s, %s, %s)",
+                (state, user_id, return_to),
+            )
 
     flow = _build_flow()
     auth_url, _ = flow.authorization_url(
@@ -88,13 +97,22 @@ def create_auth_url(user_id: int, return_to: str = "terminal") -> str:
 
 
 def consume_state(state: str | None) -> dict | None:
-    """Pop and validate a state nonce. Returns {user_id, return_to} or None."""
+    """Pop and validate a state nonce from DB. Returns {user_id, return_to} or None."""
     if not state:
         return None
-    entry = _states.pop(state, None)
-    if entry is None or (time.time() - entry["ts"]) > _STATE_TTL:
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM cvc.drive_oauth_states "
+                "WHERE state = %s "
+                "  AND created_at >= NOW() - INTERVAL '%s minutes' "
+                "RETURNING user_id, return_to",
+                (state, _STATE_TTL_MINUTES),
+            )
+            row = cur.fetchone()
+    if not row:
         return None
-    return {"user_id": entry["user_id"], "return_to": entry["return_to"]}
+    return {"user_id": row["user_id"], "return_to": row["return_to"]}
 
 
 def exchange_and_save(user_id: int, code: str) -> str:

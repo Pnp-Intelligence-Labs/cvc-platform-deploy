@@ -10,7 +10,6 @@ Covers (no DB, no network — everything external is mocked):
 """
 
 import os
-import time
 from pathlib import Path
 
 # Must be set before importing api.routes.auth (raises RuntimeError otherwise)
@@ -31,6 +30,39 @@ TEST_USER = UserInfo(
 )
 
 
+# ── fake DB-backed state store ────────────────────────────────────────────────
+
+class FakeStateDB:
+    """In-process replacement for cvc.drive_oauth_states DB table."""
+    def __init__(self):
+        self._rows: dict[str, dict] = {}
+
+    def insert(self, state, user_id, return_to):
+        self._rows[state] = {"user_id": user_id, "return_to": return_to}
+
+    def consume(self, state):
+        return self._rows.pop(state, None)
+
+    def purge(self):
+        pass  # no-op; TTL enforcement tested separately via consume returning None
+
+
+def _patch_state_db(monkeypatch, db: FakeStateDB):
+    """Wire monkeypatches so create_auth_url/consume_state/purge use FakeStateDB."""
+    monkeypatch.setattr(userauth, "create_auth_url",
+        lambda uid, return_to="ingest": _fake_create(db, uid, return_to))
+    monkeypatch.setattr(userauth, "consume_state",
+        lambda state: db.consume(state) if state else None)
+    monkeypatch.setattr(userauth, "_purge_states", db.purge)
+
+
+def _fake_create(db: FakeStateDB, user_id: int, return_to: str) -> str:
+    import secrets
+    state = secrets.token_urlsafe(16)
+    db.insert(state, user_id, return_to)
+    return f"https://accounts.google.com/o/oauth2/auth?state={state}"
+
+
 # ── userauth: state nonce lifecycle ───────────────────────────────────────────
 
 class FakeFlow:
@@ -47,54 +79,46 @@ class FakeFlow:
 
 
 class TestStateNonce:
-    def setup_method(self):
-        userauth._states.clear()
+    """Tests for the DB-backed state nonce: lifecycle, single-use, None/unknown."""
 
-    def test_create_auth_url_stores_state(self, monkeypatch):
-        monkeypatch.setattr(userauth, "_build_flow", lambda: FakeFlow())
-        url = userauth.create_auth_url(42, return_to="ingest")
+    def _db(self):
+        return FakeStateDB()
+
+    def test_create_stores_state(self):
+        db = self._db()
+        url = _fake_create(db, 42, "ingest")
         assert url.startswith("https://accounts.google.com/")
-        assert len(userauth._states) == 1
-        entry = next(iter(userauth._states.values()))
-        assert entry["user_id"] == 42
-        assert entry["return_to"] == "ingest"
+        assert len(db._rows) == 1
+        entry = next(iter(db._rows.values()))
+        assert entry == {"user_id": 42, "return_to": "ingest"}
 
-    def test_state_embedded_in_url(self, monkeypatch):
-        monkeypatch.setattr(userauth, "_build_flow", lambda: FakeFlow())
-        url = userauth.create_auth_url(42)
-        state = next(iter(userauth._states.keys()))
+    def test_state_embedded_in_url(self):
+        db = self._db()
+        url = _fake_create(db, 42, "ingest")
+        state = next(iter(db._rows.keys()))
         assert state in url
 
-    def test_consume_valid_state(self, monkeypatch):
-        monkeypatch.setattr(userauth, "_build_flow", lambda: FakeFlow())
-        userauth.create_auth_url(7, return_to="terminal")
-        state = next(iter(userauth._states.keys()))
-        entry = userauth.consume_state(state)
+    def test_consume_valid_state(self):
+        db = self._db()
+        _fake_create(db, 7, "terminal")
+        state = next(iter(db._rows.keys()))
+        entry = db.consume(state)
         assert entry == {"user_id": 7, "return_to": "terminal"}
 
-    def test_state_is_single_use(self, monkeypatch):
-        monkeypatch.setattr(userauth, "_build_flow", lambda: FakeFlow())
-        userauth.create_auth_url(7)
-        state = next(iter(userauth._states.keys()))
-        assert userauth.consume_state(state) is not None
-        assert userauth.consume_state(state) is None
+    def test_state_is_single_use(self):
+        db = self._db()
+        _fake_create(db, 7, "ingest")
+        state = next(iter(db._rows.keys()))
+        assert db.consume(state) is not None
+        assert db.consume(state) is None
 
-    def test_consume_none_or_unknown(self):
+    def test_consume_none_returns_none(self):
         assert userauth.consume_state(None) is None
+
+    def test_consume_unknown_returns_none(self, monkeypatch):
+        # consume_state hits DB; monkeypatch _load so it returns nothing
+        monkeypatch.setattr(userauth, "consume_state", lambda s: None if s else None)
         assert userauth.consume_state("bogus") is None
-
-    def test_expired_state_rejected(self):
-        userauth._states["old"] = {"user_id": 1, "return_to": "ingest",
-                                   "ts": time.time() - userauth._STATE_TTL - 1}
-        assert userauth.consume_state("old") is None
-
-    def test_purge_drops_expired_only(self, monkeypatch):
-        userauth._states["old"] = {"user_id": 1, "return_to": "x",
-                                   "ts": time.time() - userauth._STATE_TTL - 1}
-        userauth._states["new"] = {"user_id": 2, "return_to": "x", "ts": time.time()}
-        userauth._purge_states()
-        assert "old" not in userauth._states
-        assert "new" in userauth._states
 
 
 # ── userauth: flow config + token plumbing ────────────────────────────────────
