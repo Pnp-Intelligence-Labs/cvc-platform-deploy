@@ -1021,10 +1021,11 @@ def google_callback(code: str = None, error: str = None):
                     conn.commit()
 
             if not user:
-                # 3. Auto-provision (access control): only when explicitly enabled
-                #    AND a domain allowlist is configured AND the email matches it.
+                # 3. Auto-provision (access control): only when explicitly enabled.
+                #    If GOOGLE_ALLOWED_DOMAIN is set, non-matching emails were already
+                #    rejected above; unset = any Google account may provision.
                 auto = os.environ.get("GOOGLE_AUTO_PROVISION", "").lower() in ("1", "true", "yes")
-                if auto and allowed_domain:
+                if auto:
                     default_role = os.environ.get("GOOGLE_DEFAULT_ROLE", "Ventures")
                     if default_role not in {"GP", "Principal", "Director", "Ventures", "PSM", "Senior PSM"}:
                         default_role = "Ventures"

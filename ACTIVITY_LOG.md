@@ -582,3 +582,10 @@ Audited git history vs this log; these shipped earlier but were never recorded:
   - `https://cvc-api-production.up.railway.app/drive/callback` (Drive ingest, prod)
   - `http://localhost:8002/drive/callback` (Drive ingest, local dev)
   (localhost auth callback already registered)
+
+## 2026-06-11 — Open Google login to all accounts (user choice) + ingestion engine verified
+- Login screenshot showed `no_account` — OAuth flow itself worked; no platform account matched the Google identity (auto-provision was off and required a domain allowlist).
+- Per user decision ("let all google accounts access"): auto-provision no longer requires `GOOGLE_ALLOWED_DOMAIN` — `GOOGLE_AUTO_PROVISION=true` alone now provisions any Google account (domain still enforced when set). Role: `GOOGLE_DEFAULT_ROLE` (Ventures).
+- Set `GOOGLE_AUTO_PROVISION=true` on Railway + redeployed.
+- **Ingestion engine end-to-end test (local):** txt/csv/xlsx/pdf all convert (markitdown + pdfplumber paths), tagged, classified (memo→ventures, financials→sales), stored with `content_text`, read back via API from DB with no disk file, `/ask` retrieves it, delete cleans up. 42/42 unit tests pass.
+- Known heuristic quirk: a meeting-notes file mentioning "NDA" tags as `legal`→partners (keyword precedence). LLM classification (OPENROUTER_API_KEY) resolves this; heuristic acceptable as fallback.
