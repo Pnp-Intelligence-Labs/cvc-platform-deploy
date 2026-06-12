@@ -433,9 +433,7 @@ const CVCNavbar: React.FC = () => {
   const plugins = usePlugins();
   const currentUser = api.getCurrentUser();
   const role = currentUser?.role ?? 'GP';
-  const isPSM      = role === 'PSM';
-  const isVentures = role === 'Ventures';
-  const showAdmin  = !isPSM && !isVentures;   // GP / Principal / Director only
+  const showAdmin  = ['GP', 'Principal', 'Director'].includes(role);   // admin roles only (allowlist)
 
   const coreNavLinks = [
     { path: '/',           label: 'Home',       roles: null },  // null = all roles

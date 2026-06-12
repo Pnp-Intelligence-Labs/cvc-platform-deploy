@@ -63,7 +63,7 @@ KC_DEFAULT_ROLE = os.environ.get("KEYCLOAK_DEFAULT_ROLE", "Ventures")
 KC_ROLE_CLAIM = os.environ.get("KEYCLOAK_ROLE_CLAIM", "")
 PLATFORM_BASE_URL = os.environ.get("PLATFORM_BASE_URL", "http://localhost:8002").rstrip("/")
 
-_VALID_ROLES = {"GP", "Principal", "Director", "Ventures", "PSM", "Senior PSM"}
+_VALID_ROLES = {"GP", "Principal", "Director", "Member", "Ventures", "PSM", "Senior PSM"}
 
 # Keycloak OIDC base path
 _KC_OIDC = f"{KC_URL}/realms/{KC_REALM}/protocol/openid-connect"

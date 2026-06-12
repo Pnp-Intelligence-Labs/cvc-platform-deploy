@@ -661,6 +661,9 @@ ROLE_DEFAULTS: dict[str, list[str]] = {
     "GP":         ["partner_servicing", "ventures_pipeline", "admin_panel", "data_explorer", "requests_mgmt"],
     "Principal":  ["partner_servicing", "ventures_pipeline", "admin_panel", "data_explorer", "requests_mgmt"],
     "Director":   ["partner_servicing", "ventures_pipeline", "admin_panel", "data_explorer", "requests_mgmt"],
+    # Member = full platform features (everything except the admin_panel /
+    # user-management surface). Used as the Google auto-provision default.
+    "Member":     ["partner_servicing", "ventures_pipeline", "data_explorer", "requests_mgmt"],
     "Ventures":   ["ventures_pipeline", "requests_mgmt"],
     "Senior PSM": ["partner_servicing", "requests_mgmt", "data_explorer"],
     "PSM":        ["partner_servicing", "requests_mgmt"],
@@ -708,7 +711,7 @@ def create_user(body: CreateUserRequest, request: Request, caller: UserInfo = De
     if not _create_limiter.is_allowed(f"create:{caller.user_id}"):
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Too many user creation requests")
 
-    valid_roles = {"GP", "Principal", "Director", "Ventures", "PSM", "Senior PSM"}
+    valid_roles = {"GP", "Principal", "Director", "Member", "Ventures", "PSM", "Senior PSM"}
     if body.role not in valid_roles:
         raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(sorted(valid_roles))}")
 
@@ -1026,9 +1029,10 @@ def google_callback(code: str = None, error: str = None):
                 #    rejected above; unset = any Google account may provision.
                 auto = os.environ.get("GOOGLE_AUTO_PROVISION", "").lower() in ("1", "true", "yes")
                 if auto:
-                    default_role = os.environ.get("GOOGLE_DEFAULT_ROLE", "Ventures")
-                    if default_role not in {"GP", "Principal", "Director", "Ventures", "PSM", "Senior PSM"}:
-                        default_role = "Ventures"
+                    # Default Member = full platform features, minus the admin panel.
+                    default_role = os.environ.get("GOOGLE_DEFAULT_ROLE", "Member")
+                    if default_role not in {"GP", "Principal", "Director", "Member", "Ventures", "PSM", "Senior PSM"}:
+                        default_role = "Member"
                     username = re.sub(r"[^a-z0-9_.-]", "", email.split("@")[0].lower()) or f"google_{google_sub[:8]}"
                     cur.execute("SELECT 1 FROM cvc.users WHERE username = %s", [username])
                     if cur.fetchone():

@@ -593,3 +593,12 @@ Audited git history vs this log; these shipped earlier but were never recorded:
 - **Dependabot ignore rules extended:** react/react-dom majors (npm — PR #28 react 19 pending; needs coordinated MUI/radix migration), numpy + sentence-transformers majors (pip — PnPBERT embedding stack; cached vectors/model behavior). PR #28 left open for Dependabot to auto-close on next run (manual close was permission-blocked).
 - **pip-audit:** torch 2.12.0 flagged for CVE-2025-3000 with **no fix version published** — added explicit `--ignore-vuln CVE-2025-3000` to `security.yml` with removal note. CI green is now achievable; re-audit when torch ships a fix.
 - **All checks green:** Security workflow passed on main (run 27388095906) — first green today; Vercel production Ready + frontend 200; Railway live with auto-provision enabled.
+
+## 2026-06-11 — Google auto-provision: full-platform "Member" role (no admin panel)
+- User wanted auto-provisioned Google accounts to access the entire platform, not just the limited Ventures role. Granting full GP admin to any Google account on live prod was rejected as too broad; user chose **full features, not admin**.
+- New role **Member** = `partner_servicing + ventures_pipeline + data_explorer + requests_mgmt` (everything except `admin_panel`/user management). Added to `ROLE_DEFAULTS`, both backend valid-role sets (`auth.py` create-user + provision), `keycloak.py` `_VALID_ROLES`, frontend `Admin.tsx` (ROLE_DEFAULTS + ROLE_COLORS), and the data-explorer plugin nav roles so the Data Explorer tab shows.
+- `GOOGLE_DEFAULT_ROLE` default changed Ventures → **Member** (code fallback + `.env.example`).
+- **Security fix found while doing this:** navbar `showAdmin` was a denylist (`!isPSM && !isVentures`) — any new/unknown role would have seen the Admin tab. Changed to an allowlist (`['GP','Principal','Director'].includes(role)`). Backend admin APIs were already correctly gated on `_ADMIN_ROLES`, so this was a UI-only leak, now closed.
+- Core tabs (Home/Ventures/Partners/Sales/Requests) are open to all authenticated roles already; Member additionally gets Data Explorer. Admin tab hidden + admin APIs 403 for Member.
+- Verified: 42/42 tests, py_compile clean, manifest JSON valid, vite build OK.
+- **Next:** set `GOOGLE_DEFAULT_ROLE=Member` on Railway (or rely on new code default) + redeploy.
