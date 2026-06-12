@@ -37,8 +37,9 @@ class FakeStateDB:
     def __init__(self):
         self._rows: dict[str, dict] = {}
 
-    def insert(self, state, user_id, return_to):
-        self._rows[state] = {"user_id": user_id, "return_to": return_to}
+    def insert(self, state, user_id, return_to, code_verifier=None):
+        self._rows[state] = {"user_id": user_id, "return_to": return_to,
+                             "code_verifier": code_verifier}
 
     def consume(self, state):
         return self._rows.pop(state, None)
@@ -59,7 +60,7 @@ def _patch_state_db(monkeypatch, db: FakeStateDB):
 def _fake_create(db: FakeStateDB, user_id: int, return_to: str) -> str:
     import secrets
     state = secrets.token_urlsafe(16)
-    db.insert(state, user_id, return_to)
+    db.insert(state, user_id, return_to, code_verifier=f"ver-{state[:8]}")
     return f"https://accounts.google.com/o/oauth2/auth?state={state}"
 
 
@@ -90,7 +91,9 @@ class TestStateNonce:
         assert url.startswith("https://accounts.google.com/")
         assert len(db._rows) == 1
         entry = next(iter(db._rows.values()))
-        assert entry == {"user_id": 42, "return_to": "ingest"}
+        assert entry["user_id"] == 42
+        assert entry["return_to"] == "ingest"
+        assert entry["code_verifier"]  # PKCE verifier persisted with the state
 
     def test_state_embedded_in_url(self):
         db = self._db()
@@ -103,7 +106,9 @@ class TestStateNonce:
         _fake_create(db, 7, "terminal")
         state = next(iter(db._rows.keys()))
         entry = db.consume(state)
-        assert entry == {"user_id": 7, "return_to": "terminal"}
+        assert entry["user_id"] == 7
+        assert entry["return_to"] == "terminal"
+        assert entry["code_verifier"].startswith("ver-")
 
     def test_state_is_single_use(self):
         db = self._db()
@@ -165,6 +170,16 @@ class TestTokenPlumbing:
         assert fake.fetched_code == "auth-code-xyz"
         assert saved == {"uid": 42, "tj": '{"token": "t"}', "email": "u@example.com"}
 
+    def test_exchange_restores_pkce_verifier(self, monkeypatch):
+        fake = FakeFlow()
+        fake.credentials = type("C", (), {"to_json": lambda self: "{}"})()
+        monkeypatch.setattr(userauth, "_build_flow", lambda: fake)
+        monkeypatch.setattr(userauth, "_lookup_email", lambda creds: None)
+        monkeypatch.setattr(userauth, "_save_token", lambda uid, tj, email: None)
+        userauth.exchange_and_save(42, "code-1", code_verifier="ver-abc")
+        assert fake.code_verifier == "ver-abc"
+        assert fake.fetched_code == "code-1"
+
 
 # ── drive routes ──────────────────────────────────────────────────────────────
 
@@ -206,12 +221,17 @@ class TestAuthEndpoints:
 
 
 class TestCallback:
+    @pytest.fixture(autouse=True)
+    def _frontend_env(self, monkeypatch):
+        # Callback redirects are absolute (SPA may live on another origin).
+        monkeypatch.setenv("FRONTEND_BASE_URL", "http://front.test")
+
     def test_google_error_redirects_with_drive_error(self, client, monkeypatch):
         monkeypatch.setattr(drive.userauth, "consume_state",
                             lambda s: {"user_id": 42, "return_to": "ingest"})
         r = client.get("/drive/callback?error=access_denied&state=s1", follow_redirects=False)
         assert r.status_code == 307
-        assert r.headers["location"] == "/app/ingest?drive_error=access_denied"
+        assert r.headers["location"] == "http://front.test/app/ingest?drive_error=access_denied"
 
     def test_invalid_state_400(self, client, monkeypatch):
         monkeypatch.setattr(drive.userauth, "consume_state", lambda s: None)
@@ -221,18 +241,19 @@ class TestCallback:
     def test_success_saves_and_redirects(self, client, monkeypatch):
         calls = {}
         monkeypatch.setattr(drive.userauth, "consume_state",
-                            lambda s: {"user_id": 42, "return_to": "ingest"})
+                            lambda s: {"user_id": 42, "return_to": "ingest", "code_verifier": "ver-1"})
         monkeypatch.setattr(drive.userauth, "exchange_and_save",
-                            lambda uid, code: calls.update(uid=uid, code=code) or "u@example.com")
+                            lambda uid, code, verifier=None:
+                                calls.update(uid=uid, code=code, verifier=verifier) or "u@example.com")
         r = client.get("/drive/callback?code=abc&state=s1", follow_redirects=False)
         assert r.status_code == 307
-        assert r.headers["location"] == "/app/ingest?drive_connected=1"
-        assert calls == {"uid": 42, "code": "abc"}
+        assert r.headers["location"] == "http://front.test/app/ingest?drive_connected=1"
+        assert calls == {"uid": 42, "code": "abc", "verifier": "ver-1"}
 
     def test_exchange_failure_redirects_with_error(self, client, monkeypatch):
         monkeypatch.setattr(drive.userauth, "consume_state",
                             lambda s: {"user_id": 42, "return_to": "ingest"})
-        def boom(uid, code):
+        def boom(uid, code, verifier=None):
             raise RuntimeError("token exchange failed")
         monkeypatch.setattr(drive.userauth, "exchange_and_save", boom)
         r = client.get("/drive/callback?code=abc&state=s1", follow_redirects=False)

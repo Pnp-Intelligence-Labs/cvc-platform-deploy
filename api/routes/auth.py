@@ -969,7 +969,11 @@ def google_login():
 def google_callback(code: str = None, error: str = None):
     """Handle Google OAuth callback — exchange code, match user, issue JWT."""
     base_url = os.environ.get("APP_BASE_URL", "http://localhost:8002").rstrip("/")
-    app_login = f"{base_url}/app/login"
+    # The SPA may live on a different origin than the API (Vercel vs Railway).
+    # Redirect the browser to the frontend origin or the token lands on the
+    # API host's copy of the app, where the user has no session.
+    front_base = (os.environ.get("FRONTEND_BASE_URL") or base_url).rstrip("/")
+    app_login = f"{front_base}/app/login"
 
     if error or not code:
         return RedirectResponse(f"{app_login}?error=google_denied")

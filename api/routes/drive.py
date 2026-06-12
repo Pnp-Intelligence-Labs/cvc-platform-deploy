@@ -10,6 +10,7 @@ Public routes (the OAuth callback — Google redirects here without a JWT) are o
 nonce created when the auth URL was minted.
 """
 
+import os
 import shutil
 import urllib.parse
 import uuid
@@ -70,24 +71,34 @@ def auth_url(return_to: str = "ingest", user: UserInfo = Depends(require_jwt)):
         raise HTTPException(status_code=503, detail=str(e))
 
 
+def _frontend_base() -> str:
+    """Origin the SPA lives on (Vercel in prod). Google redirects to the API
+    host, so the post-OAuth redirect must be absolute or the user lands on the
+    API's copy of the app without their session."""
+    return (os.environ.get("FRONTEND_BASE_URL")
+            or os.environ.get("APP_BASE_URL")
+            or "http://localhost:8002").rstrip("/")
+
+
 @public_router.get("/callback")
 def drive_callback(code: str | None = None, state: str | None = None, error: str | None = None):
     """Google OAuth callback. Saves the token for the user encoded in `state`,
     then redirects back to the page they started from. Must be public."""
     entry = userauth.consume_state(state)
     return_to = (entry or {}).get("return_to", "ingest")
+    app_base = f"{_frontend_base()}/app"
 
     if error:
-        return RedirectResponse(url=f"/app/{return_to}?drive_error={error}")
+        return RedirectResponse(url=f"{app_base}/{return_to}?drive_error={error}")
     if entry is None:
         raise HTTPException(status_code=400, detail="Invalid or expired OAuth state. Please try again.")
 
     try:
-        userauth.exchange_and_save(entry["user_id"], code)
+        userauth.exchange_and_save(entry["user_id"], code, entry.get("code_verifier"))
     except Exception as e:
-        return RedirectResponse(url=f"/app/{return_to}?drive_error={urllib.parse.quote(str(e))}")
+        return RedirectResponse(url=f"{app_base}/{return_to}?drive_error={urllib.parse.quote(str(e))}")
 
-    return RedirectResponse(url=f"/app/{return_to}?drive_connected=1")
+    return RedirectResponse(url=f"{app_base}/{return_to}?drive_connected=1")
 
 
 @router.post("/disconnect")

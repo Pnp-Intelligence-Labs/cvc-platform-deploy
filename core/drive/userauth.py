@@ -30,10 +30,6 @@ SCOPES = ["https://www.googleapis.com/auth/drive"]
 # reuse it for the per-user flow rather than registering a new redirect URI.
 REDIRECT_URI = f"{BASE_URL}/drive/callback"
 
-# State TTL in minutes (matches prior in-memory 600s window)
-_STATE_TTL_MINUTES = 10
-
-
 def _purge_states() -> None:
     """Delete expired state nonces from DB. Non-fatal — never blocks auth-url."""
     try:
@@ -80,14 +76,6 @@ def create_auth_url(user_id: int, return_to: str = "terminal") -> str:
     client is not configured."""
     _purge_states()
     state = secrets.token_urlsafe(32)
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO cvc.drive_oauth_states (state, user_id, return_to) "
-                "VALUES (%s, %s, %s)",
-                (state, user_id, return_to),
-            )
-
     flow = _build_flow()
     auth_url, _ = flow.authorization_url(
         access_type="offline",
@@ -95,11 +83,21 @@ def create_auth_url(user_id: int, return_to: str = "terminal") -> str:
         prompt="consent",
         state=state,
     )
+    # authorization_url() autogenerates a PKCE code_verifier; the callback runs
+    # in a separate request, so persist it with the state or the exchange fails.
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO cvc.drive_oauth_states (state, user_id, return_to, code_verifier) "
+                "VALUES (%s, %s, %s, %s)",
+                (state, user_id, return_to, getattr(flow, "code_verifier", None)),
+            )
     return auth_url
 
 
 def consume_state(state: str | None) -> dict | None:
-    """Pop and validate a state nonce from DB. Returns {user_id, return_to} or None."""
+    """Pop and validate a state nonce from DB. Returns
+    {user_id, return_to, code_verifier} or None."""
     if not state:
         return None
     with get_connection() as conn:
@@ -107,20 +105,24 @@ def consume_state(state: str | None) -> dict | None:
             cur.execute(
                 "DELETE FROM cvc.drive_oauth_states "
                 "WHERE state = %s "
-                "  AND created_at >= NOW() - INTERVAL '%s minutes' "
-                "RETURNING user_id, return_to",
-                (state, _STATE_TTL_MINUTES),
+                "  AND created_at >= NOW() - INTERVAL '10 minutes' "
+                "RETURNING user_id, return_to, code_verifier",
+                (state,),
             )
             row = cur.fetchone()
     if not row:
         return None
-    return {"user_id": row["user_id"], "return_to": row["return_to"]}
+    return {"user_id": row["user_id"], "return_to": row["return_to"],
+            "code_verifier": row.get("code_verifier")}
 
 
-def exchange_and_save(user_id: int, code: str) -> str:
+def exchange_and_save(user_id: int, code: str, code_verifier: str | None = None) -> str:
     """Exchange an auth code for tokens, persist them for the user, return the
-    connected Google email."""
+    connected Google email. `code_verifier` is the PKCE verifier minted at
+    auth-url time (a fresh Flow has none, and Google requires it to match)."""
     flow = _build_flow()
+    if code_verifier:
+        flow.code_verifier = code_verifier
     flow.fetch_token(code=code)
     creds = flow.credentials
 

@@ -609,3 +609,15 @@ Audited git history vs this log; these shipped earlier but were never recorded:
 - **Per-user Drive read + ingest confirmed wired:** `/drive/auth-url` → consent → `/drive/callback` (state nonce → user_id) → token in `cvc.user_drive_tokens` → `/drive/browse` + `/drive/ingest` run against the signed-in account's Drive.
 - **New `tests/test_drive_oauth.py` (36 tests, no DB/network):** state nonce lifecycle (single-use, TTL expiry, purge), `_build_flow` env-config + unconfigured error, token plumbing (`load_creds`/`build_service`/`get_status`/`exchange_and_save`), drive routes (auth-status, auth-url 200/503, callback success/error/invalid-state/exchange-failure redirects), ingest job lifecycle incl. per-file failure accounting, 404s, deingest + path-traversal guard, `build_tree` pagination/recursion, `ingest_file` Google-export naming + download-failure short-circuit.
 - **Full suite: 78/78 pass.**
+
+## 2026-06-12 — Drive ingestion OAuth fixed end-to-end (prod was 500 on auth-url)
+
+- **Prod symptom:** "Connect Drive" did nothing — `/drive/auth-url` returned 500 on Railway, so no Google consent screen ever appeared.
+- **Root cause 1 (deployed):** migration 143 (`cvc.drive_oauth_states`) was committed but never applied to Supabase — the state INSERT crashed. Applied 143 to Supabase; auth-url immediately 200 with a real consent URL.
+- **Root cause 2 (latent, would have broken the very next step):** google_auth_oauthlib autogenerates a PKCE `code_challenge` in the consent URL, but the callback builds a *fresh* Flow (different request/container) with no verifier → Google would reject the token exchange with `invalid_grant`. Fix: migration 144 adds `code_verifier` to `cvc.drive_oauth_states`; `create_auth_url` persists `flow.code_verifier` with the state; `consume_state` returns it; `exchange_and_save(user_id, code, code_verifier)` restores it before `fetch_token`. Verified empirically (fresh Flow has `code_verifier=None`; challenge present in minted URL).
+- **Root cause 3 (UX, cross-origin):** both OAuth callbacks redirected to relative `/app/...` / `APP_BASE_URL` — i.e. the **Railway** copy of the SPA, where the user has no session (JWT lives in Vercel-origin localStorage). New `FRONTEND_BASE_URL` env (fallback `APP_BASE_URL`): Drive callback and Google login callback now redirect the browser to the Vercel frontend. Set `FRONTEND_BASE_URL=https://pnpverticalos.vercel.app` on Railway.
+- Also set `GOOGLE_DEFAULT_ROLE=Member` on Railway (pending action from 06-11).
+- `consume_state` INTERVAL no longer parameterized (matches 559c966 purge style); dropped now-unused `_STATE_TTL_MINUTES`.
+- Tests: callback tests pin `FRONTEND_BASE_URL`, exchange/verifier round-trip covered; full suite green.
+- `.env.example`: documented `FRONTEND_BASE_URL`.
+- Note: `/app/ingest` (DriveIngestPage, `/drive/ingest` disk-only path) is orphaned — no nav links to it; the real surface is Home → My Desk → My Terminal (`/terminal/*`, DB-backed + classifier). Left as-is.
