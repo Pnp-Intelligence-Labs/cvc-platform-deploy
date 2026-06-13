@@ -31,7 +31,20 @@ export default function LoginPage() {
     const token  = params.get('token');
     const err    = params.get('error');
     if (token) {
-      localStorage.setItem('platform_jwt', token);
+      // Google callback redirects with only ?token=. Decode the JWT so the
+      // navbar/profile can show name + role (mirrors what api.login stores);
+      // otherwise platform_user is never set and the profile shows blank.
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        api.storeAuthData({
+          access_token: token,
+          username: payload.username,
+          role: payload.role,
+          full_name: payload.full_name ?? null,
+        });
+      } catch {
+        localStorage.setItem('platform_jwt', token);
+      }
       navigate('/', { replace: true });
     } else if (err) {
       setError(GOOGLE_ERROR_MESSAGES[err] ?? 'Google sign-in failed.');
