@@ -282,7 +282,7 @@ class FakeService:
         page = dict(self._pages[idx]) if idx < len(self._pages) else {"files": []}
         return _Executable(page)
 
-    def get(self, fileId=None, fields=None):
+    def get(self, fileId=None, fields=None, **kwargs):
         return _Executable(self._meta.get(fileId, {}))
 
 

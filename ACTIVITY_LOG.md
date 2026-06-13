@@ -4,6 +4,19 @@ Running log of work done in this repo. Newest entries at the top. Per project ru
 
 Format: `YYYY-MM-DD — short title` followed by what changed and why.
 
+## 2026-06-12 — Terminal: PowerPoint extraction + routed docs surfaced on destination tabs
+
+After the OAuth chain was fixed, ingestion worked but two gaps remained: pitch decks didn't extract, and the classifier's tab routing was never surfaced anywhere.
+
+**Extraction:** `markitdown` needs `python-pptx` to read `.pptx`, and it was missing from `requirements.txt` (Word/Excel/PDF deps were present) — so PowerPoint pitch decks silently failed to extract. Added `python-pptx>=1.0.0`; verified `convert_file` on a real `.pptx` returns `status: ok` with extracted text. (`.xmind` remains unsupported — proprietary zip format nothing parses; its earlier `download_failed` was the Drive-API 403 still propagating at ingest time.)
+
+**Routing (half-built → wired):** the ingestion classifier wrote `target_tab` to `cvc.drive_documents` and the Terminal showed it as a badge, but nothing consumed it — routed docs never appeared in the destination tabs.
+- `api/routes/terminal.py`: new `GET /terminal/routed?tab=<tab>` returning the user's docs for that tab (user-scoped).
+- `designs/figma-dashboard/src/app/components/RoutedDocs.tsx`: new self-contained "From your Terminal — routed to X" panel (renders nothing when empty; click a doc to open the existing detail modal). Reuses `DocModal`/`docLabel`/`DocDetail` now exported from `TerminalPage.tsx`.
+- Injected `<RoutedDocs tab="…"/>` into Ventures, Partners (PartnerManagement), Sales, Requests. Home/My Desk already shows all Terminal docs via the embedded panel, so it's inherently covered.
+
+**Also shipped in this commit (separate in-progress work by the user, bundled per their go-ahead):** shared-drive support — `core/drive/browse.py`, `pipeline.py`, `ingestion.py` now pass `supportsAllDrives` / `includeItemsFromAllDrives`; a `/terminal/ingest-link` endpoint + UI in `TerminalPage.tsx`. Updated `tests/test_drive_oauth.py` `FakeService.get` to accept `**kwargs` so it tolerates `supportsAllDrives`. Suite green (37 passed); frontend builds clean.
+
 ## 2026-06-12 — Fix: My Terminal Drive connect failed with "Scope has changed"
 
 **Symptom:** Users could log in and click "Connect with Google Drive", complete the Google consent, but the panel stayed on the Connect gate — no Drive contents ever appeared.
