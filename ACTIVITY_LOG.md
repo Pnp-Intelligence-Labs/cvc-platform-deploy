@@ -648,4 +648,4 @@ Audited git history vs this log; these shipped earlier but were never recorded:
 - Link is validated up front (`files().get`) → 404 with a "share as Anyone with the link" hint if not accessible; folder with no files → 400. Requires the user's Drive connection (their OAuth token is what reads the public file).
 - Added `supportsAllDrives=True` to the pipeline's metadata get + media download and `includeItemsFromAllDrives` to `build_tree` listing, so links hosted on shared drives resolve instead of 404ing.
 - TerminalPage: link input + "Ingest link" button under the ingest button; reuses the same job polling (extracted `pollIngestJob`) and refreshes My Documents on completion.
-- NOT committed/pushed yet: working tree contains a second in-progress workstream (RoutedDocs / `/terminal/routed`) from a parallel session — committing would mix the two.
+- Shipped in e40de8a together with the RoutedDocs workstream (`/terminal/routed` + per-tab "From your Terminal" panels). Frontend live via Vercel auto-deploy; backend pending `railway up`.
