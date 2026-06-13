@@ -10,6 +10,7 @@ import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { cls } from '../components/tokens';
 import { CVCNavbar } from '../components/CVCNavbar';
+import { RoutedDocs } from '../components/RoutedDocs';
 import { AUTH_HEADER as AUTH } from '../api/client';
 import { useTeamMembers } from '../hooks/useTeamMembers';
 import { useConfig } from '../hooks/useConfig';
@@ -1728,6 +1729,8 @@ export default function SalesPage() {
   return (
     <div className={cls.page}>
       <CVCNavbar />
+
+      <RoutedDocs tab="sales" />
 
       <div className="max-w-[1800px] mx-auto px-6 py-8">
         {/* Page header */}

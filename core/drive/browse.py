@@ -26,6 +26,8 @@ def build_tree(svc, folder_id: str, depth: int = 0, max_depth: int = 3) -> dict:
             orderBy="name",
             pageSize=200,
             pageToken=page_token,
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
         ).execute()
 
         for item in resp.get("files", []):

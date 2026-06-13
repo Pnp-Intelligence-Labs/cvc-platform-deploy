@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { cls } from '../components/tokens';
 import { CVCNavbar } from '../components/CVCNavbar';
+import { RoutedDocs } from '../components/RoutedDocs';
 import { AUTH_HEADER as AUTH, api } from '../api/client';
 import { useTeamMembers } from '../hooks/useTeamMembers';
 
@@ -2548,6 +2549,7 @@ export default function RequestsPage() {
   return (
     <div className={cls.page}>
       <CVCNavbar />
+      <RoutedDocs tab="requests" />
       <div className="max-w-7xl mx-auto px-4 py-6 md:px-6 md:py-8">
 
         {/* Header */}

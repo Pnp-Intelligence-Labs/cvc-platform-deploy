@@ -641,3 +641,11 @@ Audited git history vs this log; these shipped earlier but were never recorded:
 - **Major — ingest progress polling broken:** entrypoint ran `uvicorn --workers 2` while job state (`_jobs` in terminal.py/drive.py) is per-process memory — polls hit the other worker → 404 → TerminalPage's poll loop breaks on first miss, ingests looked stalled. Now `--workers ${UVICORN_WORKERS:-1}` (single worker also keeps one copy of the torch/embedding stack in RAM).
 - **Minor — Drive filenames containing `/`:** legal in Drive, treated as path separators when staging (leading `/` escaped the staging dir). Sanitized in `ingest_file`.
 - Full suite green (78/78). Redeployed to Railway.
+
+## 2026-06-12 — Public Drive link ingest (My Terminal)
+
+- New `POST /terminal/ingest-link` — paste any "Anyone with the link" Drive share URL and ingest it through the same job pipeline as file selection. Accepts file links (`/file/d/`), Google Docs/Sheets/Slides links (`docs.google.com/.../d/`), `open?id=`/`uc?id=` forms, and folder links (`/drive/folders/`, recursed via `build_tree`, same 3-level depth cap as browse).
+- Link is validated up front (`files().get`) → 404 with a "share as Anyone with the link" hint if not accessible; folder with no files → 400. Requires the user's Drive connection (their OAuth token is what reads the public file).
+- Added `supportsAllDrives=True` to the pipeline's metadata get + media download and `includeItemsFromAllDrives` to `build_tree` listing, so links hosted on shared drives resolve instead of 404ing.
+- TerminalPage: link input + "Ingest link" button under the ingest button; reuses the same job polling (extracted `pollIngestJob`) and refreshes My Documents on completion.
+- NOT committed/pushed yet: working tree contains a second in-progress workstream (RoutedDocs / `/terminal/routed`) from a parallel session — committing would mix the two.

@@ -1,6 +1,7 @@
 import { Building, Mail, User, Plus, X, ChevronRight, ChevronDown, Upload, Trash2, FileText, StickyNote, Search, Eye, ExternalLink, Check, Pencil, AlertTriangle, Star, Sparkles, Download, RefreshCw, TrendingUp, Zap, Info } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { CVCNavbar } from '../components/CVCNavbar';
+import { RoutedDocs } from '../components/RoutedDocs';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { api } from '../api/client';
@@ -1007,6 +1008,8 @@ export default function PartnerManagement() {
   return (
     <div className={cls.page}>
       <CVCNavbar />
+
+      <RoutedDocs tab="partners" />
 
       <main className="max-w-[1400px] mx-auto px-4 py-6 md:px-6 md:py-8">
         {/* Report header */}

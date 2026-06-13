@@ -29,7 +29,7 @@ def ingest_file(svc, file_id: str, dest_dir: Path) -> dict:
     raw_dir = dest_dir / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
 
-    meta = svc.files().get(fileId=file_id, fields="id,name,mimeType,size").execute()
+    meta = svc.files().get(fileId=file_id, fields="id,name,mimeType,size", supportsAllDrives=True).execute()
     name, mime = meta["name"], meta["mimeType"]
     # Drive filenames may contain "/" (it's a legal Drive character) — keep the
     # staged file inside raw_dir instead of treating it as a path.

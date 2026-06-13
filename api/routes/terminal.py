@@ -11,6 +11,7 @@ router (Google redirects there without a JWT) and routes back here by state.
 """
 
 import json
+import re
 import uuid
 from pathlib import Path
 
@@ -99,6 +100,71 @@ def ingest(req: IngestRequest, background_tasks: BackgroundTasks, user: UserInfo
     _jobs[job_id] = {"status": "running", "progress": 0, "total": len(req.file_ids), "results": []}
     background_tasks.add_task(_run_ingest, job_id, svc, req.file_ids, user.user_id, dest_dir)
     return {"job_id": job_id, "total": len(req.file_ids)}
+
+
+# Public/shared Drive link forms we accept. Folder links list their contents;
+# file/doc links ingest the single file.
+_LINK_PATTERNS = [
+    ("folder", re.compile(r"drive\.google\.com/drive/(?:u/\d+/)?folders/([\w-]+)")),
+    ("file",   re.compile(r"drive\.google\.com/file/d/([\w-]+)")),
+    ("file",   re.compile(r"docs\.google\.com/(?:document|spreadsheets|presentation)/d/([\w-]+)")),
+    ("file",   re.compile(r"drive\.google\.com/(?:open|uc)\?(?:[^#\s]*&)?id=([\w-]+)")),
+]
+
+
+def _parse_drive_link(url: str) -> tuple[str, str] | None:
+    """Return (kind, drive_id) from a Drive share link, or None if unrecognized."""
+    for kind, pat in _LINK_PATTERNS:
+        m = pat.search(url)
+        if m:
+            return kind, m.group(1)
+    return None
+
+
+def _collect_file_ids(tree: dict) -> list[str]:
+    ids = [f["id"] for f in tree.get("files", [])]
+    for folder in tree.get("folders", []):
+        ids.extend(_collect_file_ids(folder["children"]))
+    return ids
+
+
+class IngestLinkRequest(BaseModel):
+    url: str
+
+
+@router.post("/ingest-link")
+def ingest_link(req: IngestLinkRequest, background_tasks: BackgroundTasks, user: UserInfo = Depends(require_jwt)):
+    """Ingest a publicly shared Drive link (file or folder). Same job flow as /ingest."""
+    parsed = _parse_drive_link(req.url.strip())
+    if not parsed:
+        raise HTTPException(status_code=400, detail="Not a recognized Google Drive link. Paste a file, doc, or folder share link.")
+    kind, drive_id = parsed
+
+    try:
+        svc = userauth.build_service(user.user_id)
+    except ValueError:
+        raise HTTPException(status_code=503, detail="Google Drive not connected. Use 'Connect Drive'.")
+
+    try:
+        svc.files().get(fileId=drive_id, fields="id", supportsAllDrives=True).execute()
+    except Exception:
+        raise HTTPException(
+            status_code=404,
+            detail=f"{'Folder' if kind == 'folder' else 'File'} not accessible. "
+                   "Make sure the link is shared as 'Anyone with the link'.")
+
+    if kind == "folder":
+        file_ids = _collect_file_ids(build_tree(svc, drive_id))
+        if not file_ids:
+            raise HTTPException(status_code=400, detail="Folder contains no ingestable files.")
+    else:
+        file_ids = [drive_id]
+
+    job_id = str(uuid.uuid4())
+    dest_dir = _user_dir(user.user_id)
+    _jobs[job_id] = {"status": "running", "progress": 0, "total": len(file_ids), "results": []}
+    background_tasks.add_task(_run_ingest, job_id, svc, file_ids, user.user_id, dest_dir)
+    return {"job_id": job_id, "total": len(file_ids)}
 
 
 @router.get("/ingest/{job_id}")
@@ -195,6 +261,26 @@ def list_documents(user: UserInfo = Depends(require_jwt)):
                 ORDER BY ingested_at DESC
                 """,
                 (user.user_id,),
+            )
+            return {"documents": [dict(r) for r in cur.fetchall()]}
+
+
+@router.get("/routed")
+def routed_documents(tab: str, user: UserInfo = Depends(require_jwt)):
+    """List this user's ingested documents the classifier routed to `tab`
+    (home | ventures | partners | sales | requests). Powers the 'From your
+    Terminal' panel on each destination page."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, filename, doc_type, chars, conversion, summary,
+                       target_tab, target_confidence, target_reason, ingested_at
+                FROM cvc.drive_documents
+                WHERE user_id = %s AND target_tab = %s
+                ORDER BY ingested_at DESC
+                """,
+                (user.user_id, tab),
             )
             return {"documents": [dict(r) for r in cur.fetchall()]}
 

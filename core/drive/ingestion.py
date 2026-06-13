@@ -42,7 +42,7 @@ def download_file(svc, file_id: str, mime: str, dest: Path) -> bool:
             export_mime, _ = EXPORT_MIME[mime]
             request = svc.files().export_media(fileId=file_id, mimeType=export_mime)
         else:
-            request = svc.files().get_media(fileId=file_id)
+            request = svc.files().get_media(fileId=file_id, supportsAllDrives=True)
 
         buf = io.BytesIO()
         downloader = MediaIoBaseDownload(buf, request)

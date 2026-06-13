@@ -6,7 +6,7 @@ import {
   FolderOpen, Folder, FileText, RefreshCw, Loader2,
   ChevronRight, ChevronDown, CheckSquare, Square,
   CloudDownload, AlertCircle, CheckCircle2,
-  HardDrive, Trash2, Sparkles, Send, X, Plug,
+  HardDrive, Trash2, Sparkles, Send, X, Plug, Link2,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -29,7 +29,7 @@ interface TermDoc {
   target_reason?: string;
 }
 
-interface DocDetail extends TermDoc { text: string; }
+export interface DocDetail extends TermDoc { text: string; }
 interface AskSource { id: number; filename: string; doc_type: string; }
 
 // ── Doc-type labels ─────────────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ const DOC_LABEL: Record<string, string> = {
   legal_formation: 'Formation', memo: 'Memo', report: 'Report', meeting_notes: 'Meeting Notes',
   metrics: 'Metrics', other: 'Document', unknown: 'Document',
 };
-const docLabel = (t: string) => DOC_LABEL[t] ?? t;
+export const docLabel = (t: string) => DOC_LABEL[t] ?? t;
 
 // Where the data lives — tab assigned by the ingestion classifier.
 const TAB_LABEL: Record<string, string> = {
@@ -135,7 +135,7 @@ function FolderNode({ folder, selected, onToggle, depth = 0 }: {
 
 // ── Document detail modal ───────────────────────────────────────────────────────
 
-function DocModal({ doc, onClose }: { doc: DocDetail; onClose: () => void }) {
+export function DocModal({ doc, onClose }: { doc: DocDetail; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
@@ -195,6 +195,10 @@ export function TerminalPanel({ returnTo = 'terminal', showHeader = true }: Term
   const [docs, setDocs]           = useState<TermDoc[]>([]);
   const [detail, setDetail]       = useState<DocDetail | null>(null);
   const [connecting, setConnecting] = useState(false);
+
+  const [link, setLink]           = useState('');
+  const [linkBusy, setLinkBusy]   = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   const [question, setQuestion]   = useState('');
   const [asking, setAsking]       = useState(false);
@@ -293,6 +297,18 @@ export function TerminalPanel({ returnTo = 'terminal', showHeader = true }: Term
     });
   }
 
+  async function pollIngestJob(job_id: string, total: number) {
+    setIngestProgress({ progress: 0, total });
+    while (true) {
+      await new Promise(r => setTimeout(r, 2000));
+      const sr = await fetch(`/terminal/ingest/${job_id}`, { headers: AUTH_HEADER });
+      if (!sr.ok) break;
+      const job = await sr.json();
+      setIngestProgress({ progress: job.progress, total: job.total });
+      if (job.status === 'done' || job.status === 'failed') break;
+    }
+  }
+
   async function runIngest() {
     if (selected.size === 0) return;
     setIngesting(true); setBrowseError(null); setIngestProgress(null);
@@ -308,19 +324,35 @@ export function TerminalPanel({ returnTo = 'terminal', showHeader = true }: Term
         return;
       }
       const { job_id, total } = await res.json();
-      setIngestProgress({ progress: 0, total });
-      while (true) {
-        await new Promise(r => setTimeout(r, 2000));
-        const sr = await fetch(`/terminal/ingest/${job_id}`, { headers: AUTH_HEADER });
-        if (!sr.ok) break;
-        const job = await sr.json();
-        setIngestProgress({ progress: job.progress, total: job.total });
-        if (job.status === 'done' || job.status === 'failed') break;
-      }
+      await pollIngestJob(job_id, total);
       setSelected(new Set());
       fetchDocs();
     } catch (e) { setBrowseError(`Network error: ${e}`); }
     setIngesting(false);
+    setIngestProgress(null);
+  }
+
+  async function ingestLink() {
+    const url = link.trim();
+    if (!url || linkBusy) return;
+    setLinkBusy(true); setLinkError(null); setIngestProgress(null);
+    try {
+      const res = await fetch('/terminal/ingest-link', {
+        method: 'POST', headers: { ...AUTH_HEADER, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        setLinkError(b.detail ?? `Error ${res.status}`);
+        setLinkBusy(false);
+        return;
+      }
+      const { job_id, total } = await res.json();
+      await pollIngestJob(job_id, total);
+      setLink('');
+      fetchDocs();
+    } catch (e) { setLinkError(`Network error: ${e}`); }
+    setLinkBusy(false);
     setIngestProgress(null);
   }
 
@@ -493,6 +525,33 @@ export function TerminalPanel({ returnTo = 'terminal', showHeader = true }: Term
                   : <><CloudDownload className="w-3.5 h-3.5" /> Ingest {selected.size > 0 ? `${selected.size} file${selected.size !== 1 ? 's' : ''}` : 'selected'}</>
                 }
               </button>
+
+              {/* Public link ingest */}
+              <div className="mt-2 flex gap-2">
+                <input
+                  value={link}
+                  onChange={e => { setLink(e.target.value); setLinkError(null); }}
+                  onKeyDown={e => { if (e.key === 'Enter') ingestLink(); }}
+                  placeholder="…or paste a public Drive link (file or folder)"
+                  className="flex-1 text-xs border border-slate-200 rounded-lg px-2.5 py-2 bg-white focus:outline-none focus:border-slate-400"
+                />
+                <button
+                  onClick={ingestLink}
+                  disabled={linkBusy || !link.trim()}
+                  title="Ingest from link"
+                  className="flex items-center gap-1.5 text-xs bg-[#1e293b] text-[#f59e0b] rounded-lg px-3 py-2 font-bold disabled:opacity-40 hover:bg-[#334155] transition-colors"
+                >
+                  {linkBusy
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {ingestProgress ? `${ingestProgress.progress}/${ingestProgress.total}` : '…'}</>
+                    : <><Link2 className="w-3.5 h-3.5" /> Ingest link</>
+                  }
+                </button>
+              </div>
+              {linkError && (
+                <p className="flex items-start gap-1.5 text-[11px] text-red-600 mt-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-px" />{linkError}
+                </p>
+              )}
             </div>
           </div>
 

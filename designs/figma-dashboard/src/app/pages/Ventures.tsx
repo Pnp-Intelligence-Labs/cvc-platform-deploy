@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router';
 import { CVCNavbar } from '../components/CVCNavbar';
+import { RoutedDocs } from '../components/RoutedDocs';
 import VenturesOverview from './VenturesOverview';
 import PortfolioHomepage from './PortfolioHomepage';
 import CompanySearch from './CompanySearch';
@@ -36,6 +37,8 @@ export default function Ventures() {
           ))}
         </div>
       </div>
+
+      <RoutedDocs tab="ventures" />
 
       {tab === 'Overview'  && <VenturesOverview />}
       {tab === 'Portfolio' && <PortfolioHomepage />}

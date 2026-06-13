@@ -39,3 +39,4 @@ google-api-python-client>=2.179.0
 markitdown>=0.1.0
 pandas>=2.0.0
 openpyxl>=3.1.5
+python-pptx>=1.0.0   # markitdown needs this to extract PowerPoint pitch decks
