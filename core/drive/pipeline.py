@@ -31,6 +31,9 @@ def ingest_file(svc, file_id: str, dest_dir: Path) -> dict:
 
     meta = svc.files().get(fileId=file_id, fields="id,name,mimeType,size").execute()
     name, mime = meta["name"], meta["mimeType"]
+    # Drive filenames may contain "/" (it's a legal Drive character) — keep the
+    # staged file inside raw_dir instead of treating it as a path.
+    name = name.replace("/", "_").lstrip(".") or "unnamed"
 
     if mime in EXPORT_MIME:
         _, ext = EXPORT_MIME[mime]

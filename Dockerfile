@@ -31,6 +31,12 @@ ENV PYTHONPATH=/app:/app/core
 # Entrypoint
 RUN chmod +x /app/scripts/docker_entrypoint.sh
 
+# Drive ingest stages downloads under /app/workdir (DRIVE_WORKDIR default).
+# COPY runs as root, so without this the non-root appuser can't mkdir it and
+# every ingest fails with PermissionError. Disk here is cache-only (text
+# persists in the DB), so an ephemeral container FS is fine.
+RUN mkdir -p /app/workdir && chown -R appuser:appuser /app/workdir
+
 USER appuser
 
 EXPOSE 8002

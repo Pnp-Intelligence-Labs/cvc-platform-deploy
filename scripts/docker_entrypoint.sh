@@ -87,7 +87,10 @@ else
 fi
 
 echo "[entrypoint] Starting API server ..."
+# Single worker: ingest job state (api/routes/terminal.py + drive.py _jobs) is
+# in-process memory — with >1 worker, status polls land on a worker that never
+# saw the job and 404. Also keeps one copy of the torch/embedding stack in RAM.
 exec python -m uvicorn api.main:app \
     --host 0.0.0.0 \
     --port "${PORT:-8002}" \
-    --workers 2
+    --workers "${UVICORN_WORKERS:-1}"

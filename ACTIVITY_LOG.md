@@ -621,3 +621,10 @@ Audited git history vs this log; these shipped earlier but were never recorded:
 - Tests: callback tests pin `FRONTEND_BASE_URL`, exchange/verifier round-trip covered; full suite green.
 - `.env.example`: documented `FRONTEND_BASE_URL`.
 - Note: `/app/ingest` (DriveIngestPage, `/drive/ingest` disk-only path) is orphaned — no nav links to it; the real surface is Home → My Desk → My Terminal (`/terminal/*`, DB-backed + classifier). Left as-is.
+
+## 2026-06-12 — Ingestion runtime fixes found by review sweep (workdir perms, worker count, filenames)
+
+- **Critical — ingest staging dir unwritable on Railway:** Dockerfile `COPY . .` runs as root, then `USER appuser` — `/app` is root-owned, so `ingest_file`'s `mkdir /app/workdir/...` raised PermissionError for EVERY file (jobs finished "done" with per-file errors, zero documents stored). Dockerfile now creates `/app/workdir` and chowns it to appuser.
+- **Major — ingest progress polling broken:** entrypoint ran `uvicorn --workers 2` while job state (`_jobs` in terminal.py/drive.py) is per-process memory — polls hit the other worker → 404 → TerminalPage's poll loop breaks on first miss, ingests looked stalled. Now `--workers ${UVICORN_WORKERS:-1}` (single worker also keeps one copy of the torch/embedding stack in RAM).
+- **Minor — Drive filenames containing `/`:** legal in Drive, treated as path separators when staging (leading `/` escaped the staging dir). Sanitized in `ingest_file`.
+- Full suite green (78/78). Redeployed to Railway.
