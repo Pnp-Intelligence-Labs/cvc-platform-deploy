@@ -142,6 +142,12 @@ class TestBuildFlow:
         with pytest.raises(FileNotFoundError):
             userauth._build_flow()
 
+    def test_oauthlib_scope_relaxed(self):
+        # Google returns a superset of the requested scope when the user is
+        # already signed in via Google login; oauthlib rejects the exchange
+        # ("Scope has changed…") unless this is set. Importing userauth must set it.
+        assert os.environ.get("OAUTHLIB_RELAX_TOKEN_SCOPE") == "1"
+
 
 class TestTokenPlumbing:
     def test_load_creds_none_when_not_connected(self, monkeypatch):

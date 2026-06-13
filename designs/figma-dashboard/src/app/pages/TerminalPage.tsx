@@ -200,8 +200,15 @@ export function TerminalPanel({ returnTo = 'terminal', showHeader = true }: Term
   const [asking, setAsking]       = useState(false);
   const [answer, setAnswer]       = useState<{ answer: string; sources: AskSource[] } | null>(null);
 
-  const connected  = searchParams.get('drive_connected') === '1';
-  const oauthError = searchParams.get('drive_error');
+  // Capture the OAuth result once, on first render — the mount effect below
+  // strips these params from the URL, so reading them live would blank the
+  // success/error banner before the user ever sees it.
+  const [oauthResult] = useState(() => ({
+    connected: searchParams.get('drive_connected') === '1',
+    error: searchParams.get('drive_error'),
+  }));
+  const connected  = oauthResult.connected;
+  const oauthError = oauthResult.error;
 
   const checkStatus = useCallback(async () => {
     setAuthLoading(true);

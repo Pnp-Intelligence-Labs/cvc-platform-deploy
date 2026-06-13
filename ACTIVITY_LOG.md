@@ -4,6 +4,19 @@ Running log of work done in this repo. Newest entries at the top. Per project ru
 
 Format: `YYYY-MM-DD — short title` followed by what changed and why.
 
+## 2026-06-12 — Fix: My Terminal Drive connect failed with "Scope has changed"
+
+**Symptom:** Users could log in and click "Connect with Google Drive", complete the Google consent, but the panel stayed on the Connect gate — no Drive contents ever appeared.
+
+**Diagnosis (config all ruled out):** Railway `APP_BASE_URL` (Railway host) and `FRONTEND_BASE_URL` (Vercel host) were both correct, and Google Cloud Console had both `/auth/google/callback` and `/drive/callback` whitelisted on the Railway host. Browser repro showed the real cause: the callback redirected to `…/app/?drive_error=Scope%20has%20changed%20from%20"…/auth/drive"%20to%20"…userinfo.profile openid …userinfo.email …/auth/drive"`.
+
+**Root cause:** The Drive flow uses `google_auth_oauthlib` `Flow.fetch_token`, which runs oauthlib's strict scope check. Because the user is already signed into the platform via Google (holding `openid email profile`) and the Drive auth URL sets `include_granted_scopes`, Google returns a *superset* of the requested `drive` scope. oauthlib treats any scope difference as fatal and refuses to save the token. (Platform Google-login is unaffected — it exchanges the code with a raw `http.post`, no oauthlib.)
+
+- `core/drive/userauth.py`: set `OAUTHLIB_RELAX_TOKEN_SCOPE=1` at import (the documented oauthlib escape hatch) so the expanded scope set is accepted. The token is valid and still grants Drive access.
+- `designs/figma-dashboard/src/app/pages/TerminalPage.tsx`: capture the `drive_connected` / `drive_error` query params into state on first render. The mount effect strips them from the URL, which was blanking the success/error banner before the user could see it — that's why the scope error was silently swallowed.
+- `tests/test_drive_oauth.py`: added `test_oauthlib_scope_relaxed` regression guard. Suite green (37 passed).
+- Rebuilt frontend bundle into `api/static/app/` (Railway serves the committed copy; Dockerfile does not build the SPA).
+
 ## 2026-06-09 — Doc sync + diagnosed failing Vercel duplicate project
 
 - Fixed stale git remote `natelouie11-tech/cvc-platform-deploy` → `harshalpathak97/cvc-platform-deploy` in `README.md`, `onboarding/SETUP_GUIDE.md`, `CLAUDE.md` (×2 incl. corrected local path).

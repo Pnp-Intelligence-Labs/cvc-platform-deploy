@@ -16,6 +16,13 @@ import os
 import secrets
 from pathlib import Path
 
+# Google returns a *superset* of the requested scope when the user is already
+# signed in via Google login (which holds openid/email/profile) and the auth URL
+# sets include_granted_scopes. oauthlib's Flow.fetch_token treats any scope
+# difference as fatal ("Scope has changed…") and refuses to save the token.
+# Relax that check — the token is valid and still grants the drive scope.
+os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
+
 from core.db.connection import get_connection
 
 # Shared OAuth client (the app's Google Cloud credentials), not per-user.
